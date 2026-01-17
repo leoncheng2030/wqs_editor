@@ -24,12 +24,20 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['update:modelValue', 'keydown', 'focus', 'blur'])
+const emit = defineEmits(['update:modelValue', 'keydown', 'focus', 'blur', 'scroll'])
 
 const textareaRef = ref(null)
+const gutterRef = ref(null)
 
 const handleInput = event => {
   emit('update:modelValue', event.target.value)
+}
+
+const handleScroll = event => {
+  emit('scroll', event)
+  if (gutterRef.value) {
+    gutterRef.value.scrollTop = event.target.scrollTop
+  }
 }
 
 const handleKeydown = event => {
@@ -52,7 +60,7 @@ defineExpose({
 <template>
   <div class="markdown-editor__editor-pane">
     <div class="markdown-editor__editor-shell">
-      <div v-if="showLineNumbers" class="markdown-editor__gutter">
+      <div v-if="showLineNumbers" ref="gutterRef" class="markdown-editor__gutter">
         <div
           v-for="(line, index) in lines"
           :key="index"
@@ -72,6 +80,7 @@ defineExpose({
         @keydown="handleKeydown"
         @focus="handleFocus"
         @blur="handleBlur"
+        @scroll="handleScroll"
       />
     </div>
   </div>

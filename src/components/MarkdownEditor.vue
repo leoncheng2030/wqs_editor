@@ -240,6 +240,7 @@ const internalValue = ref(initialValue)
 
 const editorPaneRef = ref(null)
 const textareaRef = computed(() => editorPaneRef.value?.textareaRef || null)
+const previewPaneRef = ref(null)
 const panesRef = ref(null)
 
 const tokens = computed(() => tokenizeMarkdown(internalValue.value))
@@ -397,6 +398,51 @@ const handleToolbarClick = key => {
 }
 
 const editorWidth = ref(50)
+
+// Sync Scroll
+const scrollingSide = ref(null)
+const scrollTimeout = ref(null)
+
+const handleEditorScroll = () => {
+  if (scrollingSide.value === 'preview') return
+  scrollingSide.value = 'editor'
+
+  const textarea = textareaRef.value
+  const preview = previewPaneRef.value?.previewRef
+
+  if (textarea && preview) {
+    const percentage = textarea.scrollTop / (textarea.scrollHeight - textarea.clientHeight)
+    if (textarea.scrollHeight > textarea.clientHeight && preview.scrollHeight > preview.clientHeight) {
+      preview.scrollTop = percentage * (preview.scrollHeight - preview.clientHeight)
+    }
+  }
+
+  clearTimeout(scrollTimeout.value)
+  scrollTimeout.value = setTimeout(() => {
+    scrollingSide.value = null
+  }, 100)
+}
+
+const handlePreviewScroll = () => {
+  if (scrollingSide.value === 'editor') return
+  scrollingSide.value = 'preview'
+
+  const textarea = textareaRef.value
+  const preview = previewPaneRef.value?.previewRef
+
+  if (textarea && preview) {
+    const percentage = preview.scrollTop / (preview.scrollHeight - preview.clientHeight)
+    if (textarea.scrollHeight > textarea.clientHeight && preview.scrollHeight > preview.clientHeight) {
+      textarea.scrollTop = percentage * (textarea.scrollHeight - textarea.clientHeight)
+    }
+  }
+
+  clearTimeout(scrollTimeout.value)
+  scrollTimeout.value = setTimeout(() => {
+    scrollingSide.value = null
+  }, 100)
+}
+
 const isDragging = ref(false)
 
 const handleDragging = event => {
@@ -496,6 +542,7 @@ const editorClasses = computed(() => [
         @keydown="handleKeydown"
         @focus="handleFocus"
         @blur="handleBlur"
+        @scroll="handleEditorScroll"
       />
       <div
         v-if="showPreview"
@@ -504,7 +551,9 @@ const editorClasses = computed(() => [
       ></div>
       <MarkdownPreviewPane
         v-if="showPreview"
+        ref="previewPaneRef"
         :style="{ flexBasis: (100 - editorWidth) + '%' }"
+        @scroll="handlePreviewScroll"
       >
         <slot name="preview" :tokens="tokens">
           <MarkdownPreview :tokens="tokens" />
