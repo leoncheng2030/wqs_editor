@@ -1,6 +1,5 @@
 {
-  "name": "wqs_editor",
-  "private": true,
+  "name": "@nywqs/vue-markdown-editor",
   "version": "0.0.0",
   "type": "module",
   "scripts": {
@@ -9,7 +8,8 @@
     "build:lib": "vite build --mode lib && npm run build:types",
     "build:types": "vue-tsc --declaration --emitDeclarationOnly --outDir dist-lib",
     "typecheck": "vue-tsc --noEmit",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "prepublishOnly": "npm run build:lib"
   },
   "dependencies": {
     "marked": "^17.0.1",
@@ -24,6 +24,12 @@
     "vite": "npm:rolldown-vite@7.2.5",
     "vue-tsc": "^3.2.2"
   },
+  "main": "dist-lib/vue-markdown-editor.umd.js",
+  "module": "dist-lib/vue-markdown-editor.es.js",
+  "style": "dist-lib/wqs_editor.css",
+  "files": [
+    "dist-lib"
+  ],
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"
   },
