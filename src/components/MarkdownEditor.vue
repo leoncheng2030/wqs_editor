@@ -327,6 +327,7 @@ const {
   insertHorizontalRule,
   insertLink,
   insertImage,
+  insertAtCursor,
   handleKeydown,
 } = createEditorCommands({
   internalValue,
@@ -458,6 +459,7 @@ const editorClasses = computed(() => [
       <slot
         name="toolbar"
         :wrap-selection="wrapSelection"
+        :insert-at-cursor="insertAtCursor"
         :toggle-heading="toggleHeading"
         :insert-unordered-list="insertUnorderedList"
         :insert-ordered-list="insertOrderedList"

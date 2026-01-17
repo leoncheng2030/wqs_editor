@@ -290,25 +290,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 	function K(e, t) {
 		e.input[e.index - 1] === "." && t.ignoreMatch();
 	}
-	function q(e, t) {
+	function Ti(e, t) {
 		e.className !== void 0 && (e.scope = e.className, delete e.className);
 	}
-	function J(e, t) {
+	function q(e, t) {
 		t && e.beginKeywords && (e.begin = "\\b(" + e.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)", e.__beforeBegin = K, e.keywords = e.keywords || e.beginKeywords, delete e.beginKeywords, e.relevance === void 0 && (e.relevance = 0));
 	}
-	function Y(e, t) {
+	function J(e, t) {
 		Array.isArray(e.illegal) && (e.illegal = x(...e.illegal));
 	}
-	function Ti(e, t) {
+	function Y(e, t) {
 		if (e.match) {
 			if (e.begin || e.end) throw Error("begin & end are not supported with match");
 			e.begin = e.match, delete e.match;
 		}
 	}
-	function X(e, t) {
+	function Ei(e, t) {
 		e.relevance === void 0 && (e.relevance = 1);
 	}
-	var Ei = (e, t) => {
+	var X = (e, t) => {
 		if (!e.beforeMatch) return;
 		if (e.starts) throw Error("beforeMatch cannot be used with starts");
 		let n = Object.assign({}, e);
@@ -443,14 +443,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			let a = n;
 			if (n.isCompiled) return a;
 			[
-				q,
 				Ti,
-				zi,
-				Ei
-			].forEach((e) => e(n, r)), e.compilerExtensions.forEach((e) => e(n, r)), n.__beforeBegin = null, [
-				J,
 				Y,
+				zi,
 				X
+			].forEach((e) => e(n, r)), e.compilerExtensions.forEach((e) => e(n, r)), n.__beforeBegin = null, [
+				q,
+				J,
+				Ei
 			].forEach((e) => e(n, r)), n.isCompiled = !0;
 			let s = null;
 			return typeof n.keywords == "object" && n.keywords.$pattern && (n.keywords = Object.assign({}, n.keywords), s = n.keywords.$pattern, delete n.keywords.$pattern), s ||= /\w+/, n.keywords &&= ki(n.keywords, e.case_insensitive), a.keywordPatternRe = t(s, !0), r && (n.begin ||= /\B|\b/, a.beginRe = t(a.begin), !n.end && !n.endsWithParent && (n.end = /\B|\b/), n.end && (a.endRe = t(a.end)), a.terminatorEnd = m(a.end) || "", n.endsWithParent && r.terminatorEnd && (a.terminatorEnd += (n.end ? "|" : "") + r.terminatorEnd)), n.illegal && (a.illegalRe = t(n.illegal)), n.contains ||= [], n.contains = [].concat(...n.contains.map(function(e) {
@@ -16603,7 +16603,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 0
 				}
 			]
-		}, q = {
+		}, Ti = {
 			begin: /</,
 			end: />/,
 			keywords: k,
@@ -16615,8 +16615,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				K
 			]
 		};
-		K.contains.push(q);
-		let J = {
+		K.contains.push(Ti);
+		let q = {
 			begin: /\(/,
 			end: /\)/,
 			relevance: 0,
@@ -16639,12 +16639,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				...G,
 				K
 			]
-		}, Y = {
+		}, J = {
 			begin: /</,
 			end: />/,
 			keywords: "repeat each",
 			contains: [...a, K]
-		}, Ti = {
+		}, Y = {
 			begin: /\(/,
 			end: /\)/,
 			keywords: k,
@@ -16668,11 +16668,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				H,
 				...G,
 				K,
-				J
+				q
 			],
 			endsParent: !0,
 			illegal: /["']/
-		}, X = {
+		}, Ei = {
 			match: [
 				/(func|macro)/,
 				/\s+/,
@@ -16683,17 +16683,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				3: "title.function"
 			},
 			contains: [
+				J,
 				Y,
-				Ti,
 				t
 			],
 			illegal: [/\[/, /%/]
-		}, Ei = {
+		}, X = {
 			match: [/\b(?:subscript|init[?!]?)/, /\s*(?=[<(])/],
 			className: { 1: "keyword" },
 			contains: [
+				J,
 				Y,
-				Ti,
 				t
 			],
 			illegal: /\[|%/
@@ -16756,7 +16756,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			},
 			keywords: k,
 			contains: [
-				Y,
+				J,
 				...A,
 				{
 					begin: /:/,
@@ -16792,8 +16792,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			keywords: k,
 			contains: [
 				...a,
-				X,
 				Ei,
+				X,
 				ki,
 				Ai,
 				ji,
@@ -16814,7 +16814,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				...wi,
 				...G,
 				K,
-				J
+				q
 			]
 		};
 	}
@@ -18883,6 +18883,17 @@ const tokenizeMarkdown = (e) => marked.lexer(e || ""), createEditorCommands = ({
 		insertHorizontalRule: p,
 		insertLink: m,
 		insertImage: g,
+		insertAtCursor: (r) => {
+			if (n.readOnly) return;
+			let a = t.value;
+			if (!a) return;
+			let o = e.value, s = a.selectionStart, l = a.selectionEnd, u = o.slice(0, s), d = o.slice(l);
+			e.value = u + r + d;
+			let f = u.length + r.length;
+			requestAnimationFrame(() => {
+				a.focus(), a.selectionStart = f, a.selectionEnd = f;
+			}), i();
+		},
 		handleKeydown: (a) => {
 			let s = t.value;
 			if (!s) return;
@@ -19852,7 +19863,7 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 		});
 		let F = (e) => {
 			u.readOnly || (f.value = e, d("update:modelValue", e), d("change", e));
-		}, { applyLineTransform: I, wrapSelection: L, toggleHeading: R, insertUnorderedList: z, insertOrderedList: B, insertBlockquote: V, insertCodeBlock: H, insertHorizontalRule: U, insertLink: xi, insertImage: W, handleKeydown: Si } = createEditorCommands({
+		}, { applyLineTransform: I, wrapSelection: L, toggleHeading: R, insertUnorderedList: z, insertOrderedList: B, insertBlockquote: V, insertCodeBlock: H, insertHorizontalRule: U, insertLink: xi, insertImage: W, insertAtCursor: Si, handleKeydown: Ci } = createEditorCommands({
 			internalValue: f,
 			textareaRef: y,
 			props: u,
@@ -19860,13 +19871,13 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 			syncToParent: () => {
 				F(f.value);
 			}
-		}), Ci = (e) => {
+		}), wi = (e) => {
 			d("focus", e);
-		}, wi = (e) => {
-			d("blur", e);
 		}, G = (e) => {
+			d("blur", e);
+		}, K = (e) => {
 			if (e === "theme-toggle") {
-				Ei();
+				Di();
 				return;
 			}
 			if (!u.readOnly) {
@@ -19912,17 +19923,17 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 				}
 				e === "image" && W();
 			}
-		}, K = ref(50), q = ref(!1), J = (e) => {
+		}, Ti = ref(50), q = ref(!1), J = (e) => {
 			if (!q.value) return;
 			let t = x.value;
 			if (!t) return;
 			let n = t.getBoundingClientRect();
 			if (!n.width) return;
 			let r = e.clientX - n.left;
-			K.value = Math.max(10, Math.min(90, r / n.width * 100));
+			Ti.value = Math.max(10, Math.min(90, r / n.width * 100));
 		}, Y = () => {
 			q.value && (q.value = !1, document.removeEventListener("mousemove", J), document.removeEventListener("mouseup", Y));
-		}, Ti = () => {
+		}, Ei = () => {
 			u.showPreview && (q.value || (q.value = !0, document.addEventListener("mousemove", J), document.addEventListener("mouseup", Y)));
 		}, X = ref(u.theme || "dark");
 		watch(() => u.theme, (e) => {
@@ -19930,17 +19941,18 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 		}), onBeforeUnmount(() => {
 			document.removeEventListener("mousemove", J), document.removeEventListener("mouseup", Y);
 		});
-		let Ei = () => {
+		let Di = () => {
 			let e = X.value === "dark" ? "light" : "dark";
 			X.value = e, d("update:theme", e);
-		}, Di = computed(() => [
+		}, Oi = computed(() => [
 			"markdown-editor",
 			`markdown-editor--${X.value}`,
 			`markdown-editor--toolbar-${u.toolbarStyle}`
 		]);
-		return (t, o) => (openBlock(), createElementBlock("div", { class: normalizeClass(Di.value) }, [
+		return (t, o) => (openBlock(), createElementBlock("div", { class: normalizeClass(Oi.value) }, [
 			e.showToolbar ? (openBlock(), createElementBlock("div", _hoisted_1, [renderSlot(t.$slots, "toolbar", {
 				wrapSelection: unref(L),
+				insertAtCursor: unref(Si),
 				toggleHeading: unref(R),
 				insertUnorderedList: unref(z),
 				insertOrderedList: unref(B),
@@ -19949,8 +19961,8 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 				insertHorizontalRule: unref(U),
 				insertLink: unref(xi),
 				insertImage: unref(W),
-				toggleTheme: Ei,
-				handleToolbarClick: G,
+				toggleTheme: Di,
+				handleToolbarClick: K,
 				xiconComponents: M
 			}, () => [createVNode(MarkdownToolbar_default, {
 				"toolbar-items": e.toolbarItems,
@@ -19959,7 +19971,7 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 				"xicon-components": M,
 				messages: N.value,
 				"get-toolbar-label": P,
-				"handle-toolbar-click": G
+				"handle-toolbar-click": K
 			}, null, 8, [
 				"toolbar-items",
 				"toolbar-style",
@@ -19974,16 +19986,16 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 				createVNode(MarkdownEditorPane_default, {
 					ref_key: "editorPaneRef",
 					ref: g,
-					style: normalizeStyle(e.showPreview ? { flexBasis: K.value + "%" } : {}),
+					style: normalizeStyle(e.showPreview ? { flexBasis: Ti.value + "%" } : {}),
 					"model-value": f.value,
 					lines: O.value,
 					"show-line-numbers": e.showLineNumbers,
 					"read-only": e.readOnly,
 					placeholder: e.placeholder,
 					"onUpdate:modelValue": F,
-					onKeydown: unref(Si),
-					onFocus: Ci,
-					onBlur: wi
+					onKeydown: unref(Ci),
+					onFocus: wi,
+					onBlur: G
 				}, null, 8, [
 					"style",
 					"model-value",
@@ -19996,11 +20008,11 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 				e.showPreview ? (openBlock(), createElementBlock("div", {
 					key: 0,
 					class: normalizeClass(["markdown-editor__divider", { "markdown-editor__divider--dragging": q.value }]),
-					onMousedown: Ti
+					onMousedown: Ei
 				}, null, 34)) : createCommentVNode("", !0),
 				e.showPreview ? (openBlock(), createBlock(MarkdownPreviewPane_default, {
 					key: 1,
-					style: normalizeStyle({ flexBasis: 100 - K.value + "%" })
+					style: normalizeStyle({ flexBasis: 100 - Ti.value + "%" })
 				}, {
 					default: withCtx(() => [renderSlot(t.$slots, "preview", { tokens: C.value }, () => [createVNode(MarkdownPreview_default, { tokens: C.value }, null, 8, ["tokens"])])]),
 					_: 3

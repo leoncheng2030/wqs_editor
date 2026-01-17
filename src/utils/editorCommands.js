@@ -261,6 +261,25 @@ export const createEditorCommands = ({ internalValue, textareaRef, props, emit, 
     syncToParent()
   }
 
+  const insertAtCursor = text => {
+    if (props.readOnly) return
+    const textarea = textareaRef.value
+    if (!textarea) return
+    const value = internalValue.value
+    const start = textarea.selectionStart
+    const end = textarea.selectionEnd
+    const before = value.slice(0, start)
+    const after = value.slice(end)
+    internalValue.value = before + text + after
+    const cursor = before.length + text.length
+    requestAnimationFrame(() => {
+      textarea.focus()
+      textarea.selectionStart = cursor
+      textarea.selectionEnd = cursor
+    })
+    syncToParent()
+  }
+
   const handleKeydown = event => {
     const textarea = textareaRef.value
     if (!textarea) return
@@ -384,6 +403,7 @@ export const createEditorCommands = ({ internalValue, textareaRef, props, emit, 
     insertHorizontalRule,
     insertLink,
     insertImage,
+    insertAtCursor,
     handleKeydown,
   }
 }
