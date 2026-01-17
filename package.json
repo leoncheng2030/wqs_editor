@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "prepublishOnly": "npm run build:lib"
   },
+  "license": "MIT",
   "dependencies": {
     "marked": "^17.0.1",
     "highlight.js": "^11.10.0",
