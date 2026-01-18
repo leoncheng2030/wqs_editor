@@ -95,11 +95,13 @@ button:focus-visible {
   --md-color-footer-border: rgba(0, 0, 0, 0.06);
   --md-color-footer-bg: #f8f8f8;
   --md-color-footer-fg: rgba(0, 0, 0, 0.7);
-  --md-color-divider: rgba(0, 0, 0, 0.06);
-  --md-color-divider-hover: rgba(0, 0, 0, 0.12);
+  --md-color-divider: rgba(0, 0, 0, 0.12);
+  --md-color-divider-hover: rgba(56, 139, 253, 0.5);
   --md-color-gutter-border: rgba(0, 0, 0, 0.08);
   --md-color-gutter-fg: rgba(0, 0, 0, 0.4);
   --md-color-inline-code-bg: rgba(110, 118, 129, 0.4);
+  --md-color-blockmark-bg: rgba(250, 204, 21, 0.25);
+  --md-color-blockmark-fg: #92400e;
   --md-color-quote-border: rgba(148, 163, 184, 0.8);
   --md-color-quote-bg: rgba(148, 163, 184, 0.15);
   --md-color-codeblock-border: rgba(110, 118, 129, 0.3);
@@ -110,6 +112,10 @@ button:focus-visible {
   --md-color-codegutter-fg: rgba(110, 118, 129, 0.9);
   --md-color-codecopy-hover-bg: rgba(56, 139, 253, 0.08);
   --md-color-codecopy-hover-border: rgba(56, 139, 253, 0.5);
+  --md-color-scrollbar-bg: transparent;
+  --md-color-scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --md-color-scrollbar-thumb-hover: rgba(0, 0, 0, 0.3);
+  --md-color-hr: rgba(0, 0, 0, 0.12);
 }
 
 .markdown-editor--dark {
@@ -127,8 +133,8 @@ button:focus-visible {
   --md-color-footer-border: rgba(255, 255, 255, 0.08);
   --md-color-footer-bg: #1e1e1e;
   --md-color-footer-fg: rgba(255, 255, 255, 0.7);
-  --md-color-divider: rgba(255, 255, 255, 0.06);
-  --md-color-divider-hover: rgba(255, 255, 255, 0.16);
+  --md-color-divider: rgba(255, 255, 255, 0.12);
+  --md-color-divider-hover: rgba(56, 139, 253, 0.6);
   --md-color-gutter-border: rgba(255, 255, 255, 0.08);
   --md-color-gutter-fg: rgba(255, 255, 255, 0.4);
   --md-color-quote-border: rgba(148, 163, 184, 0.9);
@@ -141,9 +147,39 @@ button:focus-visible {
   --md-color-codegutter-fg: rgba(156, 163, 175, 0.9);
   --md-color-codecopy-hover-bg: rgba(56, 139, 253, 0.16);
   --md-color-codecopy-hover-border: rgba(56, 139, 253, 0.6);
+  --md-color-blockmark-bg: rgba(250, 204, 21, 0.2);
+  --md-color-blockmark-fg: #facc15;
+  --md-color-scrollbar-bg: transparent;
+  --md-color-scrollbar-thumb: rgba(255, 255, 255, 0.2);
+  --md-color-scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  --md-color-hr: rgba(255, 255, 255, 0.16);
 }
 
-.markdown-editor--light {
+/* Scrollbar Styling */
+.markdown-editor ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.markdown-editor ::-webkit-scrollbar-track {
+  background: var(--md-color-scrollbar-bg);
+}
+
+.markdown-editor ::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+.markdown-editor ::-webkit-scrollbar-thumb {
+  background: var(--md-color-scrollbar-thumb);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.markdown-editor ::-webkit-scrollbar-thumb:hover {
+  background: var(--md-color-scrollbar-thumb-hover);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
 .markdown-editor__toolbar {
@@ -152,6 +188,7 @@ button:focus-visible {
   padding: 8px 12px;
   border-bottom: 1px solid var(--md-color-toolbar-border);
   background-color: var(--md-color-toolbar-bg);
+  flex-shrink: 0;
 }
 
 .markdown-editor__toolbar-button {
@@ -191,6 +228,7 @@ button:focus-visible {
   display: flex;
   flex: 1;
   min-height: 0;
+  overflow: hidden;
 }
 
 .markdown-editor__editor-pane,
@@ -199,10 +237,11 @@ button:focus-visible {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 .markdown-editor__divider {
-  width: 4px;
+  width: 2px;
   cursor: col-resize;
   background-color: var(--md-color-divider);
 }
@@ -216,11 +255,13 @@ button:focus-visible {
   position: relative;
   display: flex;
   flex: 1;
+  min-height: 0;
   font-family: Menlo, Monaco, 'Fira Code', ui-monospace, SFMono-Regular,
     Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
   font-size: 14px;
   background-color: var(--md-color-editor-bg);
   color: var(--md-color-editor-fg);
+  overflow: hidden;
 }
 
 .markdown-editor .markdown-editor__gutter {
@@ -234,8 +275,8 @@ button:focus-visible {
 }
 
 .markdown-editor .markdown-editor__line-number {
-  height: 20px;
-  line-height: 20px;
+  height: 24px;
+  line-height: 24px;
 }
 
 .markdown-editor .markdown-editor__textarea {
@@ -250,6 +291,28 @@ button:focus-visible {
   line-height: 20px;
   white-space: pre;
   overflow: auto;
+}
+
+/* Rich Editor Styles */
+.markdown-editor__rich-editor {
+  flex: 1;
+  padding: 8px 8px 8px 10px;
+  border: none;
+  outline: none;
+  resize: none;
+  background-color: transparent;
+  color: inherit;
+  font: inherit;
+  line-height: 24px;
+  white-space: pre;
+  overflow: auto;
+}
+
+.markdown-editor__rich-line {
+  height: 24px;
+  line-height: 24px;
+  white-space: pre;
+  overflow: visible; /* ✅ 修复：允许 outline 边框显示 */
 }
 
 .markdown-editor .markdown-editor__preview-pane {
@@ -268,10 +331,100 @@ button:focus-visible {
   border-top: 1px solid var(--md-color-footer-border);
   background-color: var(--md-color-footer-bg);
   color: var(--md-color-footer-fg);
+  flex-shrink: 0;
+}
+
+.markdown-editor__block-panel {
+  padding: 8px 12px;
+  border-top: 1px solid var(--md-color-footer-border);
+  border-bottom: 1px solid var(--md-color-toolbar-border);
+  background-color: var(--md-color-toolbar-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.markdown-editor__block-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+}
+
+.markdown-editor__block-panel-title {
+  font-weight: 500;
+}
+
+.markdown-editor__block-panel-close {
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  cursor: pointer;
+  color: inherit;
+}
+
+.markdown-editor__block-panel-body {
+  display: flex;
+  gap: 8px;
+}
+
+.markdown-editor__block-panel-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.markdown-editor__block-panel-label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  opacity: 0.8;
+}
+
+.markdown-editor__block-panel-original {
+  border-radius: 4px;
+  background-color: var(--md-color-preview-bg);
+  color: var(--md-color-preview-fg);
+  padding: 4px 6px;
+  max-height: 160px;
+  overflow: auto;
+}
+
+.markdown-editor__block-panel-original-text {
+  margin: 0;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.markdown-editor__block-panel-textarea {
+  width: 100%;
+  min-height: 80px;
+  max-height: 160px;
+  resize: vertical;
+  padding: 4px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--md-color-toolbar-button-border);
+  background-color: var(--md-color-editor-bg);
+  color: var(--md-color-editor-fg);
+  font: inherit;
+}
+
+.markdown-editor__block-panel-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .markdown-editor__footer-right {
   white-space: nowrap;
+  display: flex;
+  gap: 12px;
+}
+
+.markdown-editor__footer-item {
+  display: inline-flex;
+  align-items: center;
 }
 
 .markdown-editor__preview {
@@ -339,6 +492,14 @@ button:focus-visible {
   padding: 2px 4px;
   border-radius: 3px;
   background-color: var(--md-color-inline-code-bg);
+}
+
+.markdown-editor__preview mark[data-md-block] {
+  background-color: var(--md-color-blockmark-bg);
+  color: var(--md-color-blockmark-fg);
+  padding: 0 3px;
+  border-radius: 3px;
+  border: 1px dashed currentColor;
 }
 
 .markdown-editor__preview pre {
@@ -418,4 +579,64 @@ button:focus-visible {
   font-size: 13px;
   line-height: 20px;
   white-space: pre;
+}
+
+.markdown-editor__preview hr {
+  height: 0;
+  margin: 24px 0;
+  border: none;
+  border-top: 1px solid var(--md-color-hr);
+}
+
+/* ✅ 加粗和斜体样式 */
+.markdown-editor__preview strong,
+.markdown-editor__preview b {
+  font-weight: 600 !important;
+}
+
+.markdown-editor__preview em,
+.markdown-editor__preview i {
+  font-style: italic !important;
+  /* 如果字体不支持斜体，强制倾斜 */
+  transform: skewX(-8deg);
+  display: inline-block;
+}
+
+.markdown-editor__preview a {
+  color: #0969da;
+  text-decoration: none;
+}
+
+.markdown-editor--dark .markdown-editor__preview a {
+  color: #58a6ff;
+}
+
+.markdown-editor__preview a:hover {
+  text-decoration: underline;
+}
+
+/* Custom Kernel Token Styles */
+.md-token-tag {
+  color: #888;
+  font-size: 0.85em;
+  opacity: 0.6;
+}
+
+.md-token-mark-content {
+  background-color: var(--md-color-blockmark-bg);
+  color: var(--md-color-blockmark-fg);
+  border-radius: 0;
+
+  /* 🔥 只保留底部边框 */
+  border-bottom: 1px dashed var(--md-color-blockmark-fg);
+  font-weight: 500;
+  cursor: pointer;
+  /* 🔥 关键修复：给空块设置最小宽度，避免输入第一个字符时的宽度突变 */
+  min-width: 20em;
+  display: inline-block;
+  /* 🔥 禁用所有过渡和动画，避免视觉跳动 */
+  transition: none !important;
+  /* 🔥 强制 GPU 加速，减少重排 */
+  will-change: auto;
+  transform: translateZ(0);
 }
