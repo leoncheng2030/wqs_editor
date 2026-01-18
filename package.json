@@ -1,6 +1,26 @@
 {
   "name": "@nywqs/vue-markdown-editor",
-  "version": "0.1.0",
+  "version": "0.1.1",
+  "description": "A high-performance Markdown editor based on Vue 3 and Canvas with hybrid rendering architecture",
+  "keywords": [
+    "vue",
+    "vue3",
+    "markdown",
+    "editor",
+    "canvas",
+    "syntax-highlight",
+    "markdown-editor",
+    "canvas-editor"
+  ],
+  "author": "nywqs",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/leoncheng2030/wqs_editor"
+  },
+  "homepage": "https://github.com/leoncheng2030/wqs_editor#readme",
+  "bugs": {
+    "url": "https://github.com/leoncheng2030/wqs_editor/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -13,8 +33,10 @@
   },
   "license": "MIT",
   "dependencies": {
-    "marked": "^17.0.1",
     "highlight.js": "^11.10.0",
+    "katex": "^0.16.27",
+    "marked": "^17.0.1",
+    "mermaid": "^11.12.2",
     "vue": "^3.5.24"
   },
   "devDependencies": {
@@ -29,10 +51,10 @@
   "module": "dist-lib/vue-markdown-editor.es.js",
   "style": "dist-lib/wqs_editor.css",
   "files": [
-    "dist-lib"
+    "dist-lib",
+    "README.md"
   ],
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"
-  },
-  "types": "dist-lib/src/lib/index.d.ts"
+  }
 }

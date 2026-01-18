@@ -8,6 +8,13 @@
         :width="canvasWidth"
         :height="canvasHeight"
       ></canvas>
+      <SearchPanel
+        :visible="showSearch"
+        @close="showSearch = false"
+        @search="handleSearch"
+        @replace="handleReplace"
+        @replaceAll="handleReplaceAll"
+      />
     </div>
   </div>
 </template>
@@ -27,7 +34,18 @@ import { Clipboard } from './managers/ClipboardManager.js'
 import { MarkdownLexer } from './syntax/MarkdownLexer.js'
 import { SyntaxHighlighter } from './syntax/SyntaxHighlighter.js'
 import { LineNumberRenderer } from './renderers/LineNumberRenderer.js'
+import { RenderOptimizer } from './managers/RenderOptimizer.js'
+import { PreloadManager } from './managers/PreloadManager.js'
+import { PredictiveRenderer } from './managers/PredictiveRenderer.js'
 import CanvasToolbar from './CanvasToolbar.vue'
+import SearchPanel from './SearchPanel.vue'
+import { PluginManager } from './plugins/PluginManager.js'
+import { TablePlugin } from './plugins/TablePlugin.js'
+import { TodoListPlugin } from './plugins/TodoListPlugin.js'
+import { MathPlugin } from './plugins/MathPlugin.js'
+import { MermaidPlugin } from './plugins/MermaidPlugin.js'
+import { AutoCompletePlugin } from './plugins/AutoCompletePlugin.js'
+import { SyntaxCheckerPlugin } from './plugins/SyntaxCheckerPlugin.js'
 
 const props = defineProps({
   modelValue: {
@@ -95,12 +113,21 @@ let history = null
 let clipboard = null
 let ctx = null
 let lineNumberRenderer = null
+let pluginManager = null
+let renderOptimizer = null // 渲染优化器
+let preloadManager = null // 预加载管理器
+let predictiveRenderer = null // 智能预测渲染器
 
 // 鼠标状态
 let isMouseDown = false
 let mouseDownPosition = null
 let isDragging = false
 let dragStartSelection = null
+
+// 搜索状态
+const showSearch = ref(false)
+const searchMatches = ref([])
+const searchHighlightRenderer = ref(null)
 
 // 渲染循环
 let animationFrameId = null
@@ -176,6 +203,41 @@ const initEditor = () => {
   // 创建剪贴板管理器
   clipboard = new Clipboard()
   
+  // 创建渲染优化器
+  renderOptimizer = new RenderOptimizer({
+    debounceDelay: 16 // 60fps
+  })
+  
+  // 创建预加载管理器
+  preloadManager = new PreloadManager({
+    preloadLines: 10,
+    preloadThreshold: 0.3,
+    onPreload: async ({ startLine, endLine, direction }) => {
+      // 预加载回调：提前解析这些行的语法
+      for (let i = startLine; i < endLine && i < document.getLineCount(); i++) {
+        const line = document.getLine(i)
+        if (textRenderer.lexer) {
+          textRenderer.lexer.parseLine(line, i)
+        }
+      }
+    }
+  })
+  
+  // 创建智能预测渲染器
+  predictiveRenderer = new PredictiveRenderer({
+    enablePrediction: true,
+    learningRate: 0.1,
+    onPredict: (predictions) => {
+      // 根据预测调整策略
+      if (predictions.nextScrollSpeed === 'fast') {
+        // 快速滚动时，增加预加载范围
+        preloadManager.preloadLines = 20
+      } else {
+        preloadManager.preloadLines = 10
+      }
+    }
+  })
+  
   // 获取 Canvas 上下文
   const canvas = canvasRef.value
   
@@ -210,11 +272,54 @@ const initEditor = () => {
   // 监听文档变化
   document.on('change', handleDocumentChange)
   
+  // 初始化插件系统
+  initPluginSystem()
+  
+  // 初始化离屏Canvas（用于缓存静态内容）
+  renderOptimizer.initOffscreenCanvas(canvasWidth.value * dpr.value, canvasHeight.value * dpr.value)
+  
   // 开始渲染
   render()
   
   // 启动光标闪烁
   cursorRenderer.startBlinking(render)
+}
+
+/**
+ * 初始化插件系统
+ */
+const initPluginSystem = async () => {
+  // 创建插件管理器
+  pluginManager = new PluginManager({
+    document,
+    viewport,
+    textRenderer,
+    cursor,
+    selection,
+    history,
+    clipboard,
+    render
+  })
+  
+  // 注册内置插件
+  pluginManager.register(TablePlugin)
+  pluginManager.register(TodoListPlugin)
+  pluginManager.register(MathPlugin)
+  pluginManager.register(MermaidPlugin)
+  pluginManager.register(AutoCompletePlugin)
+  pluginManager.register(SyntaxCheckerPlugin)
+  
+  // 激活插件
+  try {
+    await pluginManager.activate('markdown-table')
+    await pluginManager.activate('todo-list')
+    await pluginManager.activate('math')
+    await pluginManager.activate('mermaid')
+    await pluginManager.activate('autocomplete')
+    await pluginManager.activate('syntax-checker')
+  } catch (error) {
+    console.error('Failed to activate plugins:', error)
+  }
 }
 
 /**
@@ -228,7 +333,11 @@ watch(() => props.theme, (newTheme) => {
   if (lineNumberRenderer) {
     lineNumberRenderer.updateTheme(newTheme)
   }
-  render()
+  // 主题变化需要重绘静态层
+  if (renderOptimizer) {
+    renderOptimizer.markStaticLayerDirty()
+  }
+  render(true) // 立即渲染
 })
 
 /**
@@ -248,20 +357,27 @@ watch(() => props.enableSyntaxHighlight, (enabled) => {
 /**
  * 监听字体大小变化
  */
-watch(() => props.fontSize, (newSize) => {
+watch(() => props.fontSize, (newSize, oldSize) => {
   if (textRenderer) {
     textRenderer.fontSize = newSize
+    // 清除测量缓存（字体大小变化）
+    if (textRenderer.clearMeasureCache) {
+      textRenderer.clearMeasureCache()
+    }
     // 强制重新渲染DOM文字层
     if (textRenderer.markDirty) {
       textRenderer.markDirty()
     }
-    render()
   }
+  
   // 更新行号渲染器的字体大小
   if (lineNumberRenderer) {
     lineNumberRenderer.fontSize = newSize - 1
-    render()
   }
+  
+  // 注意：不在这里渲染，等待lineHeight的watch一起处理
+  // 因为App.vue会在fontSize变化时自动更新lineHeight（1.73倍比例）
+  // 避免使用不一致的fontSize和lineHeight进行渲染
 })
 
 /**
@@ -279,7 +395,14 @@ watch(() => props.lineHeight, (newHeight) => {
     viewport.lineHeight = newHeight
     viewport.setTotalLines(document.getLineCount())  // 重新计算总高度
   }
-  render()
+  
+  // 行高变化会影响行号的位置，需要重绘静态层
+  if (renderOptimizer) {
+    renderOptimizer.markStaticLayerDirty()
+  }
+  
+  // 立即渲染，确保fontSize和lineHeight同步更新后的效果
+  render(true)
 })
 
 /**
@@ -305,7 +428,13 @@ watch(() => props.showLineNumbers, (show) => {
   
   // 重新计算总高度（因为 padding 变化了）
   viewport.setTotalLines(document.getLineCount())
-  render()
+  
+  // 需要重绘静态层
+  if (renderOptimizer) {
+    renderOptimizer.markStaticLayerDirty()
+  }
+  
+  render(true)
 })
 
 /**
@@ -324,7 +453,7 @@ watch(() => props.scrollPercentage, (newPercentage) => {
 /**
  * 文档变化处理
  */
-const handleDocumentChange = () => {
+const handleDocumentChange = (changeInfo) => {
   viewport.setTotalLines(document.getLineCount())
   
   // 标记文字层需要重新渲染
@@ -332,49 +461,87 @@ const handleDocumentChange = () => {
     textRenderer.markDirty()
   }
   
+  // 如果有变更信息，添加脏区域（增量渲染）
+  if (changeInfo && changeInfo.startLine !== undefined && changeInfo.endLine !== undefined) {
+    renderOptimizer.addDirtyRegion(changeInfo.startLine, changeInfo.endLine)
+  } else {
+    // 没有详细信息，标记完整重绘
+    renderOptimizer.markFullRender()
+  }
+  
+  // 触发插件的 afterChange 钩子
+  if (pluginManager) {
+    pluginManager.triggerHook('afterChange')
+  }
+  
   emit('update:modelValue', document.getText())
   render()
 }
 
 /**
- * 渲染
+ * 渲染（带防抖优化）
  */
-const render = () => {
-  if (!ctx || !document || !viewport || !textRenderer) return
+const render = (immediate = false) => {
+  if (!ctx || !document || !viewport || !textRenderer || !renderOptimizer) return
   
-  // 1. 清空整个Canvas
-  ctx.clearRect(0, 0, viewport.width, viewport.height)
+  // 通过渲染优化器请求渲染
+  renderOptimizer.requestRender((renderContext) => {
+    performRender(renderContext)
+  }, immediate)
+}
+
+/**
+ * 执行实际渲染
+ */
+const performRender = (renderContext) => {
+  const { fullRender, staticLayerDirty, offscreenCtx, offscreenCanvas } = renderContext
   
-  // 2. 渲染背景色（Canvas）
-  ctx.fillStyle = textRenderer.backgroundColor
-  ctx.fillRect(0, 0, viewport.width, viewport.height)
+  // 获取可见范围（带缓冲区）
+  const { startLine, endLine } = viewport.getVisibleRange(2)
   
-  // 3. 渲染行号（Canvas）
-  if (lineNumberRenderer && props.showLineNumbers) {
-    lineNumberRenderer.render(
-      ctx,
-      viewport,
-      document.getLineCount(),
-      cursor.line,
-      textRenderer.lineHeight
-    )
+  // 如果需要重绘静态层（行号、背景）
+  if (staticLayerDirty && offscreenCtx && offscreenCanvas) {
+    renderStaticLayer(offscreenCtx, startLine, endLine)
   }
   
-  // 4. 渲染选区（Canvas）
+  // 1. 清空Canvas
+  ctx.clearRect(0, 0, viewport.width, viewport.height)
+  
+  // 2. 如果有缓存，使用缓存的静态层
+  if (offscreenCanvas && !staticLayerDirty) {
+    ctx.drawImage(offscreenCanvas, 0, 0)
+  } else {
+    // 渲染背景色
+    ctx.fillStyle = textRenderer.backgroundColor
+    ctx.fillRect(0, 0, viewport.width, viewport.height)
+    
+    // 渲染行号
+    if (lineNumberRenderer && props.showLineNumbers) {
+      lineNumberRenderer.render(
+        ctx,
+        viewport,
+        document.getLineCount(),
+        cursor.line,
+        textRenderer.lineHeight
+      )
+    }
+  }
+  
+  // 3. 渲染选区（Canvas）
   if (selection && selectionRenderer) {
     selectionRenderer.render(ctx, selection, viewport, document, textRenderer, textRenderer.lineHeight)
   }
   
-  // 5. 渲染文本内容（DOM！）
+  // 4. 渲染文本内容（DOM！）
   textRenderer.renderContent(document, viewport)
   
-  // 6. 渲染光标（Canvas）
+  // 5. 渲染光标（Canvas）
   if (cursor && cursorRenderer && !selection.hasSelection) {
     const lineText = document.getLine(cursor.line)
     cursorRenderer.render(ctx, cursor, viewport, textRenderer, lineText, textRenderer.lineHeight)
   }
   
-  // 7. 更新 textarea 位置，让 IME 候选框跟随光标
+  // 6. 更新 textarea 位置，让 IME 候选框跟随光标
   if (cursor && inputManager) {
     const lineText = document.getLine(cursor.line)
     const { x, y } = viewport.docToCanvas(cursor.line, cursor.column, textRenderer, lineText)
@@ -383,10 +550,77 @@ const render = () => {
 }
 
 /**
+ * 渲染静态层（行号、背景）到离屏Canvas
+ */
+const renderStaticLayer = (offCtx, startLine, endLine) => {
+  if (!offCtx) return
+  
+  // 清空离屏Canvas
+  offCtx.clearRect(0, 0, viewport.width, viewport.height)
+  
+  // 渲染背景色
+  offCtx.fillStyle = textRenderer.backgroundColor
+  offCtx.fillRect(0, 0, viewport.width, viewport.height)
+  
+  // 渲染行号
+  if (lineNumberRenderer && props.showLineNumbers) {
+    lineNumberRenderer.render(
+      offCtx,
+      viewport,
+      document.getLineCount(),
+      cursor.line,
+      textRenderer.lineHeight
+    )
+  }
+}
+
+/**
+ * 获取性能统计
+ */
+const getPerformanceStats = () => {
+  const stats = {
+    optimizer: null,
+    preload: null,
+    prediction: null
+  }
+  
+  if (renderOptimizer) {
+    stats.optimizer = {
+      dirtyRegions: renderOptimizer.dirtyRegions.length,
+      fullRenderNeeded: renderOptimizer.fullRenderNeeded,
+      hasOffscreenCanvas: !!renderOptimizer.offscreenCanvas
+    }
+  }
+  
+  if (preloadManager) {
+    stats.preload = preloadManager.getStats()
+  }
+  
+  if (predictiveRenderer) {
+    stats.prediction = predictiveRenderer.getStats()
+  }
+  
+  return stats
+}
+
+/**
  * 处理输入
  */
 const handleInput = (data) => {
   if (!data.data || !cursor || !document) return
+  
+  // 过滤换行符，因为Enter键已经在handleKeyDown中处理了
+  if (data.data === '\n') {
+    return
+  }
+  
+  // 记录编辑行为（智能预测）
+  if (predictiveRenderer) {
+    predictiveRenderer.recordBehavior('edit', {
+      type: 'insert',
+      length: data.data.length
+    })
+  }
   
   const cursorBefore = { line: cursor.line, column: cursor.column }
   
@@ -425,8 +659,8 @@ const handleInput = (data) => {
   // 移动光标
   cursor.column += data.data.length
   
-  // 重置光标闪烁
-  cursorRenderer.resetBlink(render)
+  // 重置光标闪烁（立即渲染，响应更快）
+  cursorRenderer.resetBlink(() => render(true))
 }
 
 /**
@@ -437,10 +671,34 @@ const handleKeyDown = (data) => {
   
   if (!cursor || !document) return
   
+  // 阻止Tab键的默认行为（切换焦点）
+  if (key === 'Tab') {
+    data.preventDefault()
+  }
+  
+  // 尝试用插件系统处理快捷键
+  if (pluginManager && pluginManager.handleKeybinding(data)) {
+    render(true) // 快捷键立即渲染
+    return
+  }
+  
   // Ctrl+A 全选
   if ((ctrlKey || metaKey) && key === 'a') {
     selection.selectAll(document)
-    render()
+    render(true) // 全选立即渲染
+    return
+  }
+  
+  // Ctrl+F 搜索
+  if ((ctrlKey || metaKey) && key === 'f') {
+    showSearch.value = true
+    return
+  }
+  
+  // Ctrl+H 替换
+  if ((ctrlKey || metaKey) && key === 'h') {
+    showSearch.value = true
+    // SearchPanel会自动展开替换区域
     return
   }
   
@@ -473,7 +731,7 @@ const handleKeyDown = (data) => {
       
       const pos = selection.deleteSelectedText(document)
       cursor.setPosition(pos.line, pos.column)
-      cursorRenderer.resetBlink(render)
+      cursorRenderer.resetBlink(() => render(true))
     }
     return
   }
@@ -525,7 +783,7 @@ const handleKeyDown = (data) => {
         cursor.column = lines[lines.length - 1].length
       }
       
-      cursorRenderer.resetBlink(render)
+      cursorRenderer.resetBlink(() => render(true))
     })
     return
   }
@@ -596,7 +854,64 @@ const handleKeyDown = (data) => {
       cursor.column = 0
     }
     
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
+    return
+  }
+  
+  // Tab 缩进 / Shift+Tab 取消缩进
+  if (key === 'Tab') {
+    const cursorBefore = { line: cursor.line, column: cursor.column }
+    
+    if (shiftKey) {
+      // Shift+Tab: 取消缩进（删除行首的空格/Tab）
+      const lineText = document.getLine(cursor.line)
+      
+      // 检查行首是否有空格或Tab
+      if (lineText.startsWith('  ')) {
+        // 删除2个空格
+        history.record({
+          type: 'delete',
+          line: cursor.line,
+          column: 0,
+          text: '  ',
+          cursorBefore: cursorBefore,
+          cursorAfter: { line: cursor.line, column: Math.max(0, cursor.column - 2) }
+        })
+        
+        document.deleteText(cursor.line, 0, cursor.line, 2)
+        cursor.column = Math.max(0, cursor.column - 2)
+      } else if (lineText.startsWith('\t')) {
+        // 删除1个Tab
+        history.record({
+          type: 'delete',
+          line: cursor.line,
+          column: 0,
+          text: '\t',
+          cursorBefore: cursorBefore,
+          cursorAfter: { line: cursor.line, column: Math.max(0, cursor.column - 1) }
+        })
+        
+        document.deleteText(cursor.line, 0, cursor.line, 1)
+        cursor.column = Math.max(0, cursor.column - 1)
+      }
+    } else {
+      // Tab: 增加缩进（插入2个空格）
+      const indent = '  '  // 使用2个空格作为缩进
+      
+      history.record({
+        type: 'insert',
+        line: cursor.line,
+        column: cursor.column,
+        text: indent,
+        cursorBefore: cursorBefore,
+        cursorAfter: { line: cursor.line, column: cursor.column + indent.length }
+      })
+      
+      document.insertText(cursor.line, cursor.column, indent)
+      cursor.column += indent.length
+    }
+    
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -619,7 +934,7 @@ const handleKeyDown = (data) => {
         cursor.moveLeft(document)
       }
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true)) // 立即渲染
     return
   }
   
@@ -639,7 +954,7 @@ const handleKeyDown = (data) => {
         cursor.moveRight(document)
       }
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -654,7 +969,7 @@ const handleKeyDown = (data) => {
       selection.clear()
       cursor.moveUp(document)
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -669,7 +984,7 @@ const handleKeyDown = (data) => {
       selection.clear()
       cursor.moveDown(document)
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -685,7 +1000,7 @@ const handleKeyDown = (data) => {
       selection.clear()
       cursor.moveToLineStart()
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -700,7 +1015,7 @@ const handleKeyDown = (data) => {
       selection.clear()
       cursor.moveToLineEnd(document)
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -752,7 +1067,7 @@ const handleKeyDown = (data) => {
       cursor.line--
       cursor.column = prevLineLength
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -801,7 +1116,7 @@ const handleKeyDown = (data) => {
         document.deleteText(cursor.line, cursor.column, cursor.line + 1, 0)
       }
     }
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
   
@@ -824,19 +1139,110 @@ const handleKeyDown = (data) => {
       cursor.setPosition(pos.line, pos.column)
     }
     
+    // 获取当前行文字
+    const currentLineText = document.getLine(cursor.line)
+    let newLinePrefix = ''
+    
+    // 检查是否为无序列表
+    const unorderedListMatch = currentLineText.match(/^(\s*)([-*+])\s+(.*)$/)
+    if (unorderedListMatch) {
+      const indent = unorderedListMatch[1]
+      const marker = unorderedListMatch[2]
+      const content = unorderedListMatch[3]
+      
+      // 如果列表项为空，取消列表格式
+      if (content.trim() === '') {
+        // 删除当前行的列表标记
+        history.record({
+          type: 'delete',
+          line: cursor.line,
+          column: 0,
+          text: currentLineText,
+          cursorBefore: { line: cursor.line, column: cursor.column },
+          cursorAfter: { line: cursor.line, column: 0 }
+        })
+        document.deleteText(cursor.line, 0, cursor.line, currentLineText.length)
+        cursor.column = 0
+        cursorRenderer.resetBlink(() => render(true))
+        return
+      }
+      
+      // 继续列表
+      newLinePrefix = `${indent}${marker} `
+    }
+    
+    // 检查是否为有序列表
+    const orderedListMatch = currentLineText.match(/^(\s*)(\d+)\.\s+(.*)$/)
+    if (orderedListMatch) {
+      const indent = orderedListMatch[1]
+      const number = parseInt(orderedListMatch[2])
+      const content = orderedListMatch[3]
+      
+      // 如果列表项为空，取消列表格式
+      if (content.trim() === '') {
+        // 删除当前行的列表标记
+        history.record({
+          type: 'delete',
+          line: cursor.line,
+          column: 0,
+          text: currentLineText,
+          cursorBefore: { line: cursor.line, column: cursor.column },
+          cursorAfter: { line: cursor.line, column: 0 }
+        })
+        document.deleteText(cursor.line, 0, cursor.line, currentLineText.length)
+        cursor.column = 0
+        cursorRenderer.resetBlink(() => render(true))
+        return
+      }
+      
+      // 继续列表，编号自动+1
+      newLinePrefix = `${indent}${number + 1}. `
+    }
+    
+    // 检查是否为任务列表
+    const taskListMatch = currentLineText.match(/^(\s*)([-*+])\s+\[([xX ])\]\s+(.*)$/)
+    if (taskListMatch) {
+      const indent = taskListMatch[1]
+      const marker = taskListMatch[2]
+      const content = taskListMatch[4]
+      
+      // 如果任务项为空，取消列表格式
+      if (content.trim() === '') {
+        // 删除当前行的任务列表标记
+        history.record({
+          type: 'delete',
+          line: cursor.line,
+          column: 0,
+          text: currentLineText,
+          cursorBefore: { line: cursor.line, column: cursor.column },
+          cursorAfter: { line: cursor.line, column: 0 }
+        })
+        document.deleteText(cursor.line, 0, cursor.line, currentLineText.length)
+        cursor.column = 0
+        cursorRenderer.resetBlink(() => render(true))
+        return
+      }
+      
+      // 继续任务列表，默认未选中
+      newLinePrefix = `${indent}${marker} [ ] `
+    }
+    
+    // 插入换行和前缀
+    const textToInsert = '\n' + newLinePrefix
+    
     history.record({
       type: 'insert',
       line: cursor.line,
       column: cursor.column,
-      text: '\n',
+      text: textToInsert,
       cursorBefore: { line: cursor.line, column: cursor.column },
-      cursorAfter: { line: cursor.line + 1, column: 0 }
+      cursorAfter: { line: cursor.line + 1, column: newLinePrefix.length }
     })
     
-    document.insertText(cursor.line, cursor.column, '\n')
+    document.insertText(cursor.line, cursor.column, textToInsert)
     cursor.line++
-    cursor.column = 0
-    cursorRenderer.resetBlink(render)
+    cursor.column = newLinePrefix.length
+    cursorRenderer.resetBlink(() => render(true))
     return
   }
 }
@@ -892,7 +1298,7 @@ const handleDblClick = (data) => {
   if (start < end) {
     selection.setRange(targetLine, start, targetLine, end)
     cursor.setPosition(targetLine, end)
-    render()
+    render(true) // 选词立即渲染
   }
 }
 
@@ -912,7 +1318,7 @@ const handleTripleClick = (data) => {
   // 选择整行
   selection.selectLine(targetLine, document)
   cursor.setPosition(targetLine, document.getLine(targetLine).length)
-  render()
+  render(true) // 选行立即渲染
 }
 
 /**
@@ -977,6 +1383,34 @@ const handleToolbarCommand = (command) => {
       textToInsert = '![图片描述](url)'
       cursorOffset = 2
       break
+    case 'table':
+      // 使用插件命令插入表格
+      if (pluginManager) {
+        pluginManager.executeCommand('markdown-table.insertTable', 3, 3)
+        return
+      }
+      break
+    case 'todo':
+      // 使用插件命令插入任务列表
+      if (pluginManager) {
+        pluginManager.executeCommand('todo-list.insertTodo', false)
+        return
+      }
+      break
+    case 'math':
+      // 使用插件命令插入数学公式
+      if (pluginManager) {
+        pluginManager.executeCommand('math.insertInlineMath')
+        return
+      }
+      break
+    case 'diagram':
+      // 使用插件命令插入流程图
+      if (pluginManager) {
+        pluginManager.executeCommand('mermaid.insertFlowchart')
+        return
+      }
+      break
     default:
       return
   }
@@ -1018,7 +1452,204 @@ const handleToolbarCommand = (command) => {
   cursor.column += cursorOffset
   
   // 重置光标闪烁
-  cursorRenderer.resetBlink(render)
+  cursorRenderer.resetBlink(() => render(true))
+}
+
+/**
+ * 处理搜索
+ */
+const handleSearch = (options) => {
+  if (!document) return
+  
+  const { text, matchCase, matchWholeWord, useRegex, jumpTo, callback } = options
+  
+  if (!text) {
+    searchMatches.value = []
+    if (callback) callback([])
+    return
+  }
+  
+  const matches = []
+  let pattern
+  
+  try {
+    if (useRegex) {
+      pattern = new RegExp(text, matchCase ? 'g' : 'gi')
+    } else {
+      // 转义特殊字符
+      const escapedText = text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+      const boundaryPattern = matchWholeWord ? `\\b${escapedText}\\b` : escapedText
+      pattern = new RegExp(boundaryPattern, matchCase ? 'g' : 'gi')
+    }
+  } catch (e) {
+    // 正则表达式错误
+    if (callback) callback([])
+    return
+  }
+  
+  // 搜索所有行
+  for (let line = 0; line < document.getLineCount(); line++) {
+    const lineText = document.getLine(line)
+    let match
+    
+    // 重置 lastIndex
+    pattern.lastIndex = 0
+    
+    while ((match = pattern.exec(lineText)) !== null) {
+      matches.push({
+        line,
+        startColumn: match.index,
+        endColumn: match.index + match[0].length,
+        text: match[0]
+      })
+      
+      // 防止无限循环
+      if (match.index === pattern.lastIndex) {
+        pattern.lastIndex++
+      }
+    }
+  }
+  
+  searchMatches.value = matches
+  
+  if (callback) {
+    callback(matches)
+  }
+  
+  // 跳转到指定匹配
+  if (typeof jumpTo === 'number' && matches[jumpTo]) {
+    // 记录跳转行为（智能预测）
+    if (predictiveRenderer) {
+      predictiveRenderer.recordBehavior('jump', {
+        from: cursor.line,
+        to: matches[jumpTo].line
+      })
+    }
+    
+    const match = matches[jumpTo]
+    cursor.setPosition(match.line, match.startColumn)
+    
+    // 滚动到可见区域
+    const targetY = match.line * viewport.lineHeight
+    if (targetY < viewport.scrollTop || targetY > viewport.scrollTop + viewport.height) {
+      viewport.setScrollTop(targetY - viewport.height / 3)
+    }
+    
+    render(true) // 搜索跳转立即渲染
+  }
+}
+
+/**
+ * 处理替换
+ */
+const handleReplace = (options) => {
+  if (!document || !cursor) return
+  
+  const { searchText, replaceText, matchCase, matchWholeWord, useRegex, callback } = options
+  
+  // 先搜索
+  handleSearch({
+    text: searchText,
+    matchCase,
+    matchWholeWord,
+    useRegex,
+    callback: (matches) => {
+      if (matches.length === 0) return
+      
+      // 找到当前光标位置的匹配
+      const currentMatch = matches.find(m => 
+        m.line === cursor.line && 
+        cursor.column >= m.startColumn && 
+        cursor.column <= m.endColumn
+      )
+      
+      if (currentMatch) {
+        // 替换当前匹配
+        const cursorBefore = { line: cursor.line, column: cursor.column }
+        
+        history.record({
+          type: 'delete',
+          line: currentMatch.line,
+          column: currentMatch.startColumn,
+          text: currentMatch.text,
+          cursorBefore,
+          cursorAfter: { line: currentMatch.line, column: currentMatch.startColumn }
+        })
+        
+        document.deleteText(currentMatch.line, currentMatch.startColumn, currentMatch.line, currentMatch.endColumn)
+        
+        history.record({
+          type: 'insert',
+          line: currentMatch.line,
+          column: currentMatch.startColumn,
+          text: replaceText,
+          cursorBefore: { line: currentMatch.line, column: currentMatch.startColumn },
+          cursorAfter: { line: currentMatch.line, column: currentMatch.startColumn + replaceText.length }
+        })
+        
+        document.insertText(currentMatch.line, currentMatch.startColumn, replaceText)
+        cursor.setPosition(currentMatch.line, currentMatch.startColumn + replaceText.length)
+        
+        render(true) // 替换立即渲染
+      }
+      
+      if (callback) callback()
+    }
+  })
+}
+
+/**
+ * 处理全部替换
+ */
+const handleReplaceAll = (options) => {
+  if (!document) return
+  
+  const { searchText, replaceText, matchCase, matchWholeWord, useRegex, callback } = options
+  
+  // 先搜索
+  handleSearch({
+    text: searchText,
+    matchCase,
+    matchWholeWord,
+    useRegex,
+    callback: (matches) => {
+      if (matches.length === 0) {
+        if (callback) callback()
+        return
+      }
+      
+      // 从后往前替换，避免位置偏移
+      for (let i = matches.length - 1; i >= 0; i--) {
+        const match = matches[i]
+        
+        history.record({
+          type: 'delete',
+          line: match.line,
+          column: match.startColumn,
+          text: match.text,
+          cursorBefore: { line: match.line, column: match.startColumn },
+          cursorAfter: { line: match.line, column: match.startColumn }
+        })
+        
+        document.deleteText(match.line, match.startColumn, match.line, match.endColumn)
+        
+        history.record({
+          type: 'insert',
+          line: match.line,
+          column: match.startColumn,
+          text: replaceText,
+          cursorBefore: { line: match.line, column: match.startColumn },
+          cursorAfter: { line: match.line, column: match.startColumn + replaceText.length }
+        })
+        
+        document.insertText(match.line, match.startColumn, replaceText)
+      }
+      
+      render(true) // 全部替换立即渲染
+      
+      if (callback) callback()
+    }
+  })
 }
 
 /**
@@ -1064,7 +1695,7 @@ const applyHistoryOperation = (operation, isUndo) => {
     selection.clear()
     
     // 重置光标闪烁
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
   } finally {
     history.endApplying()
   }
@@ -1100,7 +1731,7 @@ const handleClick = (data) => {
   cursor.setPosition(targetLine, targetColumn)
   
   // 重置光标闪烁
-  cursorRenderer.resetBlink(render)
+  cursorRenderer.resetBlink(() => render(true))
 }
 
 /**
@@ -1152,7 +1783,7 @@ const handleMouseDown = (data) => {
   cursor.setPosition(targetLine, targetColumn)
   
   // 重置光标闪烁
-  cursorRenderer.resetBlink(render)
+  cursorRenderer.resetBlink(() => render(true))
 }
 
 /**
@@ -1189,7 +1820,7 @@ const handleMouseMove = (data) => {
   if (isDragging) {
     // 拖拽模式：更新光标位置
     cursor.setPosition(targetLine, targetColumn)
-    render()
+    render() // 拖拽使用防抖
   } else if (mouseDownPosition) {
     // 选择模式：更新选区
     selection.setRange(
@@ -1200,7 +1831,7 @@ const handleMouseMove = (data) => {
     )
     
     cursor.setPosition(targetLine, targetColumn)
-    render()
+    render() // 选择使用防抖
   }
 }
 
@@ -1296,13 +1927,13 @@ const handleMouseUp = () => {
       selection.clear()
       
       // 重置光标闪烁
-      cursorRenderer.resetBlink(render)
+      cursorRenderer.resetBlink(() => render(true))
     } else {
       // 拖到原位置，清除选区
       selection.clear()
       
       // 重置光标闪烁
-      cursorRenderer.resetBlink(render)
+      cursorRenderer.resetBlink(() => render(true))
     }
     
     // 恢复鼠标样式
@@ -1317,7 +1948,7 @@ const handleMouseUp = () => {
     }
     
     // 重置光标闪烁
-    cursorRenderer.resetBlink(render)
+    cursorRenderer.resetBlink(() => render(true))
   }
   
   isMouseDown = false
@@ -1337,7 +1968,7 @@ const handleMouseUp = () => {
     
     if (isEmptySelection) {
       selection.clear()
-      render()
+      render(true) // 清除选区立即渲染
     }
   }
 }
@@ -1349,12 +1980,32 @@ const handleWheel = (event) => {
   event.preventDefault()
   
   const delta = event.deltaY
+  const oldScrollTop = viewport.scrollTop
   viewport.setScrollTop(viewport.scrollTop + delta)
+  
+  // 记录滚动行为（智能预测）
+  if (predictiveRenderer) {
+    const scrollSpeed = Math.abs(delta) / 100 // 归一化速度
+    predictiveRenderer.recordBehavior('scroll', {
+      direction: delta > 0 ? 'down' : 'up',
+      speed: scrollSpeed,
+      delta: Math.abs(delta)
+    })
+  }
+  
+  // 更新预加载状态
+  if (preloadManager && viewport) {
+    preloadManager.updateScroll(
+      viewport.scrollTop,
+      viewport.height,
+      viewport.totalHeight
+    )
+  }
   
   // 发送滚动事件
   emitScrollPercentage()
   
-  render()
+  render() // 滚动使用防抖，提升性能
 }
 
 /**
@@ -1436,7 +2087,14 @@ const resizeCanvas = () => {
   
   if (viewport) {
     viewport.setSize(canvasWidth.value, canvasHeight.value)
-    render()
+    
+    // 重新初始化离屏Canvas
+    if (renderOptimizer) {
+      renderOptimizer.resizeOffscreenCanvas(width * pixelRatio, height * pixelRatio)
+      renderOptimizer.markFullRender()
+    }
+    
+    render(true) // 立即渲染
   }
 }
 
@@ -1476,7 +2134,35 @@ onBeforeUnmount(() => {
     textRenderer.destroy()
   }
   
+  // 清理插件系统
+  if (pluginManager) {
+    pluginManager.destroy()
+  }
+  
+  // 清理渲染优化器
+  if (renderOptimizer) {
+    renderOptimizer.destroy()
+  }
+  
+  // 清理预加载管理器
+  if (preloadManager) {
+    preloadManager.destroy()
+  }
+  
+  // 清理智能预测渲染器
+  if (predictiveRenderer) {
+    predictiveRenderer.destroy()
+  }
+  
   window.removeEventListener('resize', resizeCanvas)
+})
+
+// 暴露给父组件的方法
+defineExpose({
+  getPerformanceStats,
+  document,
+  cursor,
+  selection
 })
 </script>
 

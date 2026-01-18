@@ -12,6 +12,9 @@ const fontSize = ref(14)
 const lineHeight = ref(24)
 const customColors = ref({})
 const showConfig = ref(false)
+const showStats = ref(false)
+const editorRef = ref(null)
+const perfStats = ref(null)
 
 // 滚动同步状态
 const editorScrollPercentage = ref(0)
@@ -96,7 +99,22 @@ watch(fontSize, (newSize) => {
 // 组件挂载时加载配置
 onMounted(() => {
   loadConfig()
+  
+  // 定期更新性能统计
+  setInterval(() => {
+    if (showStats.value && editorRef.value) {
+      perfStats.value = editorRef.value.getPerformanceStats()
+    }
+  }, 1000)
 })
+
+// 切换统计面板
+const toggleStats = () => {
+  showStats.value = !showStats.value
+  if (showStats.value && editorRef.value) {
+    perfStats.value = editorRef.value.getPerformanceStats()
+  }
+}
 
 // 重置配置
 const resetConfig = () => {
@@ -161,6 +179,10 @@ const canvasText = ref(`# Canvas 编辑器测试
         <button @click="showConfig = true" class="config-btn">
           高级配置
         </button>
+        
+        <button @click="toggleStats" class="stats-btn" :class="{ active: showStats }">
+          性能统计
+        </button>
       </div>
     </div>
     
@@ -168,6 +190,7 @@ const canvasText = ref(`# Canvas 编辑器测试
       <div class="canvas-container" :class="{ 'split-view': showPreview }">
         <div class="canvas-editor-wrapper">
           <CanvasEditor 
+            ref="editorRef"
             v-model="canvasText"
             :theme="theme"
             :enableSyntaxHighlight="enableSyntaxHighlight"
@@ -178,6 +201,52 @@ const canvasText = ref(`# Canvas 编辑器测试
             :isSyncing="isSyncingEditor"
             @scroll="handleEditorScroll"
           />
+          
+          <!-- 性能统计面板 -->
+          <div v-if="showStats" class="stats-panel">
+            <h4>性能统计</h4>
+            <div v-if="perfStats" class="stats-content">
+              <div class="stats-section">
+                <h5>预加载统计</h5>
+                <div class="stat-item">
+                  <span>预加载次数：</span>
+                  <strong>{{ perfStats.preload?.preloadCount || 0 }}</strong>
+                </div>
+                <div class="stat-item">
+                  <span>命中率：</span>
+                  <strong>{{ perfStats.preload?.hitRate || '0%' }}</strong>
+                </div>
+              </div>
+              
+              <div class="stats-section">
+                <h5>智能预测</h5>
+                <div class="stat-item">
+                  <span>预测次数：</span>
+                  <strong>{{ perfStats.prediction?.predictions || 0 }}</strong>
+                </div>
+                <div class="stat-item">
+                  <span>准确率：</span>
+                  <strong>{{ perfStats.prediction?.accuracy || '0%' }}</strong>
+                </div>
+                <div class="stat-item">
+                  <span>下一动作：</span>
+                  <strong>{{ perfStats.prediction?.currentPrediction?.likelyAction || '-' }}</strong>
+                </div>
+              </div>
+              
+              <div class="stats-section">
+                <h5>渲染优化</h5>
+                <div class="stat-item">
+                  <span>脏区域：</span>
+                  <strong>{{ perfStats.optimizer?.dirtyRegions || 0 }}</strong>
+                </div>
+                <div class="stat-item">
+                  <span>离屏Canvas：</span>
+                  <strong>{{ perfStats.optimizer?.hasOffscreenCanvas ? '✅' : '❌' }}</strong>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div v-if="showPreview" class="preview-wrapper">
@@ -240,24 +309,31 @@ const canvasText = ref(`# Canvas 编辑器测试
   gap: 8px;
   font-size: 14px;
   cursor: pointer;
+  line-height: 1.5;
 }
 
 .config-item span {
   color: #666;
+  white-space: nowrap;
+  line-height: 1.5;
 }
 
 .config-item select,
 .config-item input[type="number"] {
-  padding: 4px 8px;
+  padding: 6px 10px;
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 14px;
+  line-height: 1.5;
   background: white;
   cursor: pointer;
+  color: #333;
+  min-height: 32px;
 }
 
 .config-item input[type="number"] {
-  width: 60px;
+  width: 65px;
+  text-align: center;
 }
 
 .config-item input[type="checkbox"] {
@@ -296,6 +372,23 @@ const canvasText = ref(`# Canvas 编辑器测试
   border-color: #357abd;
 }
 
+.stats-btn {
+  padding: 6px 12px;
+  border: 1px solid #10b981;
+  background: white;
+  color: #10b981;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.stats-btn:hover,
+.stats-btn.active {
+  background: #10b981;
+  color: white;
+}
+
 .config-overlay {
   position: fixed;
   top: 0;
@@ -324,6 +417,61 @@ const canvasText = ref(`# Canvas 编辑器测试
 .canvas-editor-wrapper {
   height: 100%;
   overflow: hidden;
+  position: relative;
+}
+
+.stats-panel {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  min-width: 250px;
+  backdrop-filter: blur(10px);
+}
+
+.stats-panel h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  color: #333;
+  border-bottom: 2px solid #10b981;
+  padding-bottom: 8px;
+}
+
+.stats-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.stats-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-section h5 {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+  font-weight: 600;
+}
+
+.stat-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  color: #666;
+}
+
+.stat-item strong {
+  color: #10b981;
+  font-weight: 600;
 }
 
 .canvas-container.split-view .canvas-editor-wrapper {

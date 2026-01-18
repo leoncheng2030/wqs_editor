@@ -8,12 +8,28 @@
       :title="getTooltip(item)"
       @click="handleClick(item)"
     >
-      <span v-if="item !== 'divider'" class="icon">{{ getIcon(item) }}</span>
+      <component v-if="item !== 'divider'" :is="getIcon(item)" class="icon" />
     </button>
   </div>
 </template>
 
 <script setup>
+import { h } from 'vue'
+import {
+  TextOutline,
+  CodeSlashOutline,
+  ListOutline,
+  ReorderThreeOutline,
+  ChatboxOutline,
+  CodeOutline,
+  LinkOutline,
+  ImageOutline,
+  GridOutline,
+  CheckboxOutline,
+  CalculatorOutline,
+  GitNetworkOutline
+} from '@vicons/ionicons5'
+
 const props = defineProps({
   toolbarItems: {
     type: Array,
@@ -26,8 +42,13 @@ const props = defineProps({
       'divider',
       'unordered-list',
       'ordered-list',
+      'todo',
       'blockquote',
       'code-block',
+      'divider',
+      'table',
+      'math',
+      'diagram',
       'divider',
       'link',
       'image'
@@ -38,16 +59,20 @@ const props = defineProps({
 const emit = defineEmits(['command'])
 
 const icons = {
-  h1: 'H1',
-  h2: 'H2',
-  bold: '𝗕',
-  italic: '𝘐',
-  'unordered-list': '•',
-  'ordered-list': '1.',
-  blockquote: '❝',
-  'code-block': '</>',
-  link: '🔗',
-  image: '🖼'
+  h1: () => h('span', { style: 'font-weight: bold; font-size: 16px;' }, 'H1'),
+  h2: () => h('span', { style: 'font-weight: bold; font-size: 14px;' }, 'H2'),
+  bold: () => h('span', { style: 'font-weight: bold; font-size: 16px;' }, 'B'),
+  italic: () => h('span', { style: 'font-style: italic; font-size: 16px;' }, 'I'),
+  'unordered-list': ListOutline,
+  'ordered-list': ReorderThreeOutline,
+  todo: CheckboxOutline,
+  blockquote: ChatboxOutline,
+  'code-block': CodeSlashOutline,
+  table: GridOutline,
+  math: CalculatorOutline,
+  diagram: GitNetworkOutline,
+  link: LinkOutline,
+  image: ImageOutline
 }
 
 const tooltips = {
@@ -57,8 +82,12 @@ const tooltips = {
   italic: '斜体 (Ctrl+I)',
   'unordered-list': '无序列表',
   'ordered-list': '有序列表',
+  todo: '任务列表',
   blockquote: '引用',
   'code-block': '代码块',
+  table: '插入表格 (Ctrl+Shift+T)',
+  math: '数学公式 (Ctrl+M)',
+  diagram: '流程图 (Ctrl+Shift+D)',
   link: '插入链接',
   image: '插入图片'
 }
@@ -106,8 +135,11 @@ const handleClick = (item) => {
 }
 
 .toolbar-btn .icon {
-  font-weight: bold;
-  user-select: none;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .toolbar-btn:hover {

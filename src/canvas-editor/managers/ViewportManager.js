@@ -53,14 +53,15 @@ export class ViewportManager {
   
   /**
    * 获取可见行范围（虚拟滚动）
+   * @param {number} bufferLines - 缓冲行数（避免滚动闪烁）
    */
-  getVisibleRange() {
-    // 计算第一个可见行
-    const startLine = Math.floor(Math.max(0, this.scrollTop) / this.lineHeight)
+  getVisibleRange(bufferLines = 2) {
+    // 计算第一个可见行（向上扩展缓冲区）
+    const startLine = Math.max(0, Math.floor(this.scrollTop / this.lineHeight) - bufferLines)
     
-    // 计算最后一个可见行（多渲染1行避免滚动时闪烁）
+    // 计算最后一个可见行（向下扩展缓冲区）
     const visibleLines = Math.ceil(this.height / this.lineHeight)
-    const endLine = Math.min(this.totalLines, startLine + visibleLines + 1)
+    const endLine = Math.min(this.totalLines, startLine + visibleLines + bufferLines * 2 + 1)
     
     return {
       startLine,

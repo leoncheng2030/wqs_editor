@@ -14,10 +14,17 @@ export class DOMTextRenderer {
     // 计算平均字符宽度（用于退化方案）
     this.charWidth = this.fontSize * 0.6  // 等宽字体的近似值
     
+    // 文本测量缓存 - 性能优化
+    this.measureCache = new Map()
+    this.maxCacheSize = 1000  // 限制缓存大小
+    
     // 语法高亮相关
     this.enableSyntaxHighlight = options.enableSyntaxHighlight !== false
     this.lexer = null
     this.highlighter = null
+    
+    // 语法检查诊断数据
+    this.diagnostics = []
     
     // 创建文字渲染容器
     this.textLayer = document.createElement('div')
@@ -60,6 +67,14 @@ export class DOMTextRenderer {
   }
   
   /**
+   * 设置语法检查诊断数据
+   */
+  setDiagnostics(diagnostics) {
+    this.diagnostics = diagnostics || []
+    this.markDirty()
+  }
+  
+  /**
    * 更新主题颜色
    */
   updateThemeColors() {
@@ -97,6 +112,9 @@ export class DOMTextRenderer {
     this.textLayer.style.lineHeight = `${this.lineHeight}px`
     this.textLayer.style.fontFamily = this.fontFamily
     
+    // 更新textLayer的左侧padding（保证实时响应行号显示开关）
+    this.textLayer.style.left = `${viewport.padding}px`
+    
     // 获取可见行范围
     const { startLine, endLine } = viewport.getVisibleRange()
     
@@ -131,7 +149,8 @@ export class DOMTextRenderer {
       
       // 计算行的绝对位置（不考虑滚动）
       const y = lineIndex * this.lineHeight
-      const x = viewport.padding
+      // x坐标现在由textLayer的left控制，这里设为0
+      const x = 0
       
       this.renderLine(text, x, y, lineIndex, context)
       
@@ -164,10 +183,13 @@ export class DOMTextRenderer {
       left: ${x}px;
       top: ${y}px;
       height: ${this.lineHeight}px;
+      line-height: ${this.lineHeight}px;
       white-space: pre;
       user-select: none;
+      display: flex;
+      align-items: center;
     `
-    
+      
     if (!text || text.length === 0) {
       // 空行也要渲染，占位
       lineDiv.innerHTML = '&nbsp;'
@@ -175,18 +197,25 @@ export class DOMTextRenderer {
       this.renderedLines.set(lineIndex, lineDiv)
       return
     }
-    
+      
+    // 获取当前行的诊断信息
+    const lineDiagnostics = this.diagnostics.filter(d => d.line === lineIndex)
+      
     if (!this.enableSyntaxHighlight || !this.lexer || !this.highlighter) {
-      // 无语法高亮，直接渲染
-      lineDiv.textContent = text
+      // 无语法高亮，直接渲染（但仍然需要添加诊断标记）
+      if (lineDiagnostics.length > 0) {
+        this.renderLineWithDiagnostics(lineDiv, text, lineDiagnostics)
+      } else {
+        lineDiv.textContent = text
+      }
       this.textLayer.appendChild(lineDiv)
       this.renderedLines.set(lineIndex, lineDiv)
       return
     }
-    
+      
     // 解析语法
     const tokens = this.lexer.parseLine(text, lineIndex, context)
-    
+      
     if (tokens.length === 0) {
       // 空行
       lineDiv.innerHTML = '&nbsp;'
@@ -194,15 +223,70 @@ export class DOMTextRenderer {
       this.renderedLines.set(lineIndex, lineDiv)
       return
     }
+      
+    // 按 token 渲染（带诊断标记）
+    this.renderTokensWithDiagnostics(lineDiv, tokens, text, lineDiagnostics)
+      
+    this.textLayer.appendChild(lineDiv)
+    this.renderedLines.set(lineIndex, lineDiv)
+  }
     
-    // 按 token 渲染
+  /**
+   * 渲染带诊断标记的纯文本
+   */
+  renderLineWithDiagnostics(lineDiv, text, diagnostics) {
+    if (diagnostics.length === 0) {
+      lineDiv.textContent = text
+      return
+    }
+      
+    // 按列号排序诊断
+    const sortedDiagnostics = [...diagnostics].sort((a, b) => a.column - b.column)
+      
+    let lastPos = 0
+    for (const diagnostic of sortedDiagnostics) {
+      const start = diagnostic.column
+      const end = start + (diagnostic.length || 1)
+        
+      // 添加诊断之前的文本
+      if (start > lastPos) {
+        const span = document.createElement('span')
+        span.textContent = text.substring(lastPos, start)
+        lineDiv.appendChild(span)
+      }
+        
+      // 添加带波浪线的诊断文本
+      const diagnosticSpan = document.createElement('span')
+      diagnosticSpan.textContent = text.substring(start, end)
+      diagnosticSpan.className = `syntax-${diagnostic.severity}-underline`
+      diagnosticSpan.title = diagnostic.message  // 添加悬停提示
+      lineDiv.appendChild(diagnosticSpan)
+        
+      lastPos = end
+    }
+      
+    // 添加剩余文本
+    if (lastPos < text.length) {
+      const span = document.createElement('span')
+      span.textContent = text.substring(lastPos)
+      lineDiv.appendChild(span)
+    }
+  }
+    
+  /**
+   * 渲染带诊断标记的 tokens
+   */
+  renderTokensWithDiagnostics(lineDiv, tokens, text, diagnostics) {
+    // 先按正常方式渲染 tokens
     for (const token of tokens) {
       const style = this.highlighter.getStyle(token.type)
-      
+        
       const span = document.createElement('span')
       span.textContent = token.text
       span.style.color = style.color
-      
+      span.dataset.tokenStart = token.start
+      span.dataset.tokenEnd = token.end
+        
       if (style.bold) {
         span.style.fontWeight = 'bold'
       }
@@ -215,23 +299,46 @@ export class DOMTextRenderer {
       if (style.strikethrough) {
         span.style.textDecoration = 'line-through'
       }
-      
+        
+      // 检查是否有诊断覆盖这个 token
+      const overlappingDiagnostic = diagnostics.find(d => {
+        const dStart = d.column
+        const dEnd = d.column + (d.length || 1)
+        return (dStart < token.end && dEnd > token.start)
+      })
+        
+      if (overlappingDiagnostic) {
+        // 添加波浪线样式
+        span.classList.add(`syntax-${overlappingDiagnostic.severity}-underline`)
+        span.title = overlappingDiagnostic.message  // 添加悬停提示
+      }
+        
       lineDiv.appendChild(span)
     }
-    
-    this.textLayer.appendChild(lineDiv)
-    this.renderedLines.set(lineIndex, lineDiv)
   }
   
   /**
-   * 测量文本宽度
+   * 清除测量缓存（字体变化时调用）
+   */
+  clearMeasureCache() {
+    this.measureCache.clear()
+  }
+  
+  /**
+   * 测量文本宽度（带缓存）
    * @param {string} text - 要测量的文本
    * @returns {number} 文本宽度（像素）
    */
   measureText(ctx, text) {
     if (!text || text.length === 0) return 0
     
-    // 创建临时span测量
+    // 检查缓存
+    const cacheKey = `${this.fontSize}_${text}`
+    if (this.measureCache.has(cacheKey)) {
+      return this.measureCache.get(cacheKey)
+    }
+    
+    // 实际测量
     const span = document.createElement('span')
     span.style.cssText = `
       font-family: ${this.fontFamily};
@@ -244,6 +351,14 @@ export class DOMTextRenderer {
     document.body.appendChild(span)
     const width = span.offsetWidth
     document.body.removeChild(span)
+    
+    // 存入缓存
+    if (this.measureCache.size >= this.maxCacheSize) {
+      // LRU: 删除最早的缓存
+      const firstKey = this.measureCache.keys().next().value
+      this.measureCache.delete(firstKey)
+    }
+    this.measureCache.set(cacheKey, width)
     
     return width
   }

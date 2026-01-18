@@ -1,4 +1,5 @@
-import { Fragment, computed, createBlock, createCommentVNode, createElementBlock, createElementVNode, createStaticVNode, createTextVNode, createVNode, defineComponent, h, inject, normalizeClass, normalizeStyle, onBeforeMount, onBeforeUnmount, openBlock, provide, ref, renderList, renderSlot, resolveDynamicComponent, toDisplayString, unref, watch, withCtx } from "vue";
+/* empty css                */
+import { Fragment, computed, createBlock, createCommentVNode, createElementBlock, createElementVNode, createStaticVNode, createTextVNode, createVNode, defineComponent, h, nextTick, normalizeClass, onBeforeUnmount, onMounted, openBlock, ref, renderList, resolveDynamicComponent, toDisplayString, vModelCheckbox, vModelText, watch, withDirectives, withKeys } from "vue";
 import { marked } from "marked";
 var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDesc = Object.getOwnPropertyDescriptor, __getOwnPropNames = Object.getOwnPropertyNames, __getProtoOf = Object.getPrototypeOf, __hasOwnProp = Object.prototype.hasOwnProperty, __commonJSMin = (e, t) => () => (t || e((t = { exports: {} }).exports, t), t.exports), __copyProps = (e, t, n, r) => {
 	if (t && typeof t == "object" || typeof t == "function") for (var i = __getOwnPropNames(t), a = 0, o = i.length, s; a < o; a++) s = i[a], !__hasOwnProp.call(e, s) && s !== n && __defProp(e, s, {
@@ -9,7 +10,4790 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 }, __toESM = (e, t, n) => (n = e == null ? {} : __create(__getProtoOf(e)), __copyProps(t || !e || !e.__esModule ? __defProp(n, "default", {
 	value: e,
 	enumerable: !0
-}) : n, e)), require_core = /* @__PURE__ */ __commonJSMin(((e, t) => {
+}) : n, e)), Document = class {
+	constructor(e = "") {
+		this.lines = e ? e.split("\n") : [""], this.listeners = {
+			change: [],
+			lineChange: []
+		}, this.lexer = null;
+	}
+	getLine(e) {
+		return this.lines[e] || "";
+	}
+	getLineCount() {
+		return this.lines.length;
+	}
+	getText() {
+		return this.lines.join("\n");
+	}
+	setLexer(e) {
+		this.lexer = e;
+	}
+	setText(e) {
+		this.lines = e ? e.split("\n") : [""], this.lexer && this.lexer.clearCache(), this.emit("change");
+	}
+	insertText(e, t, n) {
+		if (e < 0 || e >= this.lines.length) return;
+		let r = this.lines[e], i = r.slice(0, t), a = r.slice(t);
+		if (n.includes("\n")) {
+			let t = n.split("\n");
+			this.lines[e] = i + t[0];
+			for (let n = 1; n < t.length; n++) this.lines.splice(e + n, 0, t[n]);
+			let r = e + t.length - 1;
+			this.lines[r] += a, this.lexer && this.lexer.markDirtyRange(e, r), this.emit("lineChange", {
+				startLine: e,
+				endLine: r
+			});
+		} else this.lines[e] = i + n + a, this.lexer && this.lexer.markDirty(e), this.emit("lineChange", {
+			startLine: e,
+			endLine: e
+		});
+		this.emit("change");
+	}
+	deleteText(e, t, n, r) {
+		if (e === n) {
+			let n = this.lines[e];
+			this.lines[e] = n.slice(0, t) + n.slice(r), this.lexer && this.lexer.markDirty(e), this.emit("lineChange", {
+				startLine: e,
+				endLine: e
+			});
+		} else {
+			let i = this.lines[e].slice(0, t), a = this.lines[n].slice(r);
+			this.lines.splice(e, n - e + 1, i + a), this.lexer && this.lexer.markDirty(e), this.emit("lineChange", {
+				startLine: e,
+				endLine: e
+			});
+		}
+		this.emit("change");
+	}
+	getTextRange(e, t, n, r) {
+		if (e === n) return this.lines[e].slice(t, r);
+		let i = [];
+		i.push(this.lines[e].slice(t));
+		for (let t = e + 1; t < n; t++) i.push(this.lines[t]);
+		return i.push(this.lines[n].slice(0, r)), i.join("\n");
+	}
+	on(e, t) {
+		this.listeners[e] && this.listeners[e].push(t);
+	}
+	off(e, t) {
+		this.listeners[e] && (this.listeners[e] = this.listeners[e].filter((e) => e !== t));
+	}
+	emit(e, ...t) {
+		this.listeners[e] && this.listeners[e].forEach((e) => e(...t));
+	}
+}, ViewportManager = class {
+	constructor(e = {}) {
+		this.width = e.width || 800, this.height = e.height || 600, this.lineHeight = e.lineHeight || 24, this.padding = e.padding || 16, this.scrollTop = 0, this.scrollLeft = 0, this.contentHeight = 0, this.totalLines = 0;
+	}
+	setSize(e, t) {
+		this.width = e, this.height = t;
+	}
+	setTotalLines(e) {
+		this.totalLines = e, this.contentHeight = e * this.lineHeight + this.padding * 2;
+	}
+	get totalHeight() {
+		return this.contentHeight;
+	}
+	setScrollTop(e) {
+		let t = Math.max(0, this.contentHeight - this.height);
+		this.scrollTop = Math.max(0, Math.min(e, t));
+	}
+	getVisibleRange(e = 2) {
+		let t = Math.max(0, Math.floor(this.scrollTop / this.lineHeight) - e), n = Math.ceil(this.height / this.lineHeight);
+		return {
+			startLine: t,
+			endLine: Math.min(this.totalLines, t + n + e * 2 + 1)
+		};
+	}
+	docToCanvas(e, t = 0, n = null, r = "") {
+		let i;
+		if (n && r && t > 0) {
+			let e = n.getColumnX(r, t);
+			i = this.padding + e - this.scrollLeft;
+		} else {
+			let e = n ? n.charWidth : 8.4;
+			i = this.padding + t * e - this.scrollLeft;
+		}
+		let a = e * this.lineHeight - this.scrollTop;
+		return {
+			x: i,
+			y: a
+		};
+	}
+	canvasToDoc(e, t, n = null, r = "") {
+		let i = Math.floor((t + this.scrollTop) / this.lineHeight), a;
+		if (n && r) {
+			let t = e + this.scrollLeft - this.padding;
+			a = n.getColumnFromX(r, t);
+		} else {
+			let t = n ? n.charWidth : 8.4;
+			a = Math.round((e + this.scrollLeft - this.padding) / t);
+		}
+		return {
+			line: Math.max(0, Math.min(i, this.totalLines - 1)),
+			column: Math.max(0, a)
+		};
+	}
+	scrollToLine(e) {
+		let t = e * this.lineHeight;
+		this.setScrollTop(t - this.height / 2);
+	}
+	ensureLineVisible(e) {
+		let t = e * this.lineHeight, n = this.scrollTop, r = this.scrollTop + this.height;
+		t < n ? this.setScrollTop(t) : t + this.lineHeight > r && this.setScrollTop(t + this.lineHeight - this.height);
+	}
+}, DOMTextRenderer = class {
+	constructor(e, t = {}) {
+		this.container = e, this.fontFamily = t.fontFamily || "\"SF Mono\", \"JetBrains Mono\", \"Fira Code\", Consolas, Monaco, \"Courier New\", monospace", this.fontSize = t.fontSize || 15, this.lineHeight = t.lineHeight || 26, this.textColor = t.textColor || "#333333", this.backgroundColor = t.backgroundColor || "#ffffff", this.charWidth = this.fontSize * .6, this.measureCache = /* @__PURE__ */ new Map(), this.maxCacheSize = 1e3, this.enableSyntaxHighlight = t.enableSyntaxHighlight !== !1, this.lexer = null, this.highlighter = null, this.diagnostics = [], this.textLayer = document.createElement("div"), this.textLayer.className = "text-layer", this.textLayer.style.cssText = `
+      position: absolute;
+      left: 0;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      pointer-events: none;
+      z-index: 2;
+      font-family: ${this.fontFamily};
+      font-size: ${this.fontSize}px;
+      line-height: ${this.lineHeight}px;
+      color: ${this.textColor};
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: optimizeLegibility;
+      overflow: hidden;
+    `, this.container.appendChild(this.textLayer), this.renderedLines = /* @__PURE__ */ new Map(), this.lastStartLine = -1, this.lastEndLine = -1, this.needsFullRender = !0;
+	}
+	setSyntaxHighlight(e, t) {
+		this.lexer = e, this.highlighter = t, this.updateThemeColors();
+	}
+	setDiagnostics(e) {
+		this.diagnostics = e || [], this.markDirty();
+	}
+	updateThemeColors() {
+		this.highlighter && (this.highlighter.theme === "dark" ? (this.textColor = "#cccccc", this.backgroundColor = "#1e1e1e") : (this.textColor = "#333333", this.backgroundColor = "#ffffff"), this.textLayer.style.color = this.textColor);
+	}
+	markDirty() {
+		this.needsFullRender = !0;
+	}
+	renderContent(e, t) {
+		this.textLayer.style.transform = `translateY(${-t.scrollTop}px)`, this.textLayer.style.fontSize = `${this.fontSize}px`, this.textLayer.style.lineHeight = `${this.lineHeight}px`, this.textLayer.style.fontFamily = this.fontFamily, this.textLayer.style.left = `${t.padding}px`;
+		let { startLine: n, endLine: r } = t.getVisibleRange();
+		if (this.lastStartLine === n && this.lastEndLine === r && !this.needsFullRender) return;
+		this.lastStartLine = n, this.lastEndLine = r, this.needsFullRender = !1;
+		let i = { inCodeBlock: !1 };
+		for (let t = 0; t < n && t < e.getLineCount(); t++) e.getLine(t).trimStart().startsWith("```") && (i.inCodeBlock = !i.inCodeBlock);
+		this.textLayer.innerHTML = "", this.renderedLines.clear();
+		for (let t = n; t < r; t++) {
+			let n = e.getLine(t), r = t * this.lineHeight;
+			this.renderLine(n, 0, r, t, i), n.trimStart().startsWith("```") && (i.inCodeBlock = !i.inCodeBlock);
+		}
+		this.lexer && this.lexer.clearDirtyMarks();
+	}
+	renderLine(e, t, n, r, i = {}) {
+		let a = document.createElement("div");
+		if (a.className = "editor-line", a.style.cssText = `
+      position: absolute;
+      left: ${t}px;
+      top: ${n}px;
+      height: ${this.lineHeight}px;
+      line-height: ${this.lineHeight}px;
+      white-space: pre;
+      user-select: none;
+      display: flex;
+      align-items: center;
+    `, !e || e.length === 0) {
+			a.innerHTML = "&nbsp;", this.textLayer.appendChild(a), this.renderedLines.set(r, a);
+			return;
+		}
+		let o = this.diagnostics.filter((e) => e.line === r);
+		if (!this.enableSyntaxHighlight || !this.lexer || !this.highlighter) {
+			o.length > 0 ? this.renderLineWithDiagnostics(a, e, o) : a.textContent = e, this.textLayer.appendChild(a), this.renderedLines.set(r, a);
+			return;
+		}
+		let s = this.lexer.parseLine(e, r, i);
+		if (s.length === 0) {
+			a.innerHTML = "&nbsp;", this.textLayer.appendChild(a), this.renderedLines.set(r, a);
+			return;
+		}
+		this.renderTokensWithDiagnostics(a, s, e, o), this.textLayer.appendChild(a), this.renderedLines.set(r, a);
+	}
+	renderLineWithDiagnostics(e, t, n) {
+		if (n.length === 0) {
+			e.textContent = t;
+			return;
+		}
+		let r = [...n].sort((e, t) => e.column - t.column), i = 0;
+		for (let n of r) {
+			let r = n.column, a = r + (n.length || 1);
+			if (r > i) {
+				let n = document.createElement("span");
+				n.textContent = t.substring(i, r), e.appendChild(n);
+			}
+			let o = document.createElement("span");
+			o.textContent = t.substring(r, a), o.className = `syntax-${n.severity}-underline`, o.title = n.message, e.appendChild(o), i = a;
+		}
+		if (i < t.length) {
+			let n = document.createElement("span");
+			n.textContent = t.substring(i), e.appendChild(n);
+		}
+	}
+	renderTokensWithDiagnostics(e, t, n, r) {
+		for (let n of t) {
+			let t = this.highlighter.getStyle(n.type), i = document.createElement("span");
+			i.textContent = n.text, i.style.color = t.color, i.dataset.tokenStart = n.start, i.dataset.tokenEnd = n.end, t.bold && (i.style.fontWeight = "bold"), t.italic && (i.style.fontStyle = "italic"), t.underline && (i.style.textDecoration = "underline"), t.strikethrough && (i.style.textDecoration = "line-through");
+			let a = r.find((e) => {
+				let t = e.column, r = e.column + (e.length || 1);
+				return t < n.end && r > n.start;
+			});
+			a && (i.classList.add(`syntax-${a.severity}-underline`), i.title = a.message), e.appendChild(i);
+		}
+	}
+	clearMeasureCache() {
+		this.measureCache.clear();
+	}
+	measureText(e, t) {
+		if (!t || t.length === 0) return 0;
+		let n = `${this.fontSize}_${t}`;
+		if (this.measureCache.has(n)) return this.measureCache.get(n);
+		let r = document.createElement("span");
+		r.style.cssText = `
+      font-family: ${this.fontFamily};
+      font-size: ${this.fontSize}px;
+      position: absolute;
+      visibility: hidden;
+      white-space: pre;
+    `, r.textContent = t, document.body.appendChild(r);
+		let i = r.offsetWidth;
+		if (document.body.removeChild(r), this.measureCache.size >= this.maxCacheSize) {
+			let e = this.measureCache.keys().next().value;
+			this.measureCache.delete(e);
+		}
+		return this.measureCache.set(n, i), i;
+	}
+	getColumnX(e, t) {
+		if (t === 0) return 0;
+		if (t >= e.length) return this.measureText(null, e);
+		let n = e.substring(0, t);
+		return this.measureText(null, n);
+	}
+	getColumnFromX(e, t) {
+		if (t <= 0 || !e || e.length === 0) return 0;
+		let n = 0, r = e.length;
+		for (; n < r;) {
+			let i = Math.floor((n + r + 1) / 2);
+			this.measureText(null, e.substring(0, i)) <= t ? n = i : r = i - 1;
+		}
+		if (n < e.length) {
+			let r = this.measureText(null, e.substring(0, n)), i = this.measureText(null, e.substring(0, n + 1)), a = Math.abs(t - r);
+			if (Math.abs(t - i) < a) return n + 1;
+		}
+		return n;
+	}
+	destroy() {
+		this.textLayer && this.textLayer.parentNode && this.textLayer.parentNode.removeChild(this.textLayer), this.renderedLines.clear();
+	}
+}, InputManager = class {
+	constructor(e, t = {}) {
+		this.container = e, this.canvas = t.canvas, this.textarea = document.createElement("textarea"), this.textarea.style.cssText = "\n      position: absolute;\n      width: 1px;\n      height: 1px;\n      opacity: 0;\n      z-index: -1;\n      overflow: hidden;\n      resize: none;\n      padding: 0;\n      margin: 0;\n      border: 0;\n    ", this.textarea.setAttribute("autocomplete", "off"), this.textarea.setAttribute("autocorrect", "off"), this.textarea.setAttribute("autocapitalize", "off"), this.textarea.setAttribute("spellcheck", "false"), e.appendChild(this.textarea), this.callbacks = {
+			input: [],
+			keydown: [],
+			click: [],
+			dblclick: [],
+			mousedown: [],
+			mousemove: [],
+			mouseup: []
+		}, this.isComposing = !1, this.clickCount = 0, this.lastClickTime = 0, this.clickDelay = 500, this.bindEvents(), setTimeout(() => this.focus(), 0);
+	}
+	bindEvents() {
+		this.textarea.addEventListener("input", this.handleInput.bind(this)), this.textarea.addEventListener("keydown", this.handleKeydown.bind(this)), this.textarea.addEventListener("compositionstart", (e) => {
+			this.isComposing = !0;
+		}), this.textarea.addEventListener("compositionend", (e) => {
+			this.isComposing = !1;
+			let t = e.data || this.textarea.value;
+			t && (this.textarea.value = "", this.emit("input", { data: t }));
+		}), this.textarea.addEventListener("blur", (e) => {
+			document.activeElement && document.activeElement.tagName !== "BODY" || setTimeout(() => {
+				document.activeElement && document.activeElement.tagName === "BODY" && this.focus();
+			}, 10);
+		}), this.canvas.addEventListener("click", this.handleClick.bind(this)), this.canvas.addEventListener("dblclick", this.handleDblClick.bind(this)), this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this)), document.addEventListener("mousemove", this.handleMouseMove.bind(this)), document.addEventListener("mouseup", this.handleMouseUp.bind(this)), this.canvas.addEventListener("mousedown", (e) => {
+			this.focus();
+		});
+	}
+	focus() {
+		try {
+			this.textarea.focus({ preventScroll: !0 });
+		} catch {
+			this.textarea.focus();
+		}
+	}
+	updateTextareaPosition(e, t) {
+		this.textarea.style.left = `${e}px`, this.textarea.style.top = `${t}px`;
+	}
+	handleInput(e) {
+		if (this.isComposing) return;
+		let t = e.data || this.textarea.value;
+		this.textarea.value = "", this.emit("input", { data: t });
+	}
+	handleKeydown(e) {
+		this.emit("keydown", e);
+	}
+	handleClick(e) {
+		let t = this.canvas.getBoundingClientRect(), n = e.clientX - t.left, r = e.clientY - t.top, i = Date.now();
+		if (i - this.lastClickTime < this.clickDelay ? this.clickCount++ : this.clickCount = 1, this.lastClickTime = i, this.clickCount === 3) {
+			this.emit("tripleclick", {
+				x: n,
+				y: r,
+				event: e
+			}), this.clickCount = 0;
+			return;
+		}
+		this.emit("click", {
+			x: n,
+			y: r,
+			event: e,
+			clickCount: this.clickCount
+		});
+	}
+	handleDblClick(e) {
+		let t = this.canvas.getBoundingClientRect(), n = e.clientX - t.left, r = e.clientY - t.top;
+		this.emit("dblclick", {
+			x: n,
+			y: r,
+			event: e
+		});
+	}
+	handleMouseDown(e) {
+		let t = this.canvas.getBoundingClientRect(), n = e.clientX - t.left, r = e.clientY - t.top;
+		this.emit("mousedown", {
+			x: n,
+			y: r,
+			event: e
+		});
+	}
+	handleMouseMove(e) {
+		let t = this.canvas.getBoundingClientRect(), n = e.clientX - t.left, r = e.clientY - t.top;
+		this.emit("mousemove", {
+			x: n,
+			y: r,
+			event: e
+		});
+	}
+	handleMouseUp(e) {
+		let t = this.canvas.getBoundingClientRect(), n = e.clientX - t.left, r = e.clientY - t.top;
+		this.emit("mouseup", {
+			x: n,
+			y: r,
+			event: e
+		});
+	}
+	on(e, t) {
+		this.callbacks[e] && this.callbacks[e].push(t);
+	}
+	emit(e, t) {
+		this.callbacks[e] && this.callbacks[e].forEach((e) => e(t));
+	}
+	destroy() {
+		document.removeEventListener("mousemove", this.handleMouseMove.bind(this)), document.removeEventListener("mouseup", this.handleMouseUp.bind(this)), this.textarea.remove();
+	}
+}, Cursor = class e {
+	constructor(e = 0, t = 0) {
+		this.line = e, this.column = t;
+	}
+	setPosition(e, t) {
+		this.line = e, this.column = t;
+	}
+	moveLeft(e) {
+		this.column > 0 ? this.column-- : this.line > 0 && (this.line--, this.column = e.getLine(this.line).length);
+	}
+	moveRight(e) {
+		let t = e.getLine(this.line);
+		this.column < t.length ? this.column++ : this.line < e.getLineCount() - 1 && (this.line++, this.column = 0);
+	}
+	moveUp(e) {
+		if (this.line > 0) {
+			this.line--;
+			let t = e.getLine(this.line);
+			this.column = Math.min(this.column, t.length);
+		}
+	}
+	moveDown(e) {
+		if (this.line < e.getLineCount() - 1) {
+			this.line++;
+			let t = e.getLine(this.line);
+			this.column = Math.min(this.column, t.length);
+		}
+	}
+	moveToLineStart() {
+		this.column = 0;
+	}
+	moveToLineEnd(e) {
+		this.column = e.getLine(this.line).length;
+	}
+	clone() {
+		return new e(this.line, this.column);
+	}
+}, CursorRenderer = class {
+	constructor(e = {}) {
+		this.color = e.color || "#000000", this.width = e.width || 2, this.blinkInterval = e.blinkInterval || 530, this.visible = !0, this.blinkTimer = null, this.blinkEnabled = !0, this.lastInputTime = 0;
+	}
+	render(e, t, n, r, i, a) {
+		if (!this.visible) return;
+		let { x: o, y: s } = n.docToCanvas(t.line, t.column, r, i);
+		if (o < 0 || o > n.width || s < 0 || s > n.height) return;
+		let c = r.fontSize, l = s + (a - c) / 2;
+		e.fillStyle = this.color, e.fillRect(o, l, this.width, c);
+	}
+	startBlinking(e) {
+		if (this.stopBlinking(), !this.blinkEnabled) {
+			this.visible = !0;
+			return;
+		}
+		this.visible = !0, this.blinkTimer = setInterval(() => {
+			this.visible = !this.visible, e && e();
+		}, this.blinkInterval);
+	}
+	stopBlinking() {
+		this.blinkTimer &&= (clearInterval(this.blinkTimer), null);
+	}
+	resetBlink(e) {
+		this.visible = !0, this.lastInputTime = Date.now(), this.blinkEnabled && this.startBlinking(e), e && e();
+	}
+	setColor(e) {
+		this.color = e;
+	}
+	setBlinkEnabled(e, t) {
+		this.blinkEnabled = e, e ? this.startBlinking(t) : (this.stopBlinking(), this.visible = !0, t && t());
+	}
+	show() {
+		this.visible = !0;
+	}
+	hide() {
+		this.visible = !1;
+	}
+	destroy() {
+		this.stopBlinking();
+	}
+}, Selection = class {
+	constructor() {
+		this.anchorLine = 0, this.anchorColumn = 0, this.focusLine = 0, this.focusColumn = 0, this.hasSelection = !1;
+	}
+	setRange(e, t, n, r) {
+		this.anchorLine = e, this.anchorColumn = t, this.focusLine = n, this.focusColumn = r, this.hasSelection = !(e === n && t === r);
+	}
+	collapse() {
+		this.anchorLine = this.focusLine, this.anchorColumn = this.focusColumn, this.hasSelection = !1;
+	}
+	collapseToStart() {
+		let { startLine: e, startColumn: t } = this.getOrderedRange();
+		this.anchorLine = e, this.anchorColumn = t, this.focusLine = e, this.focusColumn = t, this.hasSelection = !1;
+	}
+	collapseToEnd() {
+		let { endLine: e, endColumn: t } = this.getOrderedRange();
+		this.anchorLine = e, this.anchorColumn = t, this.focusLine = e, this.focusColumn = t, this.hasSelection = !1;
+	}
+	getOrderedRange() {
+		return this.anchorLine < this.focusLine ? {
+			startLine: this.anchorLine,
+			startColumn: this.anchorColumn,
+			endLine: this.focusLine,
+			endColumn: this.focusColumn
+		} : this.anchorLine > this.focusLine ? {
+			startLine: this.focusLine,
+			startColumn: this.focusColumn,
+			endLine: this.anchorLine,
+			endColumn: this.anchorColumn
+		} : this.anchorColumn <= this.focusColumn ? {
+			startLine: this.anchorLine,
+			startColumn: this.anchorColumn,
+			endLine: this.focusLine,
+			endColumn: this.focusColumn
+		} : {
+			startLine: this.focusLine,
+			startColumn: this.focusColumn,
+			endLine: this.anchorLine,
+			endColumn: this.anchorColumn
+		};
+	}
+	selectAll(e) {
+		this.anchorLine = 0, this.anchorColumn = 0, this.focusLine = e.getLineCount() - 1, this.focusColumn = e.getLine(this.focusLine).length, this.hasSelection = !0;
+	}
+	selectLine(e, t) {
+		this.anchorLine = e, this.anchorColumn = 0, this.focusLine = e, this.focusColumn = t.getLine(e).length, this.hasSelection = !0;
+	}
+	extend(e, t) {
+		this.focusLine = e, this.focusColumn = t, this.hasSelection = !(this.anchorLine === this.focusLine && this.anchorColumn === this.focusColumn);
+	}
+	getSelectedText(e) {
+		if (!this.hasSelection) return "";
+		let { startLine: t, startColumn: n, endLine: r, endColumn: i } = this.getOrderedRange();
+		return e.getTextRange(t, n, r, i);
+	}
+	deleteSelectedText(e) {
+		if (!this.hasSelection) return {
+			line: this.focusLine,
+			column: this.focusColumn
+		};
+		let { startLine: t, startColumn: n, endLine: r, endColumn: i } = this.getOrderedRange();
+		return e.deleteText(t, n, r, i), this.anchorLine = t, this.anchorColumn = n, this.focusLine = t, this.focusColumn = n, this.hasSelection = !1, {
+			line: t,
+			column: n
+		};
+	}
+	replaceSelectedText(e, t) {
+		let { line: n, column: r } = this.deleteSelectedText(e);
+		e.insertText(n, r, t);
+		let i = t.split("\n");
+		return i.length === 1 ? {
+			line: n,
+			column: r + t.length
+		} : {
+			line: n + i.length - 1,
+			column: i[i.length - 1].length
+		};
+	}
+	clear() {
+		this.hasSelection = !1, this.anchorLine = this.focusLine, this.anchorColumn = this.focusColumn;
+	}
+}, SelectionRenderer = class {
+	constructor(e = {}) {
+		this.color = e.color || "rgba(100, 150, 255, 0.3)", this.activeColor = e.activeColor || "rgba(100, 150, 255, 0.4)", this.padding = e.padding || 0;
+	}
+	render(e, t, n, r, i, a) {
+		if (!t.hasSelection) return;
+		let { startLine: o, startColumn: s, endLine: c, endColumn: l } = t.getOrderedRange(), { startLine: u, endLine: d } = n.getVisibleRange();
+		if (!(Math.max(o, u) > Math.min(c, d - 1))) {
+			if (e.fillStyle = this.color, o === c) {
+				let t = r.getLine(o);
+				this.renderSingleLine(e, o, s, l, n, i, t, a);
+				return;
+			}
+			if (o >= u && o < d) {
+				let t = r.getLine(o);
+				this.renderSingleLine(e, o, s, t.length, n, i, t, a);
+			}
+			for (let t = Math.max(o + 1, u); t < Math.min(c, d); t++) {
+				let o = r.getLine(t);
+				this.renderSingleLine(e, t, 0, o.length, n, i, o, a);
+			}
+			if (c >= u && c < d) {
+				let t = r.getLine(c);
+				this.renderSingleLine(e, c, 0, l, n, i, t, a);
+			}
+		}
+	}
+	renderSingleLine(e, t, n, r, i, a, o, s) {
+		if (n >= r) return;
+		let c = i.docToCanvas(t, n, a, o), l = a.getColumnX(o, n), u = a.getColumnX(o, r) - l, d = a.fontSize + 4, f = c.y + (s - d) / 2;
+		e.fillRect(c.x, f, u, d);
+	}
+	renderRectangle(e, t, n, r, i, a, o, s) {
+		let c = Math.min(t, r), l = Math.max(t, r), u = Math.min(n, i), d = Math.max(n, i);
+		e.fillStyle = this.color;
+		for (let t = c; t <= l; t++) this.renderSingleLine(e, t, u, d, a, o, s);
+	}
+	setColor(e) {
+		this.color = e;
+	}
+	setActiveColor(e) {
+		this.activeColor = e;
+	}
+}, History = class {
+	constructor(e = {}) {
+		this.maxSize = e.maxSize || 100, this.undoStack = [], this.redoStack = [], this.isApplying = !1, this.mergeDelay = e.mergeDelay || 300, this.lastRecordTime = 0;
+	}
+	record(e) {
+		if (this.isApplying) return;
+		let t = Date.now();
+		if (t - this.lastRecordTime < this.mergeDelay && this.undoStack.length > 0) {
+			let n = this.undoStack[this.undoStack.length - 1];
+			if (e.type === "insert" && n.type === "insert" && e.line === n.line && e.column === n.column + n.text.length && !e.text.includes("\n") && !n.text.includes("\n")) {
+				n.text += e.text, n.cursorAfter = e.cursorAfter, this.lastRecordTime = t;
+				return;
+			}
+			if (e.type === "delete" && n.type === "delete" && e.line === n.line && e.column === n.column - e.text.length && !e.text.includes("\n") && !n.text.includes("\n")) {
+				n.text = e.text + n.text, n.column = e.column, n.cursorBefore = e.cursorBefore, this.lastRecordTime = t;
+				return;
+			}
+		}
+		this.undoStack.push(e), this.undoStack.length > this.maxSize && this.undoStack.shift(), this.redoStack = [], this.lastRecordTime = t;
+	}
+	undo() {
+		if (this.undoStack.length === 0) return null;
+		let e = this.undoStack.pop();
+		return this.redoStack.push(e), e;
+	}
+	redo() {
+		if (this.redoStack.length === 0) return null;
+		let e = this.redoStack.pop();
+		return this.undoStack.push(e), e;
+	}
+	startApplying() {
+		this.isApplying = !0;
+	}
+	endApplying() {
+		this.isApplying = !1;
+	}
+	clear() {
+		this.undoStack = [], this.redoStack = [];
+	}
+	canUndo() {
+		return this.undoStack.length > 0;
+	}
+	canRedo() {
+		return this.redoStack.length > 0;
+	}
+}, Clipboard = class {
+	constructor() {
+		this.internalClipboard = "";
+	}
+	async copy(e) {
+		try {
+			return navigator.clipboard && navigator.clipboard.writeText ? (await navigator.clipboard.writeText(e), this.internalClipboard = e, !0) : this.copyFallback(e);
+		} catch (t) {
+			return console.warn("Failed to copy to clipboard:", t), this.internalClipboard = e, !1;
+		}
+	}
+	async paste() {
+		try {
+			return navigator.clipboard && navigator.clipboard.readText ? await navigator.clipboard.readText() : this.internalClipboard;
+		} catch (e) {
+			return console.warn("Failed to paste from clipboard:", e), this.internalClipboard;
+		}
+	}
+	copyFallback(e) {
+		try {
+			let t = document.createElement("textarea");
+			t.value = e, t.style.position = "fixed", t.style.left = "-9999px", t.style.top = "0", document.body.appendChild(t), t.select(), t.setSelectionRange(0, e.length);
+			let n = document.execCommand("copy");
+			return document.body.removeChild(t), n && (this.internalClipboard = e), n;
+		} catch (t) {
+			return console.warn("Fallback copy failed:", t), this.internalClipboard = e, !1;
+		}
+	}
+	async cut(e) {
+		return await this.copy(e);
+	}
+	async checkPermission() {
+		try {
+			if (navigator.permissions && navigator.permissions.query) {
+				let e = await navigator.permissions.query({ name: "clipboard-read" });
+				return e.state === "granted" || e.state === "prompt";
+			}
+			return !0;
+		} catch {
+			return !0;
+		}
+	}
+}, MarkdownLexer = class {
+	constructor() {
+		this.TOKEN_TYPES = {
+			TEXT: "text",
+			HEADING1: "heading1",
+			HEADING2: "heading2",
+			HEADING3: "heading3",
+			HEADING4: "heading4",
+			HEADING5: "heading5",
+			HEADING6: "heading6",
+			BOLD_DELIMITER: "bold_delimiter",
+			BOLD_TEXT: "bold_text",
+			ITALIC_DELIMITER: "italic_delimiter",
+			ITALIC_TEXT: "italic_text",
+			CODE_DELIMITER: "code_delimiter",
+			CODE_TEXT: "code_text",
+			CODE_BLOCK_DELIMITER: "code_block_delimiter",
+			CODE_BLOCK_LANG: "code_block_lang",
+			CODE_BLOCK_TEXT: "code_block_text",
+			LINK_BRACKET: "link_bracket",
+			LINK_TEXT: "link_text",
+			LINK_PAREN: "link_paren",
+			LINK_URL: "link_url",
+			IMAGE_BANG: "image_bang",
+			IMAGE_BRACKET: "image_bracket",
+			IMAGE_ALT: "image_alt",
+			IMAGE_PAREN: "image_paren",
+			IMAGE_URL: "image_url",
+			LIST_MARKER: "list_marker",
+			QUOTE_MARKER: "quote_marker",
+			STRIKETHROUGH_DELIMITER: "strikethrough_delimiter",
+			STRIKETHROUGH_TEXT: "strikethrough_text",
+			HR: "hr",
+			TABLE_DELIMITER: "table_delimiter",
+			TABLE_HEADER: "table_header",
+			TABLE_ALIGN: "table_align",
+			TABLE_CELL: "table_cell",
+			TASK_BRACKET: "task_bracket",
+			TASK_CHECKBOX: "task_checkbox",
+			TASK_TEXT: "task_text",
+			FOOTNOTE_MARKER: "footnote_marker",
+			FOOTNOTE_REF: "footnote_ref",
+			FOOTNOTE_DEF: "footnote_def",
+			MATH_DELIMITER: "math_delimiter",
+			MATH_CONTENT: "math_content"
+		}, this.cache = /* @__PURE__ */ new Map(), this.dirtyLines = /* @__PURE__ */ new Set(), this.cacheStats = {
+			hits: 0,
+			misses: 0
+		};
+	}
+	parseLine(e, t = 0, n = {}) {
+		let r = `${t}:${e}:${JSON.stringify(n)}`;
+		if (!this.dirtyLines.has(t) && this.cache.has(r)) return this.cacheStats.hits++, this.cache.get(r);
+		this.cacheStats.misses++;
+		let i = [];
+		if (!e || e.trim().length === 0) return this.cache.set(r, i), i;
+		if (n.inCodeBlock) return i.push({
+			type: this.TOKEN_TYPES.CODE_BLOCK_TEXT,
+			start: 0,
+			end: e.length,
+			text: e
+		}), this.cache.set(r, i), i;
+		if (e.trimStart().startsWith("```")) {
+			let t = e.match(/^(\s*)(```)(.*)?$/);
+			if (t) {
+				let n = 0;
+				return t[1] && (i.push({
+					type: this.TOKEN_TYPES.TEXT,
+					start: n,
+					end: n + t[1].length,
+					text: t[1]
+				}), n += t[1].length), i.push({
+					type: this.TOKEN_TYPES.CODE_BLOCK_DELIMITER,
+					start: n,
+					end: n + 3,
+					text: "```"
+				}), n += 3, t[3] && i.push({
+					type: this.TOKEN_TYPES.CODE_BLOCK_LANG,
+					start: n,
+					end: e.length,
+					text: t[3]
+				}), this.cache.set(r, i), i;
+			}
+		}
+		return this.parseInlineSyntax(e, i), this.cache.set(r, i), i;
+	}
+	parseInlineSyntax(e, t) {
+		let n = e.match(/^\[\^(\w+)\]:\s+(.*)$/);
+		if (n) {
+			t.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_MARKER,
+				start: 0,
+				end: 2,
+				text: "[^"
+			}), t.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_REF,
+				start: 2,
+				end: 2 + n[1].length,
+				text: n[1]
+			});
+			let r = e.indexOf("]:");
+			t.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_MARKER,
+				start: 2 + n[1].length,
+				end: r + 2,
+				text: "]:"
+			});
+			let i = e.indexOf(n[2], r + 2);
+			i > r + 2 && t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: r + 2,
+				end: i,
+				text: e.substring(r + 2, i)
+			}), t.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_DEF,
+				start: i,
+				end: e.length,
+				text: n[2]
+			});
+			return;
+		}
+		if (e.trimStart().startsWith("|")) {
+			this.parseTableRow(e, t);
+			return;
+		}
+		let r = e.match(/^(#{1,6})\s+(.*)$/);
+		if (r) {
+			let n = `heading${r[1].length}`;
+			t.push({
+				type: this.TOKEN_TYPES[n.toUpperCase()],
+				start: 0,
+				end: r[1].length,
+				text: r[1]
+			});
+			let i = e.indexOf(r[2]);
+			i > r[1].length && t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: r[1].length,
+				end: i,
+				text: e.substring(r[1].length, i)
+			}), this.parseInlineStyles(r[2], t, i);
+			return;
+		}
+		let i = e.match(/^(\s*)([-*+])\s+\[([ xX])\]\s+(.*)$/);
+		if (i) {
+			this.parseTaskList(e, i, t);
+			return;
+		}
+		let a = e.match(/^(\s*)([-*+])\s+(.*)$/);
+		if (a) {
+			let n = 0;
+			a[1] && (t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: n,
+				end: n + a[1].length,
+				text: a[1]
+			}), n += a[1].length), t.push({
+				type: this.TOKEN_TYPES.LIST_MARKER,
+				start: n,
+				end: n + 1,
+				text: a[2]
+			}), n += 1;
+			let r = e.indexOf(a[3]);
+			r > n && (t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: n,
+				end: r,
+				text: e.substring(n, r)
+			}), n = r), this.parseInlineStyles(a[3], t, n);
+			return;
+		}
+		let o = e.match(/^(\s*)(>+)\s+(.*)$/);
+		if (o) {
+			let n = 0;
+			o[1] && (t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: n,
+				end: n + o[1].length,
+				text: o[1]
+			}), n += o[1].length), t.push({
+				type: this.TOKEN_TYPES.QUOTE_MARKER,
+				start: n,
+				end: n + o[2].length,
+				text: o[2]
+			}), n += o[2].length;
+			let r = e.indexOf(o[3]);
+			r > n && (t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: n,
+				end: r,
+				text: e.substring(n, r)
+			}), n = r), this.parseInlineStyles(o[3], t, n);
+			return;
+		}
+		if (/^(\s*)([-*_])\2{2,}\s*$/.test(e)) {
+			t.push({
+				type: this.TOKEN_TYPES.HR,
+				start: 0,
+				end: e.length,
+				text: e
+			});
+			return;
+		}
+		this.parseInlineStyles(e, t, 0);
+	}
+	parseInlineStyles(e, t, n = 0) {
+		let r = 0;
+		for (; r < e.length;) {
+			if (e[r] === "\\" && r + 1 < e.length) {
+				let i = e[r + 1];
+				t.push({
+					type: this.TOKEN_TYPES.TEXT,
+					start: n + r,
+					end: n + r + 2,
+					text: i,
+					escaped: !0
+				}), r += 2;
+				continue;
+			}
+			let i = this.findNextSpecialChar(e, r);
+			if (i === -1) {
+				r < e.length && t.push({
+					type: this.TOKEN_TYPES.TEXT,
+					start: n + r,
+					end: n + e.length,
+					text: e.substring(r)
+				});
+				break;
+			}
+			i > r && t.push({
+				type: this.TOKEN_TYPES.TEXT,
+				start: n + r,
+				end: n + i,
+				text: e.substring(r, i)
+			});
+			let a = this.parseSpecialChar(e, i, t, n);
+			a.nestedText && this.parseInlineStyles(a.nestedText, t, n + a.nestedStart), r = a.nextPos;
+		}
+	}
+	parseTableRow(e, t) {
+		let n = !1, r = 0, i = !!e.match(/^\|?\s*:?-+:?\s*(\|\s*:?-+:?\s*)+\|?$/);
+		for (let a = 0; a < e.length; a++) if (e[a] === "|") {
+			if (n) {
+				let o = e.substring(r, a), s = o.trim();
+				if (s.length > 0) {
+					let e = o.length - o.trimStart().length, n = o.length - o.trimEnd().length, c = i ? this.TOKEN_TYPES.TABLE_ALIGN : this.TOKEN_TYPES.TABLE_CELL;
+					e > 0 && t.push({
+						type: this.TOKEN_TYPES.TEXT,
+						start: r,
+						end: r + e,
+						text: o.substring(0, e)
+					}), t.push({
+						type: c,
+						start: r + e,
+						end: a - n,
+						text: s
+					}), n > 0 && t.push({
+						type: this.TOKEN_TYPES.TEXT,
+						start: a - n,
+						end: a,
+						text: o.substring(o.length - n)
+					});
+				}
+				n = !1;
+			}
+			t.push({
+				type: this.TOKEN_TYPES.TABLE_DELIMITER,
+				start: a,
+				end: a + 1,
+				text: "|"
+			}), r = a + 1, n = !0;
+		}
+		if (n && r < e.length) {
+			let n = e.substring(r), a = n.trim();
+			if (a.length > 0) {
+				let o = n.length - n.trimStart().length, s = n.length - n.trimEnd().length, c = i ? this.TOKEN_TYPES.TABLE_ALIGN : this.TOKEN_TYPES.TABLE_CELL;
+				o > 0 && t.push({
+					type: this.TOKEN_TYPES.TEXT,
+					start: r,
+					end: r + o,
+					text: n.substring(0, o)
+				}), t.push({
+					type: c,
+					start: r + o,
+					end: e.length - s,
+					text: a
+				}), s > 0 && t.push({
+					type: this.TOKEN_TYPES.TEXT,
+					start: e.length - s,
+					end: e.length,
+					text: n.substring(n.length - s)
+				});
+			}
+		}
+	}
+	parseTaskList(e, t, n) {
+		let r = 0;
+		t[1] && (n.push({
+			type: this.TOKEN_TYPES.TEXT,
+			start: r,
+			end: r + t[1].length,
+			text: t[1]
+		}), r += t[1].length), n.push({
+			type: this.TOKEN_TYPES.LIST_MARKER,
+			start: r,
+			end: r + 1,
+			text: t[2]
+		}), r += 1;
+		let i = e.indexOf("[", r);
+		i > r && (n.push({
+			type: this.TOKEN_TYPES.TEXT,
+			start: r,
+			end: i,
+			text: e.substring(r, i)
+		}), r = i), n.push({
+			type: this.TOKEN_TYPES.TASK_BRACKET,
+			start: r,
+			end: r + 1,
+			text: "["
+		}), r += 1;
+		let a = t[3].toLowerCase() === "x";
+		n.push({
+			type: this.TOKEN_TYPES.TASK_CHECKBOX,
+			start: r,
+			end: r + 1,
+			text: t[3],
+			checked: a
+		}), r += 1, n.push({
+			type: this.TOKEN_TYPES.TASK_BRACKET,
+			start: r,
+			end: r + 1,
+			text: "]"
+		}), r += 1;
+		let o = e.indexOf(t[4], r);
+		o > r && (n.push({
+			type: this.TOKEN_TYPES.TEXT,
+			start: r,
+			end: o,
+			text: e.substring(r, o)
+		}), r = o), this.parseInlineStyles(t[4], n, r);
+	}
+	findNextSpecialChar(e, t) {
+		let n = [
+			"*",
+			"_",
+			"`",
+			"[",
+			"!",
+			"~",
+			"$"
+		];
+		e.length;
+		for (let r = t; r < e.length; r++) {
+			let t = e[r];
+			if (t === "\\" && r + 1 < e.length) {
+				r++;
+				continue;
+			}
+			if (n.includes(t)) return r;
+		}
+		return -1;
+	}
+	parseSpecialChar(e, t, n, r) {
+		let i = e[t];
+		if (i === "`") {
+			let i = e.indexOf("`", t + 1);
+			if (i !== -1) return n.push({
+				type: this.TOKEN_TYPES.CODE_DELIMITER,
+				start: r + t,
+				end: r + t + 1,
+				text: "`"
+			}), i > t + 1 && n.push({
+				type: this.TOKEN_TYPES.CODE_TEXT,
+				start: r + t + 1,
+				end: r + i,
+				text: e.substring(t + 1, i)
+			}), n.push({
+				type: this.TOKEN_TYPES.CODE_DELIMITER,
+				start: r + i,
+				end: r + i + 1,
+				text: "`"
+			}), { nextPos: i + 1 };
+		}
+		if (i === "*" && e[t + 1] === "*" || i === "_" && e[t + 1] === "_") {
+			let a = i + i, o = e.indexOf(a, t + 2);
+			if (o !== -1) {
+				n.push({
+					type: this.TOKEN_TYPES.BOLD_DELIMITER,
+					start: r + t,
+					end: r + t + 2,
+					text: a
+				});
+				let i = e.substring(t + 2, o);
+				if (i.length > 0) {
+					let e = [];
+					this.parseInlineStyles(i, e, 0);
+					for (let i of e) n.push({
+						...i,
+						start: r + t + 2 + i.start,
+						end: r + t + 2 + i.end,
+						type: i.type === this.TOKEN_TYPES.TEXT ? this.TOKEN_TYPES.BOLD_TEXT : i.type
+					});
+				}
+				return n.push({
+					type: this.TOKEN_TYPES.BOLD_DELIMITER,
+					start: r + o,
+					end: r + o + 2,
+					text: a
+				}), { nextPos: o + 2 };
+			}
+		}
+		if (i === "*" || i === "_") {
+			let a = e.indexOf(i, t + 1);
+			if (a !== -1) return n.push({
+				type: this.TOKEN_TYPES.ITALIC_DELIMITER,
+				start: r + t,
+				end: r + t + 1,
+				text: i
+			}), a > t + 1 && n.push({
+				type: this.TOKEN_TYPES.ITALIC_TEXT,
+				start: r + t + 1,
+				end: r + a,
+				text: e.substring(t + 1, a)
+			}), n.push({
+				type: this.TOKEN_TYPES.ITALIC_DELIMITER,
+				start: r + a,
+				end: r + a + 1,
+				text: i
+			}), { nextPos: a + 1 };
+		}
+		if (i === "~" && e[t + 1] === "~") {
+			let i = e.indexOf("~~", t + 2);
+			if (i !== -1) return n.push({
+				type: this.TOKEN_TYPES.STRIKETHROUGH_DELIMITER,
+				start: r + t,
+				end: r + t + 2,
+				text: "~~"
+			}), i > t + 2 && n.push({
+				type: this.TOKEN_TYPES.STRIKETHROUGH_TEXT,
+				start: r + t + 2,
+				end: r + i,
+				text: e.substring(t + 2, i)
+			}), n.push({
+				type: this.TOKEN_TYPES.STRIKETHROUGH_DELIMITER,
+				start: r + i,
+				end: r + i + 2,
+				text: "~~"
+			}), { nextPos: i + 2 };
+		}
+		if (i === "[") {
+			let i = e.substring(t).match(/^\[\^(\w+)\]/);
+			if (i) return n.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_MARKER,
+				start: r + t,
+				end: r + t + 2,
+				text: "[^"
+			}), n.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_REF,
+				start: r + t + 2,
+				end: r + t + 2 + i[1].length,
+				text: i[1]
+			}), n.push({
+				type: this.TOKEN_TYPES.FOOTNOTE_MARKER,
+				start: r + t + 2 + i[1].length,
+				end: r + t + i[0].length,
+				text: "]"
+			}), { nextPos: t + i[0].length };
+			let a = e.indexOf("]", t + 1);
+			if (a !== -1 && e[a + 1] === "(") {
+				let i = e.indexOf(")", a + 2);
+				if (i !== -1) {
+					n.push({
+						type: this.TOKEN_TYPES.LINK_BRACKET,
+						start: r + t,
+						end: r + t + 1,
+						text: "["
+					});
+					let o = e.substring(t + 1, a);
+					if (o.length > 0) {
+						let e = [];
+						this.parseInlineStyles(o, e, 0);
+						for (let i of e) n.push({
+							...i,
+							start: r + t + 1 + i.start,
+							end: r + t + 1 + i.end,
+							type: i.type === this.TOKEN_TYPES.TEXT ? this.TOKEN_TYPES.LINK_TEXT : i.type
+						});
+					}
+					return n.push({
+						type: this.TOKEN_TYPES.LINK_BRACKET,
+						start: r + a,
+						end: r + a + 1,
+						text: "]"
+					}), n.push({
+						type: this.TOKEN_TYPES.LINK_PAREN,
+						start: r + a + 1,
+						end: r + a + 2,
+						text: "("
+					}), i > a + 2 && n.push({
+						type: this.TOKEN_TYPES.LINK_URL,
+						start: r + a + 2,
+						end: r + i,
+						text: e.substring(a + 2, i)
+					}), n.push({
+						type: this.TOKEN_TYPES.LINK_PAREN,
+						start: r + i,
+						end: r + i + 1,
+						text: ")"
+					}), { nextPos: i + 1 };
+				}
+			}
+		}
+		if (i === "!" && e[t + 1] === "[") {
+			let i = e.indexOf("]", t + 2);
+			if (i !== -1 && e[i + 1] === "(") {
+				let a = e.indexOf(")", i + 2);
+				if (a !== -1) return n.push({
+					type: this.TOKEN_TYPES.IMAGE_BANG,
+					start: r + t,
+					end: r + t + 1,
+					text: "!"
+				}), n.push({
+					type: this.TOKEN_TYPES.IMAGE_BRACKET,
+					start: r + t + 1,
+					end: r + t + 2,
+					text: "["
+				}), i > t + 2 && n.push({
+					type: this.TOKEN_TYPES.IMAGE_ALT,
+					start: r + t + 2,
+					end: r + i,
+					text: e.substring(t + 2, i)
+				}), n.push({
+					type: this.TOKEN_TYPES.IMAGE_BRACKET,
+					start: r + i,
+					end: r + i + 1,
+					text: "]"
+				}), n.push({
+					type: this.TOKEN_TYPES.IMAGE_PAREN,
+					start: r + i + 1,
+					end: r + i + 2,
+					text: "("
+				}), a > i + 2 && n.push({
+					type: this.TOKEN_TYPES.IMAGE_URL,
+					start: r + i + 2,
+					end: r + a,
+					text: e.substring(i + 2, a)
+				}), n.push({
+					type: this.TOKEN_TYPES.IMAGE_PAREN,
+					start: r + a,
+					end: r + a + 1,
+					text: ")"
+				}), { nextPos: a + 1 };
+			}
+		}
+		if (i === "$") {
+			let i = e.indexOf("$", t + 1);
+			if (i !== -1) return n.push({
+				type: this.TOKEN_TYPES.MATH_DELIMITER,
+				start: r + t,
+				end: r + t + 1,
+				text: "$"
+			}), i > t + 1 && n.push({
+				type: this.TOKEN_TYPES.MATH_CONTENT,
+				start: r + t + 1,
+				end: r + i,
+				text: e.substring(t + 1, i)
+			}), n.push({
+				type: this.TOKEN_TYPES.MATH_DELIMITER,
+				start: r + i,
+				end: r + i + 1,
+				text: "$"
+			}), { nextPos: i + 1 };
+		}
+		return n.push({
+			type: this.TOKEN_TYPES.TEXT,
+			start: r + t,
+			end: r + t + 1,
+			text: i
+		}), { nextPos: t + 1 };
+	}
+	markDirty(e) {
+		this.dirtyLines.add(e);
+	}
+	markDirtyRange(e, t) {
+		for (let n = e; n <= t; n++) this.dirtyLines.add(n);
+	}
+	clearDirtyMarks() {
+		this.dirtyLines.clear();
+	}
+	invalidateLine(e) {
+		for (let t of this.cache.keys()) t.startsWith(`${e}:`) && this.cache.delete(t);
+		this.markDirty(e);
+	}
+	clearCache() {
+		this.cache.clear(), this.dirtyLines.clear(), this.cacheStats = {
+			hits: 0,
+			misses: 0
+		};
+	}
+	getCacheStats() {
+		let e = this.cacheStats.hits + this.cacheStats.misses, t = e > 0 ? (this.cacheStats.hits / e * 100).toFixed(2) : 0;
+		return {
+			...this.cacheStats,
+			total: e,
+			hitRate: `${t}%`,
+			cacheSize: this.cache.size
+		};
+	}
+	parseDocument(e) {
+		let t = [], n = { inCodeBlock: !1 };
+		for (let r = 0; r < e.length; r++) {
+			let i = e[r], a = this.parseLine(i, r, n);
+			i.trimStart().startsWith("```") && (n.inCodeBlock = !n.inCodeBlock), t.push(a);
+		}
+		return t;
+	}
+}, SyntaxHighlighter = class {
+	constructor(e = {}) {
+		this.theme = e.theme || "light", this.themes = {
+			light: {
+				text: "#333333",
+				heading1: "#0066cc",
+				heading2: "#0077dd",
+				heading3: "#0088ee",
+				heading4: "#0099ff",
+				heading5: "#00aaff",
+				heading6: "#00bbff",
+				bold_delimiter: "#666666",
+				bold_text: "#000000",
+				italic_delimiter: "#666666",
+				italic_text: "#555555",
+				code_delimiter: "#999999",
+				code_text: "#d14",
+				code_block_delimiter: "#999999",
+				code_block_lang: "#0088cc",
+				code_block_text: "#333333",
+				link_bracket: "#999999",
+				link_text: "#0066cc",
+				link_paren: "#999999",
+				link_url: "#0088cc",
+				image_bang: "#cc6600",
+				image_bracket: "#999999",
+				image_alt: "#cc6600",
+				image_paren: "#999999",
+				image_url: "#0088cc",
+				list_marker: "#cc6600",
+				quote_marker: "#999999",
+				strikethrough_delimiter: "#999999",
+				strikethrough_text: "#999999",
+				hr: "#cccccc",
+				table_delimiter: "#999999",
+				table_header: "#0066cc",
+				table_align: "#999999",
+				table_cell: "#333333",
+				task_bracket: "#999999",
+				task_checkbox: "#00aa00",
+				task_text: "#333333",
+				footnote_marker: "#999999",
+				footnote_ref: "#0066cc",
+				footnote_def: "#555555",
+				math_delimiter: "#cc0099",
+				math_content: "#cc0099"
+			},
+			dark: {
+				text: "#cccccc",
+				heading1: "#6699ff",
+				heading2: "#7799ff",
+				heading3: "#8899ff",
+				heading4: "#9999ff",
+				heading5: "#aa99ff",
+				heading6: "#bb99ff",
+				bold_delimiter: "#999999",
+				bold_text: "#ffffff",
+				italic_delimiter: "#999999",
+				italic_text: "#aaaaaa",
+				code_delimiter: "#666666",
+				code_text: "#ff9966",
+				code_block_delimiter: "#666666",
+				code_block_lang: "#66ccff",
+				code_block_text: "#cccccc",
+				link_bracket: "#666666",
+				link_text: "#6699ff",
+				link_paren: "#666666",
+				link_url: "#66ccff",
+				image_bang: "#ff9966",
+				image_bracket: "#666666",
+				image_alt: "#ff9966",
+				image_paren: "#666666",
+				image_url: "#66ccff",
+				list_marker: "#ff9966",
+				quote_marker: "#666666",
+				strikethrough_delimiter: "#666666",
+				strikethrough_text: "#666666",
+				hr: "#444444",
+				table_delimiter: "#666666",
+				table_header: "#6699ff",
+				table_align: "#666666",
+				table_cell: "#cccccc",
+				task_bracket: "#666666",
+				task_checkbox: "#00cc00",
+				task_text: "#cccccc",
+				footnote_marker: "#666666",
+				footnote_ref: "#6699ff",
+				footnote_def: "#aaaaaa",
+				math_delimiter: "#ff66cc",
+				math_content: "#ff66cc"
+			}
+		};
+	}
+	getColor(e) {
+		let t = this.themes[this.theme];
+		return t[e] || t.text;
+	}
+	getStyle(e) {
+		let t = {
+			color: this.getColor(e),
+			bold: !1,
+			italic: !1,
+			underline: !1,
+			strikethrough: !1
+		};
+		return (e === "bold_text" || e.startsWith("heading")) && (t.bold = !0), e === "italic_text" && (t.italic = !0), e === "strikethrough_text" && (t.strikethrough = !0), e === "link_url" && (t.underline = !0), t;
+	}
+	setTheme(e) {
+		this.themes[e] && (this.theme = e);
+	}
+	setColor(e, t, n) {
+		this.themes[e] && (this.themes[e][t] = n);
+	}
+}, LineNumberRenderer = class {
+	constructor(e = {}) {
+		this.width = e.width || 50, this.fontSize = e.fontSize || 13, this.fontFamily = e.fontFamily || "Consolas, Monaco, \"Courier New\", monospace", this.textColor = e.textColor || "#858585", this.backgroundColor = e.backgroundColor || "#f5f5f5", this.activeLineColor = e.activeLineColor || "#e8e8e8", this.activeTextColor = e.activeTextColor || "#333333", this.borderColor = e.borderColor || "#e0e0e0", this.padding = e.padding || 8;
+	}
+	updateTheme(e) {
+		e === "dark" ? (this.textColor = "#858585", this.backgroundColor = "#1e1e1e", this.activeLineColor = "#2a2a2a", this.activeTextColor = "#cccccc", this.borderColor = "#3e3e3e") : (this.textColor = "#858585", this.backgroundColor = "#f5f5f5", this.activeLineColor = "#e8e8e8", this.activeTextColor = "#333333", this.borderColor = "#e0e0e0");
+	}
+	render(e, t, n, r, i) {
+		let { startLine: a, endLine: o } = t.getVisibleRange();
+		e.fillStyle = this.backgroundColor, e.fillRect(0, 0, this.width, t.height), e.strokeStyle = this.borderColor, e.lineWidth = 1, e.beginPath(), e.moveTo(this.width - .5, 0), e.lineTo(this.width - .5, t.height), e.stroke(), e.font = `${this.fontSize}px ${this.fontFamily}`, e.textAlign = "right", e.textBaseline = "middle";
+		let s = 0;
+		for (let c = a; c < o && c < n; c++) {
+			s++;
+			let n = c * i - t.scrollTop;
+			c === r && (e.fillStyle = this.activeLineColor, e.fillRect(0, n, this.width, i)), e.fillStyle = c === r ? this.activeTextColor : this.textColor;
+			let a = (c + 1).toString(), o = this.width - this.padding, l = n + i / 2;
+			e.fillText(a, o, l);
+		}
+	}
+	calculateWidth(e) {
+		let t = e.toString().length;
+		return Math.max(50, t * 8 + this.padding * 2);
+	}
+}, RenderOptimizer = class {
+	constructor(e = {}) {
+		this.debounceDelay = e.debounceDelay || 16, this.renderTimer = null, this.pendingRender = !1, this.useRAF = e.useRAF !== !1, this.rafId = null, this.lastFrameTime = 0, this.targetFPS = e.targetFPS || 60, this.frameInterval = 1e3 / this.targetFPS, this.dirtyRegions = [], this.fullRenderNeeded = !0, this.offscreenCanvas = null, this.offscreenCtx = null, this.staticLayerDirty = !0, this.renderCount = 0, this.lastRenderTime = 0, this.avgRenderTime = 0, this.onRenderCallback = null;
+	}
+	initOffscreenCanvas(e, t) {
+		this.offscreenCanvas = document.createElement("canvas"), this.offscreenCanvas.width = e, this.offscreenCanvas.height = t, this.offscreenCtx = this.offscreenCanvas.getContext("2d"), this.staticLayerDirty = !0;
+	}
+	resizeOffscreenCanvas(e, t) {
+		(!this.offscreenCanvas || this.offscreenCanvas.width !== e || this.offscreenCanvas.height !== t) && this.initOffscreenCanvas(e, t);
+	}
+	markFullRender() {
+		this.fullRenderNeeded = !0, this.staticLayerDirty = !0, this.dirtyRegions = [];
+	}
+	addDirtyRegion(e, t) {
+		if (this.fullRenderNeeded) return;
+		let n = {
+			startLine: e,
+			endLine: t
+		}, r = !1;
+		for (let n = 0; n < this.dirtyRegions.length; n++) {
+			let i = this.dirtyRegions[n];
+			if (e <= i.endLine + 1 && t >= i.startLine - 1) {
+				i.startLine = Math.min(i.startLine, e), i.endLine = Math.max(i.endLine, t), r = !0;
+				break;
+			}
+		}
+		r || this.dirtyRegions.push(n), this.dirtyRegions.length > 10 && this.markFullRender();
+	}
+	markStaticLayerDirty() {
+		console.log("🟢 markStaticLayerDirty 被调用，设置 staticLayerDirty = true"), this.staticLayerDirty = !0;
+	}
+	requestRender(e, t = !1) {
+		if (this.onRenderCallback = e, t) {
+			this.performRender();
+			return;
+		}
+		if (this.useRAF) {
+			if (this.rafId) return;
+			this.rafId = requestAnimationFrame((t) => {
+				if (this.rafId = null, t - this.lastFrameTime < this.frameInterval) {
+					this.requestRender(e, !1);
+					return;
+				}
+				this.lastFrameTime = t, this.performRender();
+			});
+		} else this.renderTimer && clearTimeout(this.renderTimer), this.renderTimer = setTimeout(() => {
+			this.performRender();
+		}, this.debounceDelay);
+	}
+	performRender() {
+		if (!this.onRenderCallback) return;
+		console.log("🔵 performRender 开始:", {
+			staticLayerDirty: this.staticLayerDirty,
+			fullRenderNeeded: this.fullRenderNeeded
+		});
+		let e = performance.now();
+		this.onRenderCallback({
+			fullRender: this.fullRenderNeeded,
+			dirtyRegions: [...this.dirtyRegions],
+			staticLayerDirty: this.staticLayerDirty,
+			offscreenCtx: this.offscreenCtx,
+			offscreenCanvas: this.offscreenCanvas
+		}), console.log("🔴 清除脏标记: staticLayerDirty = false"), this.fullRenderNeeded = !1, this.dirtyRegions = [], this.staticLayerDirty = !1;
+		let t = performance.now() - e;
+		this.renderCount++, this.lastRenderTime = t, this.avgRenderTime = (this.avgRenderTime * (this.renderCount - 1) + t) / this.renderCount;
+	}
+	forceRender() {
+		this.renderTimer &&= (clearTimeout(this.renderTimer), null), this.rafId &&= (cancelAnimationFrame(this.rafId), null), this.performRender();
+	}
+	cancelPendingRender() {
+		this.renderTimer &&= (clearTimeout(this.renderTimer), null), this.rafId &&= (cancelAnimationFrame(this.rafId), null);
+	}
+	getStats() {
+		return {
+			renderCount: this.renderCount,
+			lastRenderTime: this.lastRenderTime.toFixed(2),
+			avgRenderTime: this.avgRenderTime.toFixed(2)
+		};
+	}
+	resetStats() {
+		this.renderCount = 0, this.lastRenderTime = 0, this.avgRenderTime = 0;
+	}
+	destroy() {
+		this.cancelPendingRender(), this.rafId &&= (cancelAnimationFrame(this.rafId), null), this.offscreenCanvas = null, this.offscreenCtx = null, this.dirtyRegions = [], this.onRenderCallback = null;
+	}
+}, PreloadManager = class {
+	constructor(e = {}) {
+		this.preloadLines = e.preloadLines || 10, this.preloadThreshold = e.preloadThreshold || .3, this.lastScrollTop = 0, this.scrollDirection = "down", this.scrollSpeed = 0, this.lastScrollTime = 0, this.preloadedRanges = /* @__PURE__ */ new Set(), this.preloadQueue = [], this.isPreloading = !1, this.onPreload = e.onPreload, this.stats = {
+			preloadCount: 0,
+			hitCount: 0,
+			missCount: 0
+		};
+	}
+	updateScroll(e, t, n) {
+		let r = Date.now(), i = r - this.lastScrollTime;
+		e > this.lastScrollTop ? this.scrollDirection = "down" : e < this.lastScrollTop && (this.scrollDirection = "up"), i > 0 && (this.scrollSpeed = Math.abs(e - this.lastScrollTop) / i), this.lastScrollTop = e, this.lastScrollTime = r, this.checkPreload(e, t, n);
+	}
+	checkPreload(e, t, n) {
+		let r = n - t;
+		r <= 0 || (e / r, this.scrollDirection === "down" ? n - (e + t) < t * this.preloadThreshold && this.triggerPreload("down", e, t) : e < t * this.preloadThreshold && this.triggerPreload("up", e, t));
+	}
+	triggerPreload(e, t, n) {
+		if (this.isPreloading) return;
+		let r = Math.floor(t / 26), i = Math.ceil(n / 26), a, o;
+		e === "down" ? (a = r + i, o = a + this.preloadLines) : (o = r, a = Math.max(0, o - this.preloadLines));
+		let s = `${a}-${o}`;
+		this.preloadedRanges.has(s) || this.performPreload(a, o, s);
+	}
+	async performPreload(e, t, n) {
+		if (this.onPreload) {
+			this.isPreloading = !0;
+			try {
+				if (await this.onPreload({
+					startLine: e,
+					endLine: t,
+					direction: this.scrollDirection,
+					speed: this.scrollSpeed
+				}), this.preloadedRanges.add(n), this.stats.preloadCount++, this.preloadedRanges.size > 20) {
+					let e = this.preloadedRanges.values().next().value;
+					this.preloadedRanges.delete(e);
+				}
+			} catch (e) {
+				console.error("Preload failed:", e);
+			} finally {
+				this.isPreloading = !1;
+			}
+		}
+	}
+	recordHit() {
+		this.stats.hitCount++;
+	}
+	recordMiss() {
+		this.stats.missCount++;
+	}
+	getStats() {
+		let e = this.stats.hitCount + this.stats.missCount, t = e > 0 ? (this.stats.hitCount / e * 100).toFixed(1) : 0;
+		return {
+			...this.stats,
+			hitRate: `${t}%`
+		};
+	}
+	clear() {
+		this.preloadedRanges.clear(), this.preloadQueue = [], this.isPreloading = !1;
+	}
+	resetStats() {
+		this.stats = {
+			preloadCount: 0,
+			hitCount: 0,
+			missCount: 0
+		};
+	}
+	destroy() {
+		this.clear(), this.onPreload = null;
+	}
+}, PredictiveRenderer = class {
+	constructor(e = {}) {
+		this.enablePrediction = e.enablePrediction !== !1, this.learningRate = e.learningRate || .1, this.behaviorHistory = [], this.maxHistorySize = 100, this.patterns = {
+			scrollDown: 0,
+			scrollUp: 0,
+			fastScroll: 0,
+			slowScroll: 0,
+			jumpToLine: 0,
+			search: 0,
+			edit: 0
+		}, this.predictions = {
+			nextScrollDirection: "down",
+			nextScrollSpeed: "normal",
+			likelyAction: "scroll"
+		}, this.preRenderedContent = /* @__PURE__ */ new Map(), this.maxCacheSize = 10, this.onPredict = e.onPredict, this.stats = {
+			predictions: 0,
+			correctPredictions: 0,
+			incorrectPredictions: 0
+		};
+	}
+	recordBehavior(e, t = {}) {
+		if (!this.enablePrediction) return;
+		let n = {
+			action: e,
+			data: t,
+			timestamp: Date.now()
+		};
+		this.behaviorHistory.push(n), this.behaviorHistory.length > this.maxHistorySize && this.behaviorHistory.shift(), this.updatePatterns(e, t), this.generatePrediction();
+	}
+	updatePatterns(e, t) {
+		let n = this.learningRate;
+		switch (e) {
+			case "scroll":
+				t.direction === "down" ? (this.patterns.scrollDown = this.patterns.scrollDown * (1 - n) + n, this.patterns.scrollUp = this.patterns.scrollUp * (1 - n)) : (this.patterns.scrollUp = this.patterns.scrollUp * (1 - n) + n, this.patterns.scrollDown = this.patterns.scrollDown * (1 - n)), t.speed > 1 ? (this.patterns.fastScroll = this.patterns.fastScroll * (1 - n) + n, this.patterns.slowScroll = this.patterns.slowScroll * (1 - n)) : (this.patterns.slowScroll = this.patterns.slowScroll * (1 - n) + n, this.patterns.fastScroll = this.patterns.fastScroll * (1 - n));
+				break;
+			case "jump":
+				this.patterns.jumpToLine = this.patterns.jumpToLine * (1 - n) + n;
+				break;
+			case "search":
+				this.patterns.search = this.patterns.search * (1 - n) + n;
+				break;
+			case "edit":
+				this.patterns.edit = this.patterns.edit * (1 - n) + n;
+				break;
+		}
+	}
+	generatePrediction() {
+		this.patterns.scrollDown > this.patterns.scrollUp ? this.predictions.nextScrollDirection = "down" : this.predictions.nextScrollDirection = "up", this.patterns.fastScroll > this.patterns.slowScroll ? this.predictions.nextScrollSpeed = "fast" : this.predictions.nextScrollSpeed = "slow";
+		let e = {
+			scroll: this.patterns.scrollDown + this.patterns.scrollUp,
+			jump: this.patterns.jumpToLine,
+			search: this.patterns.search,
+			edit: this.patterns.edit
+		}, t = 0, n = "scroll";
+		for (let [r, i] of Object.entries(e)) i > t && (t = i, n = r);
+		this.predictions.likelyAction = n, this.stats.predictions++, this.onPredict && this.onPredict(this.predictions);
+	}
+	getPrediction() {
+		return { ...this.predictions };
+	}
+	validatePrediction(e) {
+		let t = this.predictions.likelyAction === e;
+		return t ? this.stats.correctPredictions++ : this.stats.incorrectPredictions++, t;
+	}
+	async preRender(e, t) {
+		if (this.enablePrediction) {
+			if (this.preRenderedContent.has(e)) return this.preRenderedContent.get(e);
+			try {
+				let n = await t();
+				if (this.preRenderedContent.size >= this.maxCacheSize) {
+					let e = this.preRenderedContent.keys().next().value;
+					this.preRenderedContent.delete(e);
+				}
+				return this.preRenderedContent.set(e, n), n;
+			} catch (e) {
+				return console.error("Pre-render failed:", e), null;
+			}
+		}
+	}
+	getPreRendered(e) {
+		return this.preRenderedContent.get(e);
+	}
+	analyzePatterns() {
+		let e = this.behaviorHistory.slice(-20), t = {
+			dominantAction: null,
+			frequency: {},
+			averageSpeed: 0,
+			consistency: 0
+		};
+		e.forEach((e) => {
+			t.frequency[e.action] = (t.frequency[e.action] || 0) + 1;
+		});
+		let n = 0;
+		for (let [e, r] of Object.entries(t.frequency)) r > n && (n = r, t.dominantAction = e);
+		return t.consistency = e.length > 0 ? n / e.length : 0, t;
+	}
+	getStats() {
+		let e = this.stats.correctPredictions + this.stats.incorrectPredictions, t = e > 0 ? (this.stats.correctPredictions / e * 100).toFixed(1) : 0;
+		return {
+			...this.stats,
+			accuracy: `${t}%`,
+			patterns: this.patterns,
+			currentPrediction: this.predictions
+		};
+	}
+	clear() {
+		this.preRenderedContent.clear();
+	}
+	reset() {
+		this.behaviorHistory = [], this.patterns = {
+			scrollDown: 0,
+			scrollUp: 0,
+			fastScroll: 0,
+			slowScroll: 0,
+			jumpToLine: 0,
+			search: 0,
+			edit: 0
+		}, this.clear();
+	}
+	destroy() {
+		this.clear(), this.behaviorHistory = [], this.onPredict = null;
+	}
+}, _hoisted_1$14 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, CalculatorOutline_default = defineComponent({
+	name: "CalculatorOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$14, t[0] ||= [createStaticVNode("<rect x=\"112\" y=\"48\" width=\"288\" height=\"416\" rx=\"32\" ry=\"32\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></rect><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160.01 112H352v64H160.01z\"></path><circle cx=\"168\" cy=\"248\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"256\" cy=\"248\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"344\" cy=\"248\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"168\" cy=\"328\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"256\" cy=\"328\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"168\" cy=\"408\" r=\"24\" fill=\"currentColor\"></circle><circle cx=\"256\" cy=\"408\" r=\"24\" fill=\"currentColor\"></circle><rect x=\"320\" y=\"304\" width=\"48\" height=\"128\" rx=\"24\" ry=\"24\" fill=\"currentColor\"></rect>", 10)]);
+	}
+}), _hoisted_1$13 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, ChatboxOutline_default = defineComponent({
+	name: "ChatboxOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$13, t[0] ||= [createElementVNode("path", {
+			d: "M408 64H104a56.16 56.16 0 0 0-56 56v192a56.16 56.16 0 0 0 56 56h40v80l93.72-78.14a8 8 0 0 1 5.13-1.86H408a56.16 56.16 0 0 0 56-56V120a56.16 56.16 0 0 0-56-56z",
+			fill: "none",
+			stroke: "currentColor",
+			"stroke-linejoin": "round",
+			"stroke-width": "32"
+		}, null, -1)]);
+	}
+}), _hoisted_1$12 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, CheckboxOutline_default = defineComponent({
+	name: "CheckboxOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$12, t[0] ||= [createElementVNode("path", {
+			fill: "none",
+			stroke: "currentColor",
+			"stroke-linecap": "round",
+			"stroke-linejoin": "round",
+			"stroke-width": "32",
+			d: "M352 176L217.6 336L160 272"
+		}, null, -1), createElementVNode("rect", {
+			x: "64",
+			y: "64",
+			width: "384",
+			height: "384",
+			rx: "48",
+			ry: "48",
+			fill: "none",
+			stroke: "currentColor",
+			"stroke-linejoin": "round",
+			"stroke-width": "32"
+		}, null, -1)]);
+	}
+}), _hoisted_1$11 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, CodeSlashOutline_default = defineComponent({
+	name: "CodeSlashOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$11, t[0] ||= [
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M160 368L32 256l128-112"
+			}, null, -1),
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M352 368l128-112l-128-112"
+			}, null, -1),
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M304 96l-96 320"
+			}, null, -1)
+		]);
+	}
+}), _hoisted_1$10 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, GitNetworkOutline_default = defineComponent({
+	name: "GitNetworkOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$10, t[0] ||= [createStaticVNode("<circle cx=\"128\" cy=\"96\" r=\"48\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><circle cx=\"256\" cy=\"416\" r=\"48\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M256 256v112\"></path><circle cx=\"384\" cy=\"96\" r=\"48\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><path d=\"M128 144c0 74.67 68.92 112 128 112\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></path><path d=\"M384 144c0 74.67-68.92 112-128 112\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></path>", 6)]);
+	}
+}), _hoisted_1$9 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, GridOutline_default = defineComponent({
+	name: "GridOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$9, t[0] ||= [
+			createElementVNode("rect", {
+				x: "48",
+				y: "48",
+				width: "176",
+				height: "176",
+				rx: "20",
+				ry: "20",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("rect", {
+				x: "288",
+				y: "48",
+				width: "176",
+				height: "176",
+				rx: "20",
+				ry: "20",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("rect", {
+				x: "48",
+				y: "288",
+				width: "176",
+				height: "176",
+				rx: "20",
+				ry: "20",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("rect", {
+				x: "288",
+				y: "288",
+				width: "176",
+				height: "176",
+				rx: "20",
+				ry: "20",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1)
+		]);
+	}
+}), _hoisted_1$8 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, ImageOutline_default = defineComponent({
+	name: "ImageOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$8, t[0] ||= [
+			createElementVNode("rect", {
+				x: "48",
+				y: "80",
+				width: "416",
+				height: "352",
+				rx: "48",
+				ry: "48",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("circle", {
+				cx: "336",
+				cy: "176",
+				r: "32",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-miterlimit": "10",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("path", {
+				d: "M304 335.79l-90.66-90.49a32 32 0 0 0-43.87-1.3L48 352",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1),
+			createElementVNode("path", {
+				d: "M224 432l123.34-123.34a32 32 0 0 1 43.11-2L464 368",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32"
+			}, null, -1)
+		]);
+	}
+}), _hoisted_1$7 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, LinkOutline_default = defineComponent({
+	name: "LinkOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$7, t[0] ||= [
+			createElementVNode("path", {
+				d: "M208 352h-64a96 96 0 0 1 0-192h64",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "36"
+			}, null, -1),
+			createElementVNode("path", {
+				d: "M304 160h64a96 96 0 0 1 0 192h-64",
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "36"
+			}, null, -1),
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "36",
+				d: "M163.29 256h187.42"
+			}, null, -1)
+		]);
+	}
+}), _hoisted_1$6 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, ListOutline_default = defineComponent({
+	name: "ListOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$6, t[0] ||= [createStaticVNode("<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 144h288\"></path><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 256h288\"></path><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 368h288\"></path><circle cx=\"80\" cy=\"144\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><circle cx=\"80\" cy=\"256\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><circle cx=\"80\" cy=\"368\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle>", 6)]);
+	}
+}), _hoisted_1$5 = {
+	xmlns: "http://www.w3.org/2000/svg",
+	"xmlns:xlink": "http://www.w3.org/1999/xlink",
+	viewBox: "0 0 512 512"
+}, ReorderThreeOutline_default = defineComponent({
+	name: "ReorderThreeOutline",
+	render: function(e, t) {
+		return openBlock(), createElementBlock("svg", _hoisted_1$5, t[0] ||= [
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M96 256h320"
+			}, null, -1),
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M96 176h320"
+			}, null, -1),
+			createElementVNode("path", {
+				fill: "none",
+				stroke: "currentColor",
+				"stroke-linecap": "round",
+				"stroke-linejoin": "round",
+				"stroke-width": "32",
+				d: "M96 336h320"
+			}, null, -1)
+		]);
+	}
+}), __plugin_vue_export_helper_default = (e, t) => {
+	let n = e.__vccOpts || e;
+	for (let [e, r] of t) n[e] = r;
+	return n;
+}, _hoisted_1$4 = { class: "canvas-toolbar" }, _hoisted_2$4 = ["title", "onClick"], CanvasToolbar_default = /* @__PURE__ */ __plugin_vue_export_helper_default({
+	__name: "CanvasToolbar",
+	props: { toolbarItems: {
+		type: Array,
+		default: () => [
+			"h1",
+			"h2",
+			"divider",
+			"bold",
+			"italic",
+			"divider",
+			"unordered-list",
+			"ordered-list",
+			"todo",
+			"blockquote",
+			"code-block",
+			"divider",
+			"table",
+			"math",
+			"diagram",
+			"divider",
+			"link",
+			"image"
+		]
+	} },
+	emits: ["command"],
+	setup(t, { emit: a }) {
+		let o = a, s = {
+			h1: () => h("span", { style: "font-weight: bold; font-size: 16px;" }, "H1"),
+			h2: () => h("span", { style: "font-weight: bold; font-size: 14px;" }, "H2"),
+			bold: () => h("span", { style: "font-weight: bold; font-size: 16px;" }, "B"),
+			italic: () => h("span", { style: "font-style: italic; font-size: 16px;" }, "I"),
+			"unordered-list": ListOutline_default,
+			"ordered-list": ReorderThreeOutline_default,
+			todo: CheckboxOutline_default,
+			blockquote: ChatboxOutline_default,
+			"code-block": CodeSlashOutline_default,
+			table: GridOutline_default,
+			math: CalculatorOutline_default,
+			diagram: GitNetworkOutline_default,
+			link: LinkOutline_default,
+			image: ImageOutline_default
+		}, c = {
+			h1: "一级标题",
+			h2: "二级标题",
+			bold: "加粗 (Ctrl+B)",
+			italic: "斜体 (Ctrl+I)",
+			"unordered-list": "无序列表",
+			"ordered-list": "有序列表",
+			todo: "任务列表",
+			blockquote: "引用",
+			"code-block": "代码块",
+			table: "插入表格 (Ctrl+Shift+T)",
+			math: "数学公式 (Ctrl+M)",
+			diagram: "流程图 (Ctrl+Shift+D)",
+			link: "插入链接",
+			image: "插入图片"
+		}, l = (e) => s[e] || e, d = (e) => c[e] || e, p = (e) => {
+			e !== "divider" && o("command", e);
+		};
+		return (a, o) => (openBlock(), createElementBlock("div", _hoisted_1$4, [(openBlock(!0), createElementBlock(Fragment, null, renderList(t.toolbarItems, (e, t) => (openBlock(), createElementBlock("button", {
+			key: t,
+			class: normalizeClass(["toolbar-btn", { divider: e === "divider" }]),
+			title: d(e),
+			onClick: (t) => p(e)
+		}, [e === "divider" ? createCommentVNode("", !0) : (openBlock(), createBlock(resolveDynamicComponent(l(e)), {
+			key: 0,
+			class: "icon"
+		}))], 10, _hoisted_2$4))), 128))]));
+	}
+}, [["__scopeId", "data-v-46e06aed"]]), _hoisted_1$3 = {
+	key: 0,
+	class: "search-panel"
+}, _hoisted_2$3 = { class: "search-row" }, _hoisted_3$1 = {
+	key: 0,
+	class: "search-count"
+}, _hoisted_4$1 = {
+	key: 0,
+	class: "replace-row"
+}, _hoisted_5$1 = { class: "search-options" }, SearchPanel_default = /* @__PURE__ */ __plugin_vue_export_helper_default({
+	__name: "SearchPanel",
+	props: { visible: {
+		type: Boolean,
+		default: !1
+	} },
+	emits: [
+		"close",
+		"search",
+		"replace",
+		"replaceAll"
+	],
+	setup(e, { emit: t }) {
+		let n = e, o = t, s = ref(null), c = ref(""), l = ref(""), u = ref(!1), f = ref(!1), p = ref(!1), m = ref(!1), v = ref(0), y = ref(0);
+		watch(() => n.visible, (e) => {
+			e && nextTick(() => {
+				s.value?.focus();
+			});
+		}), watch(c, (e) => {
+			e ? E() : (v.value = 0, y.value = 0, o("search", {
+				text: "",
+				matches: []
+			}));
+		});
+		let E = () => {
+			o("search", {
+				text: c.value,
+				matchCase: f.value,
+				matchWholeWord: p.value,
+				useRegex: m.value,
+				callback: (e) => {
+					y.value = e.length, e.length > 0 && (v.value = 0);
+				}
+			});
+		}, D = () => {
+			y.value !== 0 && (v.value = (v.value + 1) % y.value, o("search", {
+				text: c.value,
+				matchCase: f.value,
+				matchWholeWord: p.value,
+				useRegex: m.value,
+				jumpTo: v.value
+			}));
+		}, O = () => {
+			y.value !== 0 && (v.value = (v.value - 1 + y.value) % y.value, o("search", {
+				text: c.value,
+				matchCase: f.value,
+				matchWholeWord: p.value,
+				useRegex: m.value,
+				jumpTo: v.value
+			}));
+		}, k = () => {
+			o("replace", {
+				searchText: c.value,
+				replaceText: l.value,
+				matchCase: f.value,
+				matchWholeWord: p.value,
+				useRegex: m.value,
+				callback: () => {
+					E();
+				}
+			});
+		}, A = () => {
+			o("replaceAll", {
+				searchText: c.value,
+				replaceText: l.value,
+				matchCase: f.value,
+				matchWholeWord: p.value,
+				useRegex: m.value,
+				callback: () => {
+					E();
+				}
+			});
+		}, j = () => {
+			u.value = !u.value;
+		}, M = () => {
+			c.value && E();
+		}, N = () => {
+			o("close");
+		};
+		return (t, n) => e.visible ? (openBlock(), createElementBlock("div", _hoisted_1$3, [
+			createElementVNode("div", _hoisted_2$3, [
+				withDirectives(createElementVNode("input", {
+					ref_key: "searchInputRef",
+					ref: s,
+					"onUpdate:modelValue": n[0] ||= (e) => c.value = e,
+					type: "text",
+					class: "search-input",
+					placeholder: "查找",
+					onKeydown: [withKeys(D, ["enter"]), withKeys(N, ["esc"])]
+				}, null, 544), [[vModelText, c.value]]),
+				c.value ? (openBlock(), createElementBlock("span", _hoisted_3$1, toDisplayString(v.value + 1) + "/" + toDisplayString(y.value), 1)) : createCommentVNode("", !0),
+				createElementVNode("button", {
+					class: "search-btn",
+					onClick: O,
+					title: "上一个 (Shift+Enter)"
+				}, "↑"),
+				createElementVNode("button", {
+					class: "search-btn",
+					onClick: D,
+					title: "下一个 (Enter)"
+				}, "↓"),
+				createElementVNode("button", {
+					class: "search-btn",
+					onClick: j,
+					title: "切换替换"
+				}, toDisplayString(u.value ? "▼" : "▶"), 1),
+				createElementVNode("button", {
+					class: "search-btn close-btn",
+					onClick: N,
+					title: "关闭 (Esc)"
+				}, "✕")
+			]),
+			u.value ? (openBlock(), createElementBlock("div", _hoisted_4$1, [
+				withDirectives(createElementVNode("input", {
+					"onUpdate:modelValue": n[1] ||= (e) => l.value = e,
+					type: "text",
+					class: "search-input",
+					placeholder: "替换",
+					onKeydown: [withKeys(k, ["enter"]), withKeys(N, ["esc"])]
+				}, null, 544), [[vModelText, l.value]]),
+				createElementVNode("button", {
+					class: "action-btn",
+					onClick: k
+				}, "替换"),
+				createElementVNode("button", {
+					class: "action-btn",
+					onClick: A
+				}, "全部替换")
+			])) : createCommentVNode("", !0),
+			createElementVNode("div", _hoisted_5$1, [
+				createElementVNode("label", null, [withDirectives(createElementVNode("input", {
+					type: "checkbox",
+					"onUpdate:modelValue": n[2] ||= (e) => f.value = e,
+					onChange: M
+				}, null, 544), [[vModelCheckbox, f.value]]), n[5] ||= createElementVNode("span", null, "区分大小写", -1)]),
+				createElementVNode("label", null, [withDirectives(createElementVNode("input", {
+					type: "checkbox",
+					"onUpdate:modelValue": n[3] ||= (e) => p.value = e,
+					onChange: M
+				}, null, 544), [[vModelCheckbox, p.value]]), n[6] ||= createElementVNode("span", null, "全字匹配", -1)]),
+				createElementVNode("label", null, [withDirectives(createElementVNode("input", {
+					type: "checkbox",
+					"onUpdate:modelValue": n[4] ||= (e) => m.value = e,
+					onChange: M
+				}, null, 544), [[vModelCheckbox, m.value]]), n[7] ||= createElementVNode("span", null, "正则表达式", -1)])
+			])
+		])) : createCommentVNode("", !0);
+	}
+}, [["__scopeId", "data-v-46382544"]]), PluginManager = class {
+	constructor(e) {
+		this.editor = e, this.plugins = /* @__PURE__ */ new Map(), this.commands = /* @__PURE__ */ new Map(), this.keybindings = /* @__PURE__ */ new Map(), this.toolbarButtons = [], this.hooks = {
+			beforeInit: [],
+			afterInit: [],
+			beforeRender: [],
+			afterRender: [],
+			beforeChange: [],
+			afterChange: [],
+			beforeCommand: [],
+			afterCommand: [],
+			beforeDestroy: [],
+			afterDestroy: []
+		};
+	}
+	register(e) {
+		if (!e.id) throw Error("Plugin must have an id");
+		if (this.plugins.has(e.id)) {
+			console.warn(`Plugin ${e.id} is already registered`);
+			return;
+		}
+		this.plugins.set(e.id, {
+			...e,
+			active: !1
+		});
+	}
+	async activate(e) {
+		let t = this.plugins.get(e);
+		if (!t) throw Error(`Plugin ${e} not found`);
+		if (t.active) {
+			console.warn(`Plugin ${e} is already active`);
+			return;
+		}
+		try {
+			let n = this.createPluginContext(e);
+			typeof t.activate == "function" && await t.activate(n), t.active = !0;
+		} catch (t) {
+			throw console.error(`Failed to activate plugin ${e}:`, t), t;
+		}
+	}
+	async deactivate(e) {
+		let t = this.plugins.get(e);
+		if (!t) throw Error(`Plugin ${e} not found`);
+		if (t.active) try {
+			typeof t.deactivate == "function" && await t.deactivate(), this.cleanupPlugin(e), t.active = !1;
+		} catch (t) {
+			throw console.error(`Failed to deactivate plugin ${e}:`, t), t;
+		}
+	}
+	createPluginContext(e) {
+		return {
+			editor: this.editor,
+			registerCommand: (t, n, r = {}) => {
+				this.registerCommand(e, t, n, r);
+			},
+			registerKeybinding: (t, n, r = {}) => {
+				this.registerKeybinding(e, t, n, r);
+			},
+			registerToolbarButton: (t) => {
+				this.registerToolbarButton(e, t);
+			},
+			onBeforeInit: (t) => this.registerHook("beforeInit", e, t),
+			onAfterInit: (t) => this.registerHook("afterInit", e, t),
+			onBeforeRender: (t) => this.registerHook("beforeRender", e, t),
+			onAfterRender: (t) => this.registerHook("afterRender", e, t),
+			onBeforeChange: (t) => this.registerHook("beforeChange", e, t),
+			onAfterChange: (t) => this.registerHook("afterChange", e, t),
+			onBeforeCommand: (t) => this.registerHook("beforeCommand", e, t),
+			onAfterCommand: (t) => this.registerHook("afterCommand", e, t),
+			onBeforeDestroy: (t) => this.registerHook("beforeDestroy", e, t),
+			onAfterDestroy: (t) => this.registerHook("afterDestroy", e, t),
+			log: (...t) => console.log(`[${e}]`, ...t),
+			warn: (...t) => console.warn(`[${e}]`, ...t),
+			error: (...t) => console.error(`[${e}]`, ...t)
+		};
+	}
+	registerCommand(e, t, n, r = {}) {
+		let i = `${e}.${t}`;
+		if (this.commands.has(i)) {
+			console.warn(`Command ${i} is already registered`);
+			return;
+		}
+		this.commands.set(i, {
+			pluginId: e,
+			commandId: t,
+			handler: n,
+			options: r,
+			fullCommandId: i
+		});
+	}
+	registerKeybinding(e, t, n, r = {}) {
+		let i = n.includes(".") ? n : `${e}.${n}`;
+		if (!this.commands.has(i)) {
+			console.warn(`Command ${i} not found`);
+			return;
+		}
+		let a = {
+			pluginId: e,
+			key: t.toLowerCase(),
+			commandId: i,
+			options: r
+		};
+		this.keybindings.has(a.key) || this.keybindings.set(a.key, []), this.keybindings.get(a.key).push(a);
+	}
+	registerToolbarButton(e, t) {
+		let n = {
+			pluginId: e,
+			...t
+		};
+		this.toolbarButtons.push(n);
+	}
+	registerHook(e, t, n) {
+		if (!this.hooks[e]) {
+			console.warn(`Hook ${e} not found`);
+			return;
+		}
+		this.hooks[e].push({
+			pluginId: t,
+			handler: n
+		});
+	}
+	executeCommand(e, ...t) {
+		let n = this.commands.get(e);
+		if (!n) {
+			console.warn(`Command ${e} not found`);
+			return;
+		}
+		try {
+			let r = n.handler(...t);
+			return Promise.resolve().then(async () => {
+				await this.triggerHook("beforeCommand", {
+					commandId: e,
+					args: t
+				}), await this.triggerHook("afterCommand", {
+					commandId: e,
+					args: t,
+					result: r
+				});
+			}), r;
+		} catch (t) {
+			throw console.error(`Failed to execute command ${e}:`, t), t;
+		}
+	}
+	handleKeybinding(e) {
+		let t = this.getKeyString(e), n = this.keybindings.get(t);
+		if (!n || n.length === 0) return !1;
+		let r = n[0];
+		return this.executeCommand(r.commandId) === !1 ? !1 : (e.preventDefault(), !0);
+	}
+	getKeyString(e) {
+		let t = [];
+		return (e.ctrlKey || e.metaKey) && t.push("ctrl"), e.altKey && t.push("alt"), e.shiftKey && t.push("shift"), t.push(e.key.toLowerCase()), t.join("+");
+	}
+	async triggerHook(e, t = {}) {
+		let n = this.hooks[e];
+		if (!(!n || n.length === 0)) for (let { handler: r } of n) try {
+			await r(t);
+		} catch (t) {
+			console.error(`Error in ${e} hook:`, t);
+		}
+	}
+	cleanupPlugin(e) {
+		for (let [t, n] of this.commands.entries()) n.pluginId === e && this.commands.delete(t);
+		for (let [t, n] of this.keybindings.entries()) {
+			let r = n.filter((t) => t.pluginId !== e);
+			r.length === 0 ? this.keybindings.delete(t) : this.keybindings.set(t, r);
+		}
+		for (let t in this.toolbarButtons = this.toolbarButtons.filter((t) => t.pluginId !== e), this.hooks) this.hooks[t] = this.hooks[t].filter((t) => t.pluginId !== e);
+	}
+	getPlugins() {
+		return Array.from(this.plugins.values());
+	}
+	getActivePlugins() {
+		return this.getPlugins().filter((e) => e.active);
+	}
+	getToolbarButtons() {
+		return this.toolbarButtons;
+	}
+	async destroy() {
+		for (let e of this.plugins.values()) e.active && await this.deactivate(e.id);
+		for (let e in this.plugins.clear(), this.commands.clear(), this.keybindings.clear(), this.toolbarButtons = [], this.hooks) this.hooks[e] = [];
+	}
+};
+const TablePlugin = {
+	id: "markdown-table",
+	name: "Markdown Table",
+	version: "1.0.0",
+	description: "Markdown表格支持",
+	activate(e) {
+		let { editor: t, registerCommand: n, registerKeybinding: r, registerToolbarButton: i } = e;
+		n("insertTable", (e = 3, n = 3) => {
+			this.insertTable(t, e, n);
+		}, {
+			title: "插入表格",
+			description: "在光标位置插入Markdown表格"
+		}), n("formatTable", () => {
+			this.formatTable(t);
+		}, {
+			title: "格式化表格",
+			description: "格式化当前行的表格"
+		}), n("addTableRow", () => {
+			this.addTableRow(t);
+		}, {
+			title: "添加表格行",
+			description: "在当前行下方添加新行"
+		}), n("addTableColumn", () => {
+			this.addTableColumn(t);
+		}, {
+			title: "添加表格列",
+			description: "在当前列右侧添加新列"
+		}), r("ctrl+shift+t", "insertTable"), r("ctrl+shift+f", "formatTable"), i({
+			id: "insert-table",
+			icon: "📊",
+			title: "插入表格",
+			command: "markdown-table.insertTable",
+			commandArgs: [3, 3]
+		});
+	},
+	deactivate() {},
+	insertTable(e, t, n) {
+		let { cursor: r, document: i, history: a } = e;
+		if (!r || !i) return;
+		let o = [], s = Array(n).fill("Header").map((e, t) => `${e}${t + 1}`);
+		o.push("| " + s.join(" | ") + " |");
+		let c = Array(n).fill("---").join(" | ");
+		o.push("| " + c + " |");
+		for (let e = 0; e < t - 1; e++) {
+			let e = Array(n).fill("Cell");
+			o.push("| " + e.join(" | ") + " |");
+		}
+		let l = "\n" + o.join("\n") + "\n";
+		a.record({
+			type: "insert",
+			line: r.line,
+			column: r.column,
+			text: l,
+			cursorBefore: {
+				line: r.line,
+				column: r.column
+			},
+			cursorAfter: {
+				line: r.line + o.length + 1,
+				column: 0
+			}
+		}), i.insertText(r.line, r.column, l), r.setPosition(r.line + o.length + 1, 0), console.log(`[markdown-table] Inserted ${t}x${n} table`);
+	},
+	formatTable(e) {
+		let { cursor: t, document: n } = e;
+		if (!t || !n) return;
+		let r = t.line;
+		if (!n.getLine(r).trim().startsWith("|")) {
+			console.warn("[markdown-table] Current line is not a table row");
+			return;
+		}
+		let i = this.findTableRange(n, r);
+		if (!i) return;
+		let a = this.parseTable(n, i);
+		if (!a) return;
+		let o = this.formatTableData(a), { startLine: s, endLine: c } = i;
+		for (let e = c; e >= s; e--) {
+			let t = n.getLine(e);
+			n.deleteText(e, 0, e, t.length), e < c && n.deleteText(e, 0, e + 1, 0);
+		}
+		let l = o.join("\n");
+		n.insertText(s, 0, l), console.log("[markdown-table] Table formatted");
+	},
+	addTableRow(e) {
+		let { cursor: t, document: n } = e;
+		if (!t || !n) return;
+		let r = t.line, i = n.getLine(r);
+		if (!i.trim().startsWith("|")) {
+			console.warn("[markdown-table] Current line is not a table row");
+			return;
+		}
+		let a = i.split("|").filter((e) => e.trim()).length, o = "| " + Array(a).fill("Cell").join(" | ") + " |";
+		n.insertText(r + 1, 0, "\n" + o), console.log("[markdown-table] Added new row");
+	},
+	addTableColumn(e) {
+		let { cursor: t, document: n } = e;
+		if (!t || !n) return;
+		let r = t.line;
+		if (!n.getLine(r).trim().startsWith("|")) {
+			console.warn("[markdown-table] Current line is not a table row");
+			return;
+		}
+		let i = this.findTableRange(n, r);
+		if (!i) return;
+		let { startLine: a, endLine: o } = i;
+		for (let e = a; e <= o; e++) {
+			let t = n.getLine(e), r = t.trimEnd().replace(/\|$/, "") + " Cell |";
+			n.deleteText(e, 0, e, t.length), n.insertText(e, 0, r);
+		}
+		console.log("[markdown-table] Added new column");
+	},
+	findTableRange(e, t) {
+		let n = t, r = t;
+		for (; n > 0 && e.getLine(n - 1).trim().startsWith("|");) n--;
+		for (; r < e.getLineCount() - 1 && e.getLine(r + 1).trim().startsWith("|");) r++;
+		return {
+			startLine: n,
+			endLine: r
+		};
+	},
+	parseTable(e, t) {
+		let { startLine: n, endLine: r } = t, i = [];
+		for (let t = n; t <= r; t++) {
+			let n = e.getLine(t).split("|").filter((e) => e.trim()).map((e) => e.trim());
+			i.push(n);
+		}
+		return i;
+	},
+	formatTableData(e) {
+		if (e.length === 0) return [];
+		let t = [], n = e[0].length;
+		for (let r = 0; r < n; r++) {
+			let n = 0;
+			for (let t of e) t[r] && (n = Math.max(n, t[r].length));
+			t.push(Math.max(n, 3));
+		}
+		let r = [];
+		for (let n = 0; n < e.length; n++) {
+			let i = e[n].map((e, n) => e.includes("-") ? "-".repeat(t[n]) : e.padEnd(t[n], " "));
+			r.push("| " + i.join(" | ") + " |");
+		}
+		return r;
+	}
+}, TodoListPlugin = {
+	id: "todo-list",
+	name: "Todo List",
+	version: "1.0.0",
+	description: "Markdown任务列表支持",
+	activate(e) {
+		let { editor: t, registerCommand: n, registerKeybinding: r, registerToolbarButton: i } = e;
+		n("insertTodo", (e = !1) => {
+			this.insertTodo(t, e);
+		}, {
+			title: "插入待办项",
+			description: "在光标位置插入Markdown待办项"
+		}), n("toggleTodo", () => {
+			this.toggleTodo(t);
+		}, {
+			title: "切换待办状态",
+			description: "切换当前行待办项的完成状态"
+		}), r("ctrl+shift+x", "toggleTodo"), i({
+			id: "insert-todo",
+			icon: "☐",
+			title: "插入待办项",
+			command: "todo-list.insertTodo",
+			commandArgs: [!1]
+		});
+	},
+	deactivate() {},
+	insertTodo(e, t = !1) {
+		let { cursor: n, document: r, history: i } = e;
+		if (!n || !r) return;
+		let a = t ? "- [x] " : "- [ ] ";
+		i.record({
+			type: "insert",
+			line: n.line,
+			column: n.column,
+			text: a,
+			cursorBefore: {
+				line: n.line,
+				column: n.column
+			},
+			cursorAfter: {
+				line: n.line,
+				column: n.column + a.length
+			}
+		}), r.insertText(n.line, n.column, a), n.column += a.length, console.log(`[todo-list] Inserted todo item (checked: ${t})`);
+	},
+	toggleTodo(e) {
+		let { cursor: t, document: n, history: r } = e;
+		if (!t || !n) return;
+		let i = n.getLine(t.line), a = null;
+		i.includes("- [ ]") ? a = i.replace("- [ ]", "- [x]") : i.includes("- [x]") ? a = i.replace("- [x]", "- [ ]") : i.includes("- [X]") && (a = i.replace("- [X]", "- [ ]")), a !== null && a !== i && (r.record({
+			type: "delete",
+			line: t.line,
+			column: 0,
+			text: i,
+			cursorBefore: {
+				line: t.line,
+				column: t.column
+			},
+			cursorAfter: {
+				line: t.line,
+				column: 0
+			}
+		}), n.deleteText(t.line, 0, t.line, i.length), r.record({
+			type: "insert",
+			line: t.line,
+			column: 0,
+			text: a,
+			cursorBefore: {
+				line: t.line,
+				column: 0
+			},
+			cursorAfter: {
+				line: t.line,
+				column: t.column
+			}
+		}), n.insertText(t.line, 0, a), console.log("[todo-list] Toggled todo status"));
+	}
+}, MathPlugin = {
+	id: "math",
+	name: "Math Formula",
+	version: "1.0.0",
+	description: "KaTeX数学公式支持",
+	activate(e) {
+		let { editor: t, registerCommand: n, registerKeybinding: r, registerToolbarButton: i } = e;
+		n("insertInlineMath", () => {
+			this.insertInlineMath(t);
+		}, {
+			title: "插入行内公式",
+			description: "插入行内数学公式 $...$"
+		}), n("insertBlockMath", () => {
+			this.insertBlockMath(t);
+		}, {
+			title: "插入块级公式",
+			description: "插入块级数学公式 $$...$$"
+		}), r("ctrl+m", "insertInlineMath"), r("ctrl+shift+m", "insertBlockMath"), i({
+			id: "insert-math",
+			icon: "∑",
+			title: "插入数学公式 (Ctrl+M)",
+			command: "math.insertInlineMath"
+		});
+	},
+	deactivate() {},
+	insertInlineMath(e) {
+		let { cursor: t, document: n, history: r, selection: i } = e;
+		if (!t || !n) return;
+		let a = "", o = 1;
+		if (i && i.hasSelection) {
+			let e = i.getSelectedText(n);
+			a = `$${e}$`, o = a.length;
+			let { startLine: s, startColumn: c } = i.getOrderedRange();
+			r.record({
+				type: "delete",
+				line: s,
+				column: c,
+				text: e,
+				cursorBefore: {
+					line: t.line,
+					column: t.column
+				},
+				cursorAfter: {
+					line: s,
+					column: c
+				}
+			});
+			let l = i.deleteSelectedText(n);
+			t.setPosition(l.line, l.column);
+		} else a = "$$", o = 1;
+		r.record({
+			type: "insert",
+			line: t.line,
+			column: t.column,
+			text: a,
+			cursorBefore: {
+				line: t.line,
+				column: t.column
+			},
+			cursorAfter: {
+				line: t.line,
+				column: t.column + o
+			}
+		}), n.insertText(t.line, t.column, a), t.column += o, console.log("[math] Inserted inline math");
+	},
+	insertBlockMath(e) {
+		let { cursor: t, document: n, history: r, selection: i } = e;
+		if (!t || !n) return;
+		let a = "";
+		if (i && i.hasSelection) {
+			let e = i.getSelectedText(n);
+			a = `$$\n${e}\n$$`, 3 + e.length;
+			let { startLine: o, startColumn: s } = i.getOrderedRange();
+			r.record({
+				type: "delete",
+				line: o,
+				column: s,
+				text: e,
+				cursorBefore: {
+					line: t.line,
+					column: t.column
+				},
+				cursorAfter: {
+					line: o,
+					column: s
+				}
+			});
+			let c = i.deleteSelectedText(n);
+			t.setPosition(c.line, c.column);
+		} else a = "$$\n\n$$";
+		r.record({
+			type: "insert",
+			line: t.line,
+			column: t.column,
+			text: a,
+			cursorBefore: {
+				line: t.line,
+				column: t.column
+			},
+			cursorAfter: {
+				line: t.line + 1,
+				column: 0
+			}
+		}), n.insertText(t.line, t.column, a), t.line += 1, t.column = 0, console.log("[math] Inserted block math");
+	}
+}, MermaidPlugin = {
+	id: "mermaid",
+	name: "Mermaid Diagrams",
+	version: "1.0.0",
+	description: "Mermaid流程图支持",
+	activate(e) {
+		let { editor: t, registerCommand: n, registerKeybinding: r, registerToolbarButton: i } = e;
+		n("insertFlowchart", () => {
+			this.insertDiagram(t, "flowchart");
+		}, {
+			title: "插入流程图",
+			description: "插入Mermaid流程图"
+		}), n("insertSequence", () => {
+			this.insertDiagram(t, "sequence");
+		}, {
+			title: "插入时序图",
+			description: "插入Mermaid时序图"
+		}), n("insertGantt", () => {
+			this.insertDiagram(t, "gantt");
+		}, {
+			title: "插入甘特图",
+			description: "插入Mermaid甘特图"
+		}), r("ctrl+shift+d", "insertFlowchart"), i({
+			id: "insert-diagram",
+			icon: "📊",
+			title: "插入流程图 (Ctrl+Shift+D)",
+			command: "mermaid.insertFlowchart"
+		});
+	},
+	deactivate() {},
+	insertDiagram(e, t) {
+		let { cursor: n, document: r, history: i } = e;
+		if (!n || !r) return;
+		let a = {
+			flowchart: "```mermaid\ngraph TD\n    A[开始] --> B{判断}\n    B -->|是| C[执行操作]\n    B -->|否| D[其他操作]\n    C --> E[结束]\n    D --> E\n```",
+			sequence: "```mermaid\nsequenceDiagram\n    participant A as 用户\n    participant B as 系统\n    A->>B: 发送请求\n    B->>B: 处理请求\n    B-->>A: 返回响应\n```",
+			gantt: "```mermaid\ngantt\n    title 项目进度\n    dateFormat  YYYY-MM-DD\n    section 阶段1\n    任务1           :a1, 2024-01-01, 30d\n    任务2           :after a1, 20d\n    section 阶段2\n    任务3           :2024-02-01, 12d\n```"
+		}, o = "\n" + (a[t] || a.flowchart) + "\n";
+		i.record({
+			type: "insert",
+			line: n.line,
+			column: n.column,
+			text: o,
+			cursorBefore: {
+				line: n.line,
+				column: n.column
+			},
+			cursorAfter: {
+				line: n.line + o.split("\n").length - 1,
+				column: 0
+			}
+		}), r.insertText(n.line, n.column, o);
+		let s = o.split("\n");
+		n.line += s.length - 1, n.column = 0, console.log(`[mermaid] Inserted ${t} diagram`);
+	}
+}, AutoCompletePlugin = {
+	id: "autocomplete",
+	name: "Auto Complete",
+	version: "1.0.0",
+	description: "智能代码补全",
+	completionSources: {
+		markdown: [
+			{
+				trigger: "#",
+				items: [
+					{
+						label: "标题",
+						insertText: "# ",
+						description: "一级标题，最高级别的标题"
+					},
+					{
+						label: "标题",
+						insertText: "## ",
+						description: "二级标题"
+					},
+					{
+						label: "标题",
+						insertText: "### ",
+						description: "三级标题"
+					},
+					{
+						label: "标题",
+						insertText: "#### ",
+						description: "四级标题"
+					},
+					{
+						label: "标题",
+						insertText: "##### ",
+						description: "五级标题"
+					},
+					{
+						label: "标题",
+						insertText: "###### ",
+						description: "六级标题，最低级别的标题"
+					}
+				]
+			},
+			{
+				trigger: "-",
+				items: [
+					{
+						label: "列表",
+						insertText: "- ",
+						description: "无序列表项"
+					},
+					{
+						label: "任务列表",
+						insertText: "- [ ] ",
+						description: "待办事项，可选中的复选框"
+					},
+					{
+						label: "任务列表",
+						insertText: "- [x] ",
+						description: "已完成任务"
+					},
+					{
+						label: "分隔线",
+						insertText: "---\n",
+						description: "水平分隔线"
+					}
+				]
+			},
+			{
+				trigger: ">",
+				items: [{
+					label: "引用",
+					insertText: "> ",
+					description: "引用块，用于引用其他内容"
+				}]
+			},
+			{
+				trigger: "`",
+				items: [{
+					label: "代码",
+					insertText: "`",
+					description: "行内代码，用于标记代码或命令"
+				}, {
+					label: "代码块",
+					insertText: "``\n\n```",
+					description: "多行代码块，支持语法高亮"
+				}]
+			},
+			{
+				trigger: "[",
+				items: [{
+					label: "链接",
+					insertText: "[",
+					description: "Markdown链接语法"
+				}, {
+					label: "图片",
+					insertText: "![",
+					description: "插入图片"
+				}]
+			},
+			{
+				trigger: "*",
+				items: [
+					{
+						label: "*斜体*",
+						insertText: "*",
+						description: "斜体文字"
+					},
+					{
+						label: "**粗体**",
+						insertText: "**",
+						description: "加粗文字"
+					},
+					{
+						label: "***粗斜体***",
+						insertText: "***",
+						description: "加粗且斜体"
+					}
+				]
+			},
+			{
+				trigger: "|",
+				items: [{
+					label: "表格",
+					insertText: "| ",
+					description: "Markdown表格分隔符"
+				}]
+			},
+			{
+				trigger: "$",
+				items: [{
+					label: "数学公式",
+					insertText: "$",
+					description: "行内数学公式，使用LaTeX语法"
+				}, {
+					label: "数学公式",
+					insertText: "$\n\n$$",
+					description: "块级数学公式，独立行显示"
+				}]
+			}
+		],
+		emoji: [{
+			trigger: ":",
+			prefix: "smile",
+			items: [
+				{
+					label: ":smile:",
+					insertText: "😊",
+					description: "微笑的脸"
+				},
+				{
+					label: ":grin:",
+					insertText: "😁",
+					description: "露齿笑，开心的表情"
+				},
+				{
+					label: ":joy:",
+					insertText: "😂",
+					description: "笑哭了，非常有趣"
+				},
+				{
+					label: ":heart:",
+					insertText: "❤️",
+					description: "红色爱心"
+				},
+				{
+					label: ":fire:",
+					insertText: "🔥",
+					description: "火焰，热门或热烈"
+				},
+				{
+					label: ":star:",
+					insertText: "⭐",
+					description: "星星，表示优秀或关注"
+				},
+				{
+					label: ":check:",
+					insertText: "✅",
+					description: "完成标记"
+				},
+				{
+					label: ":rocket:",
+					insertText: "🚀",
+					description: "火箭，表示发布或进步"
+				},
+				{
+					label: ":bulb:",
+					insertText: "💡",
+					description: "灯泡，代表想法或创意"
+				},
+				{
+					label: ":tada:",
+					insertText: "🎉",
+					description: "庆祝，表示完成或成功"
+				},
+				{
+					label: ":warning:",
+					insertText: "⚠️",
+					description: "警告标志"
+				},
+				{
+					label: ":question:",
+					insertText: "❓",
+					description: "疑问"
+				},
+				{
+					label: ":thumbsup:",
+					insertText: "👍",
+					description: "点赞，赞同"
+				},
+				{
+					label: ":memo:",
+					insertText: "📝",
+					description: "笔记或文档"
+				},
+				{
+					label: ":book:",
+					insertText: "📖",
+					description: "书籍或文档"
+				}
+			]
+		}],
+		snippets: [
+			{
+				prefix: "table",
+				label: "table",
+				insertText: "| Header1 | Header2 | Header3 |\n| ------- | ------- | ------- |\n| Cell1   | Cell2   | Cell3   |\n",
+				description: "插入3列3列的Markdown表格模板"
+			},
+			{
+				prefix: "code",
+				label: "code",
+				insertText: "```javascript\n\n```",
+				description: "插入JavaScript代码块，支持语法高亮"
+			},
+			{
+				prefix: "todo",
+				label: "todo",
+				insertText: "- [ ] ",
+				description: "插入待办事项，可点击完成"
+			},
+			{
+				prefix: "mermaid",
+				label: "mermaid",
+				insertText: "```mermaid\ngraph TD\n    A[开始] --> B[结束]\n```",
+				description: "插入Mermaid流程图模板"
+			},
+			{
+				prefix: "math",
+				label: "math",
+				insertText: "$$\n\n$$",
+				description: "插入块级数学公式，使用LaTeX语法"
+			},
+			{
+				prefix: "quote",
+				label: "quote",
+				insertText: "> ",
+				description: "插入引用块，用于摘录或引用"
+			},
+			{
+				prefix: "link",
+				label: "link",
+				insertText: "[文字](url)",
+				description: "插入链接模板"
+			}
+		]
+	},
+	activate(e) {
+		let { editor: t, registerCommand: n, registerKeybinding: r } = e;
+		this.completionState = {
+			active: !1,
+			items: [],
+			selectedIndex: 0,
+			triggerPosition: null,
+			triggerChar: null,
+			panel: null
+		}, n("trigger", () => {
+			this.triggerCompletion(t);
+		}, {
+			title: "触发补全",
+			description: "手动触发代码补全"
+		}), n("accept", () => this.completionState.active ? (this.acceptCompletion(t), !0) : !1, {
+			title: "接受补全",
+			description: "接受当前选中的补全项"
+		}), n("next", () => this.completionState.active ? (this.selectNext(), !0) : !1, {
+			title: "下一个补全",
+			description: "选择下一个补全项"
+		}), n("previous", () => this.completionState.active ? (this.selectPrevious(), !0) : !1, {
+			title: "上一个补全",
+			description: "选择上一个补全项"
+		}), n("cancel", () => this.completionState.active ? (this.cancelCompletion(), !0) : !1, {
+			title: "取消补全",
+			description: "关闭补全面板"
+		}), r("ctrl+space", "trigger"), r("tab", "accept"), r("enter", "accept"), r("arrowdown", "next"), r("arrowup", "previous"), r("escape", "cancel"), e.onAfterChange((e) => {
+			this.onTextChange(t, e);
+		}), this.createCompletionPanel(t);
+	},
+	deactivate() {
+		this.destroyCompletionPanel();
+	},
+	createCompletionPanel(e) {
+		let t = window.document.createElement("div");
+		t.className = "autocomplete-panel", t.style.cssText = "\n      position: absolute;\n      display: none;\n      background: white;\n      border: 1px solid #d0d7de;\n      border-radius: 8px;\n      box-shadow: 0 8px 24px rgba(140, 149, 159, 0.2);\n      max-height: 320px;\n      overflow-y: auto;\n      z-index: 1000;\n      min-width: 280px;\n      max-width: 400px;\n      font-size: 14px;\n      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;\n    ", window.document.body.appendChild(t), this.completionState.panel = t, t.addEventListener("click", (t) => {
+			let n = t.target.closest(".autocomplete-item");
+			if (n) {
+				let t = parseInt(n.dataset.index);
+				this.completionState.selectedIndex = t, this.acceptCompletion(e);
+			}
+		});
+	},
+	destroyCompletionPanel() {
+		this.completionState.panel && (this.completionState.panel.remove(), this.completionState.panel = null);
+	},
+	onTextChange(e, t) {
+		let { cursor: n, document: r } = e;
+		if (!n || !r) return;
+		let i = n.line, a = n.column, o = r.getLine(i).slice(0, a), s = o[o.length - 1];
+		if ([
+			"#",
+			"-",
+			">",
+			"`",
+			"[",
+			"*",
+			"|",
+			"$"
+		].includes(s) && (a === 1 || o[a - 2] === " " || s === "|" || s === "$")) {
+			this.showCompletion(e, s, "markdown");
+			return;
+		}
+		let c = o.match(/:(\w+)$/);
+		if (c) {
+			this.showCompletion(e, ":", "emoji", c[1]);
+			return;
+		}
+		let l = o.match(/(\w+)$/);
+		if (l && l[1].length >= 2) {
+			this.showCompletion(e, "", "snippets", l[1]);
+			return;
+		}
+		this.cancelCompletion();
+	},
+	showCompletion(e, t, n, r = "") {
+		let { cursor: i, viewport: a, textRenderer: o, document: s } = e, c = [];
+		if (n === "markdown") {
+			let e = this.completionSources.markdown.find((e) => e.trigger === t);
+			c = e ? e.items : [];
+		} else n === "emoji" ? c = this.completionSources.emoji[0].items.filter((e) => e.label.includes(r.toLowerCase())) : n === "snippets" && (c = this.completionSources.snippets.filter((e) => e.prefix.startsWith(r.toLowerCase())));
+		if (c.length === 0) {
+			this.cancelCompletion();
+			return;
+		}
+		c = this.analyzeAndSortItems(c, e, t, r), this.completionState.active = !0, this.completionState.items = c, this.completionState.selectedIndex = 0, this.completionState.triggerPosition = {
+			line: i.line,
+			column: i.column
+		}, this.completionState.triggerChar = t, this.completionState.sourceType = n, this.completionState.prefix = r, this.renderCompletionPanel(e);
+	},
+	analyzeAndSortItems(e, t, n, r) {
+		let { cursor: i, document: a } = t, o = i.line, s = a.getLine(o), c = {
+			isStartOfLine: s.trim().length === 1,
+			prevLine: o > 0 ? a.getLine(o - 1) : "",
+			hasListAbove: !1,
+			hasHeadingAbove: !1,
+			hasCodeBlockAbove: !1,
+			inList: !1
+		};
+		c.prevLine && (c.hasListAbove = /^\s*[-*+]\s/.test(c.prevLine), c.hasHeadingAbove = /^#{1,6}\s/.test(c.prevLine), c.hasCodeBlockAbove = c.prevLine.trim().startsWith("```")), c.inList = /^\s*[-*+]\s/.test(s);
+		let l = e.map((e) => {
+			let t = 0;
+			return r && e.label && (e.label.toLowerCase().startsWith(r.toLowerCase()) ? t += 10 : e.label.toLowerCase().includes(r.toLowerCase()) && (t += 5)), c.hasListAbove && e.label.includes("列表") && (t += 20), c.hasHeadingAbove && e.label.includes("标题") && (t += 15), c.hasCodeBlockAbove && e.label.includes("代码") && (t += 15), c.isStartOfLine && (e.label.includes("标题") || e.label.includes("列表") || e.label.includes("代码块")) && (t += 10), [
+				"标题",
+				"列表",
+				"代码块",
+				"链接"
+			].some((t) => e.label.includes(t)) && (t += 3), {
+				item: e,
+				score: t
+			};
+		});
+		return l.sort((e, t) => t.score - e.score), l.map((e) => e.item);
+	},
+	renderCompletionPanel(e) {
+		let { cursor: t, viewport: n, textRenderer: r, document: i } = e, a = this.completionState.panel;
+		if (!a) return;
+		let o = i.getLine(t.line), { x: s, y: c } = n.docToCanvas(t.line, t.column, r, o), l = window.document.querySelector(".canvas-editor");
+		if (!l) return;
+		let u = l.getBoundingClientRect();
+		a.style.left = `${u.left + s}px`, a.style.top = `${u.top + c + r.lineHeight}px`, a.style.display = "block", a.innerHTML = this.completionState.items.map((e, t) => {
+			let n = t === this.completionState.selectedIndex, r = this.getCompletionIcon(e), i = e.description || e.detail || "";
+			return `
+        <div class="autocomplete-item ${n ? "selected" : ""}" data-index="${t}">
+          <div class="autocomplete-icon">${r}</div>
+          <div class="autocomplete-content">
+            <div class="autocomplete-label">${this.escapeHtml(e.label)}</div>
+            ${i ? `<div class="autocomplete-description">${this.escapeHtml(i)}</div>` : ""}
+          </div>
+          ${e.insertText === e.label ? "" : `<div class="autocomplete-insert-text">${this.escapeHtml(e.insertText)}</div>`}
+        </div>
+      `;
+		}).join(""), this.ensureStyles();
+	},
+	getCompletionIcon(e) {
+		let t = this.completionState.sourceType;
+		return t === "markdown" ? {
+			标题: "🎯",
+			列表: "📋",
+			代码块: "💻",
+			任务列表: "☑️",
+			表格: "📑",
+			引用: "💬",
+			链接: "🔗",
+			图片: "🖼️",
+			数学公式: "🧮"
+		}[e.label] || "📝" : t === "emoji" ? e.insertText || "😊" : t === "snippets" ? "⚡" : "📝";
+	},
+	ensureStyles() {
+		if (window.document.getElementById("autocomplete-styles")) return;
+		let e = window.document.createElement("div");
+		e.id = "autocomplete-styles", e.innerHTML = "\n      <style>\n        .autocomplete-panel::-webkit-scrollbar {\n          width: 8px;\n        }\n        .autocomplete-panel::-webkit-scrollbar-track {\n          background: #f1f1f1;\n          border-radius: 4px;\n        }\n        .autocomplete-panel::-webkit-scrollbar-thumb {\n          background: #c1c1c1;\n          border-radius: 4px;\n        }\n        .autocomplete-panel::-webkit-scrollbar-thumb:hover {\n          background: #a8a8a8;\n        }\n        \n        .autocomplete-item {\n          display: flex;\n          align-items: center;\n          padding: 10px 12px;\n          cursor: pointer;\n          border-bottom: 1px solid #f6f8fa;\n          transition: background 0.1s ease;\n          gap: 10px;\n        }\n        .autocomplete-item:last-child {\n          border-bottom: none;\n        }\n        .autocomplete-item:hover {\n          background: #f6f8fa;\n        }\n        .autocomplete-item.selected {\n          background: #ddf4ff;\n          border-left: 3px solid #0969da;\n          padding-left: 9px;\n        }\n        \n        .autocomplete-icon {\n          font-size: 18px;\n          flex-shrink: 0;\n          width: 24px;\n          height: 24px;\n          display: flex;\n          align-items: center;\n          justify-content: center;\n        }\n        \n        .autocomplete-content {\n          flex: 1;\n          min-width: 0;\n        }\n        \n        .autocomplete-label {\n          font-weight: 500;\n          color: #24292f;\n          font-size: 14px;\n          margin-bottom: 2px;\n        }\n        \n        .autocomplete-description {\n          font-size: 12px;\n          color: #57606a;\n          line-height: 1.4;\n          margin-top: 2px;\n        }\n        \n        .autocomplete-insert-text {\n          font-size: 11px;\n          color: #8c959f;\n          font-family: 'Monaco', 'Menlo', 'Consolas', monospace;\n          background: #f6f8fa;\n          padding: 2px 6px;\n          border-radius: 3px;\n          flex-shrink: 0;\n        }\n      </style>\n    ", window.document.head.appendChild(e);
+	},
+	triggerCompletion(e) {
+		let { cursor: t, document: n } = e;
+		!t || !n || (n.getLine(t.line).slice(0, t.column), this.showCompletion(e, "", "snippets", ""));
+	},
+	acceptCompletion(e) {
+		if (!this.completionState.active) return;
+		let { cursor: t, document: n, history: r } = e, i = this.completionState.items[this.completionState.selectedIndex];
+		if (!i) return;
+		let a = n.getLine(t.line), o = 0;
+		if (this.completionState.sourceType === "emoji") {
+			let e = a.slice(0, t.column).match(/:(\w+)$/);
+			e && (o = e[0].length);
+		} else if (this.completionState.sourceType === "snippets") {
+			let e = a.slice(0, t.column).match(/(\w+)$/);
+			e && (o = e[0].length);
+		}
+		if (o > 0) {
+			let e = t.column - o;
+			r.record({
+				type: "delete",
+				line: t.line,
+				column: e,
+				text: a.slice(e, t.column),
+				cursorBefore: {
+					line: t.line,
+					column: t.column
+				},
+				cursorAfter: {
+					line: t.line,
+					column: e
+				}
+			}), n.deleteText(t.line, e, t.line, t.column), t.column = e;
+		}
+		let s = i.insertText;
+		r.record({
+			type: "insert",
+			line: t.line,
+			column: t.column,
+			text: s,
+			cursorBefore: {
+				line: t.line,
+				column: t.column
+			},
+			cursorAfter: {
+				line: t.line,
+				column: t.column + s.length
+			}
+		}), n.insertText(t.line, t.column, s);
+		let c = s.split("\n");
+		c.length === 1 ? t.column += s.length : (t.line += c.length - 1, t.column = c[c.length - 1].length), this.cancelCompletion(), e.render();
+	},
+	selectNext() {
+		this.completionState.active && (this.completionState.selectedIndex = (this.completionState.selectedIndex + 1) % this.completionState.items.length, this.completionState.panel.querySelectorAll(".autocomplete-item").forEach((e, t) => {
+			e.classList.toggle("selected", t === this.completionState.selectedIndex);
+		}));
+	},
+	selectPrevious() {
+		this.completionState.active && (this.completionState.selectedIndex = (this.completionState.selectedIndex - 1 + this.completionState.items.length) % this.completionState.items.length, this.completionState.panel.querySelectorAll(".autocomplete-item").forEach((e, t) => {
+			e.classList.toggle("selected", t === this.completionState.selectedIndex);
+		}));
+	},
+	cancelCompletion() {
+		this.completionState.active = !1, this.completionState.panel && (this.completionState.panel.style.display = "none");
+	},
+	escapeHtml(e) {
+		let t = document.createElement("div");
+		return t.textContent = e, t.innerHTML;
+	}
+}, SyntaxCheckerPlugin = {
+	id: "syntax-checker",
+	name: "Syntax Checker",
+	version: "1.0.0",
+	description: "Markdown语法检查和诊断",
+	rules: {
+		heading: {
+			enabled: !0,
+			name: "标题格式",
+			check: (e, t) => {
+				let n = [], r = t.match(/^(#{1,6})([^ \t#])/);
+				return r && n.push({
+					line: e,
+					column: r[1].length,
+					length: 1,
+					severity: "warning",
+					message: "标题符号后应该有空格",
+					rule: "heading-space",
+					fix: {
+						insert: " ",
+						at: r[1].length
+					}
+				}), n;
+			}
+		},
+		list: {
+			enabled: !0,
+			name: "列表格式",
+			check: (e, t) => {
+				let n = [], r = t.match(/^(\s*)([-*+])(\S)/);
+				r && n.push({
+					line: e,
+					column: r[1].length + r[2].length,
+					length: 1,
+					severity: "warning",
+					message: "列表符号后应该有空格",
+					rule: "list-space"
+				});
+				let i = t.match(/^(\s*)(\d+\.)(\S)/);
+				return i && n.push({
+					line: e,
+					column: i[1].length + i[2].length,
+					length: 1,
+					severity: "warning",
+					message: "列表编号后应该有空格",
+					rule: "list-space"
+				}), n;
+			}
+		},
+		codeBlock: {
+			enabled: !0,
+			name: "代码块格式",
+			check: (e, t, n) => {
+				let r = [];
+				if (t.trim().startsWith("```")) {
+					let n = t.match(/^`+/)?.[0] || "";
+					n.length < 3 && r.push({
+						line: e,
+						column: 0,
+						length: n.length,
+						severity: "error",
+						message: "代码块需要至少3个反引号",
+						rule: "code-fence"
+					});
+				}
+				return r;
+			}
+		},
+		link: {
+			enabled: !0,
+			name: "链接格式",
+			check: (e, t) => {
+				let n = [], r = t.match(/\[([^\]]+)\]\s*\(/g);
+				r && r.forEach((r) => {
+					let i = t.indexOf(r);
+					t.slice(i + r.length).includes(")") || n.push({
+						line: e,
+						column: i,
+						length: r.length,
+						severity: "error",
+						message: "链接语法不完整，缺少闭合括号",
+						rule: "incomplete-link"
+					});
+				});
+				let i = t.match(/\[([^\]]+)\]\(\s*\)/g);
+				return i && i.forEach((r) => {
+					let i = t.indexOf(r);
+					n.push({
+						line: e,
+						column: i,
+						length: r.length,
+						severity: "warning",
+						message: "链接URL为空",
+						rule: "empty-link"
+					});
+				}), n;
+			}
+		},
+		table: {
+			enabled: !0,
+			name: "表格格式",
+			check: (e, t, n) => {
+				let r = [];
+				if (t.trim().startsWith("|")) {
+					let n = t.split("|").filter((e) => e.trim());
+					n.every((e) => /^[\s-:]+$/.test(e)) && (n.every((e) => /^:?-+:?$/.test(e.trim())) || r.push({
+						line: e,
+						column: 0,
+						length: t.length,
+						severity: "error",
+						message: "表格分隔行格式不正确",
+						rule: "table-separator"
+					}));
+				}
+				return r;
+			}
+		},
+		taskList: {
+			enabled: !0,
+			name: "任务列表格式",
+			check: (e, t) => {
+				let n = [], r = t.match(/^(\s*)[-*+]\s+\[(.)\]/);
+				if (r) {
+					let i = r[2];
+					i !== " " && i !== "x" && i !== "X" && n.push({
+						line: e,
+						column: r[0].length - 2,
+						length: 1,
+						severity: "warning",
+						message: "任务列表复选框应该是 [ ] 或 [x]",
+						rule: "task-checkbox"
+					});
+					let a = t.slice(r[0].length);
+					a && !a.startsWith(" ") && n.push({
+						line: e,
+						column: r[0].length,
+						length: 1,
+						severity: "warning",
+						message: "复选框后应该有空格",
+						rule: "task-space"
+					});
+				}
+				return n;
+			}
+		},
+		emptyLines: {
+			enabled: !0,
+			name: "空行规范",
+			check: (e, t, n) => {
+				let r = [];
+				return t.trim() === "" && n.emptyLineCount >= 2 && r.push({
+					line: e,
+					column: 0,
+					length: 0,
+					severity: "info",
+					message: "连续空行过多，建议最多保留1个",
+					rule: "multiple-blank-lines"
+				}), r;
+			}
+		},
+		trailingSpace: {
+			enabled: !0,
+			name: "行尾空格",
+			check: (e, t) => {
+				let n = [], r = t.match(/\s+$/);
+				return r && n.push({
+					line: e,
+					column: t.length - r[0].length,
+					length: r[0].length,
+					severity: "info",
+					message: "行尾有多余空格",
+					rule: "trailing-whitespace"
+				}), n;
+			}
+		},
+		headingLevel: {
+			enabled: !0,
+			name: "标题层级",
+			check: (e, t, n) => {
+				let r = [], i = t.match(/^(#{1,6})\s/);
+				if (i) {
+					let t = i[1].length, a = n.lastHeadingLevel || 0;
+					a > 0 && t > a + 1 && r.push({
+						line: e,
+						column: 0,
+						length: i[1].length,
+						severity: "warning",
+						message: `标题级别跳过，从 H${a} 直接到 H${t}`,
+						rule: "heading-increment"
+					}), n.lastHeadingLevel = t;
+				}
+				return r;
+			}
+		},
+		imagePath: {
+			enabled: !0,
+			name: "图片路径",
+			check: (e, t) => {
+				let n = [], r = /!\[([^\]]*)\]\(([^)]+)\)/g, i;
+				for (; (i = r.exec(t)) !== null;) {
+					let t = i[1], r = i[2];
+					(!r || r.trim() === "") && n.push({
+						line: e,
+						column: i.index,
+						length: i[0].length,
+						severity: "error",
+						message: "图片路径为空",
+						rule: "empty-image-path"
+					}), (!t || t.trim() === "") && n.push({
+						line: e,
+						column: i.index,
+						length: i[0].length,
+						severity: "info",
+						message: "建议为图片添加alt描述文字",
+						rule: "empty-image-alt"
+					});
+				}
+				return n;
+			}
+		},
+		linkValidity: {
+			enabled: !1,
+			name: "链接有效性",
+			check: (e, t) => {
+				let n = [], r = /\[([^\]]+)\]\(([^)]+)\)/g, i;
+				for (; (i = r.exec(t)) !== null;) {
+					let t = i[2];
+					if (t.startsWith("http://") || t.startsWith("https://")) try {
+						new URL(t);
+					} catch {
+						n.push({
+							line: e,
+							column: i.index,
+							length: i[0].length,
+							severity: "warning",
+							message: "URL格式不正确",
+							rule: "invalid-url"
+						});
+					}
+				}
+				return n;
+			}
+		},
+		codeLanguage: {
+			enabled: !0,
+			name: "代码块语言",
+			check: (e, t, n) => {
+				let r = [];
+				if (t.trimStart().startsWith("```")) {
+					let i = t.trim().slice(3).trim();
+					!n.inCodeBlock && i === "" && r.push({
+						line: e,
+						column: 0,
+						length: 3,
+						severity: "info",
+						message: "建议为代码块指定语言，以启用语法高亮",
+						rule: "code-language"
+					});
+				}
+				return r;
+			}
+		},
+		listIndent: {
+			enabled: !0,
+			name: "列表缩进",
+			check: (e, t) => {
+				let n = [], r = t.match(/^(\s*)([-*+])\s/);
+				if (r) {
+					let t = r[1].length;
+					t > 0 && t % 2 != 0 && n.push({
+						line: e,
+						column: 0,
+						length: t,
+						severity: "info",
+						message: "列表缩进建议使用2或4个空格",
+						rule: "list-indent"
+					});
+				}
+				return n;
+			}
+		}
+	},
+	activate(e) {
+		let { editor: t, registerCommand: n, onAfterChange: r } = e;
+		this.diagnostics = [], n("check", () => {
+			this.checkSyntax(t);
+		}, {
+			title: "检查语法",
+			description: "检查Markdown语法"
+		}), n("fix", (e) => {
+			this.fixIssue(t, e);
+		}, {
+			title: "修复问题",
+			description: "自动修复语法问题"
+		}), n("toggle", (e) => {
+			this.toggleRule(e);
+		}, {
+			title: "切换规则",
+			description: "启用/禁用检查规则"
+		}), n("config", () => {
+			this.showConfigPanel();
+		}, {
+			title: "配置规则",
+			description: "打开语法检查配置面板"
+		}), r(() => {
+			clearTimeout(this.checkTimer), this.checkTimer = setTimeout(() => {
+				this.checkSyntax(t);
+			}, 500);
+		}), this.createDiagnosticPanel(t), this.checkSyntax(t);
+	},
+	deactivate() {
+		clearTimeout(this.checkTimer), this.destroyDiagnosticPanel();
+	},
+	createDiagnosticPanel(e) {
+		let t = document.createElement("div");
+		t.className = "diagnostic-status-bar", t.style.cssText = "\n      position: fixed;\n      bottom: 0;\n      left: 0;\n      right: 0;\n      height: 24px;\n      background: #f5f5f5;\n      border-top: 1px solid #e0e0e0;\n      display: flex;\n      align-items: center;\n      padding: 0 12px;\n      font-size: 12px;\n      color: #666;\n      cursor: pointer;\n      z-index: 100;\n      user-select: none;\n    ";
+		let n = document.querySelector(".canvas-editor-container");
+		n && n.appendChild(t), this.diagnosticStatusBar = t, t.addEventListener("click", () => {
+			this.toggleDetailPanel();
+		});
+		let r = document.createElement("div");
+		if (r.className = "diagnostic-detail-panel", r.style.cssText = "\n      position: fixed;\n      bottom: 24px;\n      left: 0;\n      right: 0;\n      max-height: 200px;\n      background: white;\n      border-top: 1px solid #e0e0e0;\n      overflow-y: auto;\n      font-size: 13px;\n      display: none;\n      z-index: 99;\n    ", n && n.appendChild(r), this.diagnosticDetailPanel = r, !document.getElementById("diagnostic-styles")) {
+			let e = document.createElement("div");
+			e.id = "diagnostic-styles", e.innerHTML = "\n      <style>\n        .diagnostic-status-bar:hover {\n          background: #ebebeb;\n        }\n        .diagnostic-status-icon {\n          width: 16px;\n          height: 16px;\n          border-radius: 50%;\n          display: inline-block;\n          margin-right: 6px;\n        }\n        .diagnostic-status-icon.error {\n          background: #f44336;\n        }\n        .diagnostic-status-icon.warning {\n          background: #ff9800;\n        }\n        .diagnostic-status-icon.info {\n          background: #2196f3;\n        }\n        .diagnostic-item {\n          padding: 6px 12px;\n          border-bottom: 1px solid #f0f0f0;\n          cursor: pointer;\n          display: flex;\n          align-items: center;\n          gap: 8px;\n        }\n        .diagnostic-item:hover {\n          background: #f9f9f9;\n        }\n        .diagnostic-severity {\n          width: 8px;\n          height: 8px;\n          border-radius: 50%;\n          flex-shrink: 0;\n        }\n        .diagnostic-severity.error {\n          background: #f44336;\n        }\n        .diagnostic-severity.warning {\n          background: #ff9800;\n        }\n        .diagnostic-severity.info {\n          background: #2196f3;\n        }\n        .diagnostic-message {\n          flex: 1;\n          color: #333;\n        }\n        .diagnostic-location {\n          color: #888;\n          font-size: 11px;\n        }\n        \n        /* 行内波浪线标记 */\n        .syntax-error-underline {\n          text-decoration: underline wavy #f44336;\n          text-decoration-thickness: 2px;\n          text-underline-offset: 2px;\n        }\n        .syntax-warning-underline {\n          text-decoration: underline wavy #ff9800;\n          text-decoration-thickness: 2px;\n          text-underline-offset: 2px;\n        }\n        .syntax-info-underline {\n          text-decoration: underline wavy #2196f3;\n          text-decoration-thickness: 1px;\n          text-underline-offset: 2px;\n        }\n      </style>\n    ", document.head.appendChild(e);
+		}
+	},
+	destroyDiagnosticPanel() {
+		this.diagnosticStatusBar &&= (this.diagnosticStatusBar.remove(), null), this.diagnosticDetailPanel &&= (this.diagnosticDetailPanel.remove(), null);
+	},
+	toggleDetailPanel() {
+		if (!this.diagnosticDetailPanel) return;
+		let e = this.diagnosticDetailPanel.style.display !== "none";
+		this.diagnosticDetailPanel.style.display = e ? "none" : "block";
+	},
+	checkSyntax(e) {
+		let { document: t } = e;
+		if (!t) return;
+		this.diagnostics = [];
+		let n = {
+			emptyLineCount: 0,
+			inCodeBlock: !1,
+			codeBlockStart: -1
+		};
+		for (let e = 0; e < t.getLineCount(); e++) {
+			let r = t.getLine(e);
+			if (r.trim() === "" ? n.emptyLineCount++ : n.emptyLineCount = 0, r.trim().startsWith("```") && (n.inCodeBlock = !n.inCodeBlock, n.inCodeBlock && (n.codeBlockStart = e)), !(n.inCodeBlock && e !== n.codeBlockStart)) for (let t in this.rules) {
+				let i = this.rules[t];
+				if (!i.enabled) continue;
+				let a = i.check(e, r, n);
+				this.diagnostics.push(...a);
+			}
+		}
+		this.updateDiagnosticPanel(e);
+		let { textRenderer: r } = e;
+		r && r.setDiagnostics && r.setDiagnostics(this.diagnostics), e.render();
+	},
+	updateDiagnosticPanel(e) {
+		this.updateStatusBar(), this.updateDetailPanel(e);
+	},
+	updateStatusBar() {
+		let e = this.diagnosticStatusBar;
+		if (!e) return;
+		if (this.diagnostics.length === 0) {
+			e.style.display = "none";
+			return;
+		}
+		e.style.display = "flex";
+		let t = this.diagnostics.filter((e) => e.severity === "error").length, n = this.diagnostics.filter((e) => e.severity === "warning").length, r = this.diagnostics.filter((e) => e.severity === "info").length, i = "";
+		t > 0 && (i += `<span class="diagnostic-status-icon error" title="\u9519\u8bef"></span>${t}`), n > 0 && (i += `<span style="margin-left: 12px;"><span class="diagnostic-status-icon warning" title="\u8b66\u544a"></span>${n}</span>`), r > 0 && (i += `<span style="margin-left: 12px;"><span class="diagnostic-status-icon info" title="\u63d0\u793a"></span>${r}</span>`), i += "<span style=\"margin-left: 12px; color: #999;\">点击查看详情</span>", i += "<span style=\"margin-left: auto; cursor: pointer; padding: 2px 8px; background: #fff; border-radius: 3px; border: 1px solid #ddd;\" onclick=\"document.dispatchEvent(new CustomEvent('syntax-checker-config'))\">⚙️ 设置</span>", e.innerHTML = i, this.configEventBound ||= (document.addEventListener("syntax-checker-config", () => {
+			this.showConfigPanel();
+		}), !0);
+	},
+	updateDetailPanel(e) {
+		let t = this.diagnosticDetailPanel;
+		if (t) {
+			if (this.diagnostics.length === 0) {
+				t.style.display = "none";
+				return;
+			}
+			t.innerHTML = this.diagnostics.map((e, t) => `
+      <div class="diagnostic-item" data-line="${e.line}">
+        <span class="diagnostic-severity ${e.severity}"></span>
+        <span class="diagnostic-message">${this.escapeHtml(e.message)}</span>
+        <span class="diagnostic-location">${e.line + 1}:${e.column + 1}</span>
+      </div>
+    `).join(""), t.querySelectorAll(".diagnostic-item").forEach((t) => {
+				t.addEventListener("click", () => {
+					let n = parseInt(t.dataset.line);
+					this.jumpToLine(e, n);
+				});
+			});
+		}
+	},
+	jumpToLine(e, t) {
+		let { cursor: n, viewport: r, render: i } = e;
+		n.setPosition(t, 0), r.scrollToLine(t), i();
+	},
+	fixIssue(e, t) {
+		let { document: n, history: r } = e, i = this.diagnostics.filter((e) => e.line === t && e.fix);
+		if (i.length === 0) {
+			console.log("[syntax-checker] No fixable issues on this line");
+			return;
+		}
+		i.forEach((e) => {
+			e.fix.insert && (r.record({
+				type: "insert",
+				line: e.line,
+				column: e.fix.at,
+				text: e.fix.insert,
+				cursorBefore: {
+					line: e.line,
+					column: e.fix.at
+				},
+				cursorAfter: {
+					line: e.line,
+					column: e.fix.at + e.fix.insert.length
+				}
+			}), n.insertText(e.line, e.fix.at, e.fix.insert));
+		}), this.checkSyntax(e), e.render();
+	},
+	toggleRule(e) {
+		this.rules[e] && (this.rules[e].enabled = !this.rules[e].enabled);
+	},
+	showConfigPanel() {
+		if (this.configPanel) {
+			let e = this.configPanel.style.display !== "none";
+			this.configPanel.style.display = e ? "none" : "block";
+			return;
+		}
+		let e = document.createElement("div");
+		e.className = "syntax-checker-config-panel", e.style.cssText = "\n      position: fixed;\n      top: 50%;\n      left: 50%;\n      transform: translate(-50%, -50%);\n      width: 500px;\n      max-height: 600px;\n      background: white;\n      border-radius: 8px;\n      border: 1px solid #e0e0e0;\n      z-index: 1001;\n      display: flex;\n      flex-direction: column;\n    ", e.innerHTML = `
+      <div style="padding: 16px 20px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center;">
+        <h3 style="margin: 0; font-size: 16px; font-weight: 600; color: #333;">⚠️ 语法检查配置</h3>
+        <span style="cursor: pointer; font-size: 20px; color: #666; line-height: 1;" onclick="this.closest('.syntax-checker-config-panel').style.display='none'">×</span>
+      </div>
+    
+      <div class="rules-container" style="overflow-y: auto; flex: 1;">
+        ${Object.entries(this.rules).map(([e, t]) => `
+        <div class="rule-item" data-rule="${e}" style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1;">
+            <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${t.name}</div>
+            <div style="font-size: 12px; color: #888;">${this.getRuleDescription(e)}</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${t.enabled ? "checked" : ""} onchange="document.dispatchEvent(new CustomEvent('toggle-rule', {detail: '${e}'}))">
+            <span class="slider"></span>
+          </label>
+        </div>
+      `).join("")}
+      </div>
+      <div style="padding: 12px 20px; border-top: 1px solid #e0e0e0; display: flex; justify-content: flex-end; gap: 8px;">
+        <button class="reset-btn" onclick="document.dispatchEvent(new CustomEvent('reset-rules'))" style="padding: 6px 16px; border: 1px solid #d0d7de; background: white; color: #24292f; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">重置</button>
+        <button class="confirm-btn" onclick="this.closest('.syntax-checker-config-panel').style.display='none'" style="padding: 6px 16px; border: none; background: #0969da; color: white; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 500;">确定</button>
+      </div>
+    `, document.body.appendChild(e), this.configPanel = e, document.addEventListener("toggle-rule", (e) => {
+			this.toggleRule(e.detail), this.updateConfigPanel();
+		}), document.addEventListener("reset-rules", () => {
+			this.resetRules(), this.updateConfigPanel();
+		}), this.ensureConfigStyles();
+	},
+	getRuleDescription(e) {
+		return {
+			heading: "检查标题格式，如#后需要空格",
+			list: "检查列表格式，如-、*后需要空格",
+			codeBlock: "检查代码块围栏是否正确",
+			link: "检查链接语法是否完整",
+			table: "检查表格分隔符格式",
+			taskList: "检查任务列表复选框格式",
+			emptyLines: "检查连续空行是否过多",
+			trailingSpace: "检查行尾是否有多余空格",
+			headingLevel: "检查标题层级是否跳过（如H1直接到H3）",
+			imagePath: "检查图片路径和alt文字",
+			linkValidity: "检查链接URL格式（需要网络请求）",
+			codeLanguage: "检查代码块是否指定语言",
+			listIndent: "检查列表缩进是否为2或4的倍数"
+		}[e] || "";
+	},
+	updateConfigPanel() {
+		if (!this.configPanel) return;
+		let e = this.configPanel.querySelector(".rules-container");
+		e && (e.innerHTML = Object.entries(this.rules).map(([e, t]) => `
+        <div class="rule-item" data-rule="${e}" style="padding: 12px 20px; border-bottom: 1px solid #f5f5f5; display: flex; justify-content: space-between; align-items: center;">
+          <div style="flex: 1;">
+            <div style="font-weight: 500; color: #333; margin-bottom: 4px;">${t.name}</div>
+            <div style="font-size: 12px; color: #888;">${this.getRuleDescription(e)}</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" ${t.enabled ? "checked" : ""} onchange="document.dispatchEvent(new CustomEvent('toggle-rule', {detail: '${e}'}))">
+            <span class="slider"></span>
+          </label>
+        </div>
+      `).join(""));
+	},
+	resetRules() {
+		Object.keys(this.rules).forEach((e) => {
+			this.rules[e].enabled = !0;
+		});
+	},
+	ensureConfigStyles() {
+		document.getElementById("syntax-checker-config-styles") || document.head.insertAdjacentHTML("beforeend", "\n      <style id=\"syntax-checker-config-styles\">\n        /* 滚动条样式（美化版） */\n        .syntax-checker-config-panel .rules-container::-webkit-scrollbar {\n          width: 6px;\n        }\n        .syntax-checker-config-panel .rules-container::-webkit-scrollbar-track {\n          background: #f8f9fa;\n          border-radius: 3px;\n        }\n        .syntax-checker-config-panel .rules-container::-webkit-scrollbar-thumb {\n          background: linear-gradient(180deg, #d0d7de 0%, #c1c8d0 100%);\n          border-radius: 3px;\n          border: 1px solid #e8eaed;\n        }\n        .syntax-checker-config-panel .rules-container::-webkit-scrollbar-thumb:hover {\n          background: linear-gradient(180deg, #b8c0ca 0%, #a8b0ba 100%);\n        }\n        \n        /* 按钮样式 */\n        .syntax-checker-config-panel .reset-btn:hover {\n          background: #f6f8fa !important;\n          border-color: #afb8c1 !important;\n        }\n        .syntax-checker-config-panel .reset-btn:active {\n          background: #eaeef2 !important;\n        }\n        .syntax-checker-config-panel .confirm-btn:hover {\n          background: #0860ca !important;\n        }\n        .syntax-checker-config-panel .confirm-btn:active {\n          background: #0757ba !important;\n        }\n        \n        /* 开关样式 */\n        .switch {\n          position: relative;\n          display: inline-block;\n          width: 44px;\n          height: 24px;\n        }\n        .switch input {\n          opacity: 0;\n          width: 0;\n          height: 0;\n        }\n        .slider {\n          position: absolute;\n          cursor: pointer;\n          top: 0;\n          left: 0;\n          right: 0;\n          bottom: 0;\n          background-color: #ccc;\n          transition: .3s;\n          border-radius: 24px;\n        }\n        .slider:before {\n          position: absolute;\n          content: \"\";\n          height: 18px;\n          width: 18px;\n          left: 3px;\n          bottom: 3px;\n          background-color: white;\n          transition: .3s;\n          border-radius: 50%;\n        }\n        input:checked + .slider {\n          background-color: #0969da;\n        }\n        input:checked + .slider:before {\n          transform: translateX(20px);\n        }\n        \n        .rule-item:hover {\n          background: #f9f9f9;\n        }\n      </style>\n    ");
+	},
+	escapeHtml(e) {
+		let t = document.createElement("div");
+		return t.textContent = e, t.innerHTML;
+	}
+};
+var _hoisted_1$2 = { class: "canvas-editor-container" }, _hoisted_2$2 = ["width", "height"], CanvasEditor_default = /* @__PURE__ */ __plugin_vue_export_helper_default({
+	__name: "CanvasEditor",
+	props: {
+		modelValue: {
+			type: String,
+			default: ""
+		},
+		theme: {
+			type: String,
+			default: "light",
+			validator: (e) => ["light", "dark"].includes(e)
+		},
+		enableSyntaxHighlight: {
+			type: Boolean,
+			default: !0
+		},
+		fontSize: {
+			type: Number,
+			default: 15
+		},
+		lineHeight: {
+			type: Number,
+			default: 26
+		},
+		showLineNumbers: {
+			type: Boolean,
+			default: !0
+		},
+		showToolbar: {
+			type: Boolean,
+			default: !0
+		},
+		scrollPercentage: {
+			type: Number,
+			default: 0
+		},
+		isSyncing: {
+			type: Boolean,
+			default: !1
+		}
+	},
+	emits: [
+		"update:modelValue",
+		"update:scrollPercentage",
+		"scroll"
+	],
+	setup(e, { expose: t, emit: o }) {
+		let s = e, l = o, u = ref(null), d = ref(null), f = ref(800), v = ref(600), y = ref(window.devicePixelRatio || 1), b = null, x = null, S = null, w = null, T = null, E = null, D = null, O = null, k = null, A = null, j = null, M = null, N = null, P = null, F = null, W = null, G = !1, K = null, q = !1, J = null, Y = ref(!1), hi = ref([]);
+		ref(null);
+		let gi = () => {
+			b = new Document(s.modelValue), x = new ViewportManager({
+				width: f.value,
+				height: v.value,
+				lineHeight: s.lineHeight,
+				padding: 16
+			}), s.showLineNumbers && (M = new LineNumberRenderer({ fontSize: s.fontSize - 1 }), M.updateTheme(s.theme), x.padding = M.width + 16), x.setTotalLines(b.getLineCount()), S = new DOMTextRenderer(u.value, {
+				fontSize: s.fontSize,
+				lineHeight: s.lineHeight,
+				enableSyntaxHighlight: s.enableSyntaxHighlight
+			});
+			let e = new MarkdownLexer(), t = new SyntaxHighlighter({ theme: s.theme });
+			S.setSyntaxHighlight(e, t), b.setLexer(e), T = new Cursor(0, 0), E = new CursorRenderer({
+				color: "#000000",
+				width: 2,
+				blinkInterval: 530
+			}), D = new Selection(), O = new SelectionRenderer({ color: "rgba(100, 150, 255, 0.3)" }), k = new History({
+				maxSize: 100,
+				mergeDelay: 300
+			}), A = new Clipboard(), P = new RenderOptimizer({ debounceDelay: 16 }), F = new PreloadManager({
+				preloadLines: 10,
+				preloadThreshold: .3,
+				onPreload: async ({ startLine: e, endLine: t, direction: n }) => {
+					for (let n = e; n < t && n < b.getLineCount(); n++) {
+						let e = b.getLine(n);
+						S.lexer && S.lexer.parseLine(e, n);
+					}
+				}
+			}), W = new PredictiveRenderer({
+				enablePrediction: !0,
+				learningRate: .1,
+				onPredict: (e) => {
+					e.nextScrollSpeed === "fast" ? F.preloadLines = 20 : F.preloadLines = 10;
+				}
+			});
+			let n = d.value, r = n.getBoundingClientRect();
+			f.value = r.width, v.value = r.height, j = n.getContext("2d"), w = new InputManager(u.value, { canvas: n }), w.on("input", xi), w.on("keydown", Si), w.on("click", ji), w.on("dblclick", wi), w.on("tripleclick", Ti), w.on("mousedown", Mi), w.on("mousemove", Ni), w.on("mouseup", Pi), b.on("change", vi), _i(), P.initOffscreenCanvas(f.value * y.value, v.value * y.value), X(), E.startBlinking(X);
+		}, _i = async () => {
+			N = new PluginManager({
+				document: b,
+				viewport: x,
+				textRenderer: S,
+				cursor: T,
+				selection: D,
+				history: k,
+				clipboard: A,
+				render: X
+			}), N.register(TablePlugin), N.register(TodoListPlugin), N.register(MathPlugin), N.register(MermaidPlugin), N.register(AutoCompletePlugin), N.register(SyntaxCheckerPlugin);
+			try {
+				await N.activate("markdown-table"), await N.activate("todo-list"), await N.activate("math"), await N.activate("mermaid"), await N.activate("autocomplete"), await N.activate("syntax-checker");
+			} catch (e) {
+				console.error("Failed to activate plugins:", e);
+			}
+		};
+		watch(() => s.theme, (e) => {
+			S && S.highlighter && (S.highlighter.setTheme(e), S.updateThemeColors()), M && M.updateTheme(e), P && P.markStaticLayerDirty(), X(!0);
+		}), watch(() => s.enableSyntaxHighlight, (e) => {
+			S && (S.enableSyntaxHighlight = e, S.markDirty && S.markDirty(), X());
+		}), watch(() => s.fontSize, (e, t) => {
+			S && (S.fontSize = e, S.clearMeasureCache && S.clearMeasureCache(), S.markDirty && S.markDirty()), M && (M.fontSize = e - 1);
+		}), watch(() => s.lineHeight, (e) => {
+			S && (S.lineHeight = e, S.markDirty && S.markDirty()), x && (x.lineHeight = e, x.setTotalLines(b.getLineCount())), P && P.markStaticLayerDirty(), X(!0);
+		}), watch(() => s.showLineNumbers, (e) => {
+			x && (e ? (M || (M = new LineNumberRenderer({ fontSize: s.fontSize - 1 }), M.updateTheme(s.theme)), x.padding = M.width + 16) : x.padding = 16, x.setTotalLines(b.getLineCount()), P && P.markStaticLayerDirty(), X(!0));
+		}), watch(() => s.scrollPercentage, (e) => {
+			if (s.isSyncing || !x) return;
+			let t = Math.max(0, x.totalHeight - x.height) * e;
+			x.setScrollTop(t), X();
+		});
+		let vi = (e) => {
+			x.setTotalLines(b.getLineCount()), S && S.markDirty && S.markDirty(), e && e.startLine !== void 0 && e.endLine !== void 0 ? P.addDirtyRegion(e.startLine, e.endLine) : P.markFullRender(), N && N.triggerHook("afterChange"), l("update:modelValue", b.getText()), X();
+		}, X = (e = !1) => {
+			!j || !b || !x || !S || !P || P.requestRender((e) => {
+				yi(e);
+			}, e);
+		}, yi = (e) => {
+			let { fullRender: t, staticLayerDirty: n, offscreenCtx: r, offscreenCanvas: i } = e, { startLine: a, endLine: o } = x.getVisibleRange(2);
+			if (n && r && i && Z(r, a, o), j.clearRect(0, 0, x.width, x.height), i && !n ? j.drawImage(i, 0, 0) : (j.fillStyle = S.backgroundColor, j.fillRect(0, 0, x.width, x.height), M && s.showLineNumbers && M.render(j, x, b.getLineCount(), T.line, S.lineHeight)), D && O && O.render(j, D, x, b, S, S.lineHeight), S.renderContent(b, x), T && E && !D.hasSelection) {
+				let e = b.getLine(T.line);
+				E.render(j, T, x, S, e, S.lineHeight);
+			}
+			if (T && w) {
+				let e = b.getLine(T.line), { x: t, y: n } = x.docToCanvas(T.line, T.column, S, e);
+				w.updateTextareaPosition(t, n + S.lineHeight);
+			}
+		}, Z = (e, t, n) => {
+			e && (e.clearRect(0, 0, x.width, x.height), e.fillStyle = S.backgroundColor, e.fillRect(0, 0, x.width, x.height), M && s.showLineNumbers && M.render(e, x, b.getLineCount(), T.line, S.lineHeight));
+		}, bi = () => {
+			let e = {
+				optimizer: null,
+				preload: null,
+				prediction: null
+			};
+			return P && (e.optimizer = {
+				dirtyRegions: P.dirtyRegions.length,
+				fullRenderNeeded: P.fullRenderNeeded,
+				hasOffscreenCanvas: !!P.offscreenCanvas
+			}), F && (e.preload = F.getStats()), W && (e.prediction = W.getStats()), e;
+		}, xi = (e) => {
+			if (!e.data || !T || !b || e.data === "\n") return;
+			W && W.recordBehavior("edit", {
+				type: "insert",
+				length: e.data.length
+			});
+			let t = {
+				line: T.line,
+				column: T.column
+			};
+			if (D.hasSelection) {
+				let e = D.getSelectedText(b), { startLine: n, startColumn: r } = D.getOrderedRange();
+				k.record({
+					type: "delete",
+					line: n,
+					column: r,
+					text: e,
+					cursorBefore: t,
+					cursorAfter: {
+						line: n,
+						column: r
+					}
+				});
+				let i = D.deleteSelectedText(b);
+				T.setPosition(i.line, i.column);
+			}
+			k.record({
+				type: "insert",
+				line: T.line,
+				column: T.column,
+				text: e.data,
+				cursorBefore: {
+					line: T.line,
+					column: T.column
+				},
+				cursorAfter: {
+					line: T.line,
+					column: T.column + e.data.length
+				}
+			}), b.insertText(T.line, T.column, e.data), T.column += e.data.length, E.resetBlink(() => X(!0));
+		}, Si = (e) => {
+			let { key: t, ctrlKey: n, shiftKey: r, metaKey: i } = e;
+			if (!(!T || !b)) {
+				if (t === "Tab" && e.preventDefault(), N && N.handleKeybinding(e)) {
+					X(!0);
+					return;
+				}
+				if ((n || i) && t === "a") {
+					D.selectAll(b), X(!0);
+					return;
+				}
+				if ((n || i) && t === "f") {
+					Y.value = !0;
+					return;
+				}
+				if ((n || i) && t === "h") {
+					Y.value = !0;
+					return;
+				}
+				if ((n || i) && t === "c") {
+					if (D.hasSelection) {
+						let e = D.getSelectedText(b);
+						A.copy(e);
+					}
+					return;
+				}
+				if ((n || i) && t === "x") {
+					if (D.hasSelection) {
+						let e = D.getSelectedText(b);
+						A.cut(e);
+						let { startLine: t, startColumn: n } = D.getOrderedRange();
+						k.record({
+							type: "delete",
+							line: t,
+							column: n,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: t,
+								column: n
+							}
+						});
+						let r = D.deleteSelectedText(b);
+						T.setPosition(r.line, r.column), E.resetBlink(() => X(!0));
+					}
+					return;
+				}
+				if ((n || i) && t === "v") {
+					A.paste().then((e) => {
+						if (!e) return;
+						let t = {
+							line: T.line,
+							column: T.column
+						};
+						if (D.hasSelection) {
+							let e = D.getSelectedText(b), { startLine: n, startColumn: r } = D.getOrderedRange();
+							k.record({
+								type: "delete",
+								line: n,
+								column: r,
+								text: e,
+								cursorBefore: t,
+								cursorAfter: {
+									line: n,
+									column: r
+								}
+							});
+							let i = D.deleteSelectedText(b);
+							T.setPosition(i.line, i.column);
+						}
+						k.record({
+							type: "insert",
+							line: T.line,
+							column: T.column,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: T.line,
+								column: T.column + e.length
+							}
+						}), b.insertText(T.line, T.column, e);
+						let n = e.split("\n");
+						n.length === 1 ? T.column += e.length : (T.line += n.length - 1, T.column = n[n.length - 1].length), E.resetBlink(() => X(!0));
+					});
+					return;
+				}
+				if ((n || i) && t === "z" && !r) {
+					let e = k.undo();
+					e && Ai(e, !0);
+					return;
+				}
+				if ((n || i) && (t === "y" || t === "z" && r)) {
+					let e = k.redo();
+					e && Ai(e, !1);
+					return;
+				}
+				if ((n || i) && t === "d") {
+					let e = b.getLine(T.line), t = {
+						line: T.line,
+						column: T.column
+					};
+					if (T.line < b.getLineCount() - 1) k.record({
+						type: "delete",
+						line: T.line,
+						column: 0,
+						text: e + "\n",
+						cursorBefore: t,
+						cursorAfter: {
+							line: T.line,
+							column: 0
+						}
+					}), b.deleteText(T.line, 0, T.line + 1, 0);
+					else if (T.line > 0) {
+						k.record({
+							type: "delete",
+							line: T.line - 1,
+							column: b.getLine(T.line - 1).length,
+							text: "\n" + e,
+							cursorBefore: t,
+							cursorAfter: {
+								line: T.line - 1,
+								column: b.getLine(T.line - 1).length
+							}
+						});
+						let n = b.getLine(T.line - 1).length;
+						b.deleteText(T.line - 1, n, T.line, e.length), T.line--, T.column = Math.min(T.column, n);
+					} else k.record({
+						type: "delete",
+						line: 0,
+						column: 0,
+						text: e,
+						cursorBefore: t,
+						cursorAfter: {
+							line: 0,
+							column: 0
+						}
+					}), b.deleteText(0, 0, 0, e.length), T.column = 0;
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "Tab") {
+					let e = {
+						line: T.line,
+						column: T.column
+					};
+					if (r) {
+						let t = b.getLine(T.line);
+						t.startsWith("  ") ? (k.record({
+							type: "delete",
+							line: T.line,
+							column: 0,
+							text: "  ",
+							cursorBefore: e,
+							cursorAfter: {
+								line: T.line,
+								column: Math.max(0, T.column - 2)
+							}
+						}), b.deleteText(T.line, 0, T.line, 2), T.column = Math.max(0, T.column - 2)) : t.startsWith("	") && (k.record({
+							type: "delete",
+							line: T.line,
+							column: 0,
+							text: "	",
+							cursorBefore: e,
+							cursorAfter: {
+								line: T.line,
+								column: Math.max(0, T.column - 1)
+							}
+						}), b.deleteText(T.line, 0, T.line, 1), T.column = Math.max(0, T.column - 1));
+					} else k.record({
+						type: "insert",
+						line: T.line,
+						column: T.column,
+						text: "  ",
+						cursorBefore: e,
+						cursorAfter: {
+							line: T.line,
+							column: T.column + 2
+						}
+					}), b.insertText(T.line, T.column, "  "), T.column += 2;
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "ArrowLeft") {
+					if (r) D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveLeft(b), D.extend(T.line, T.column);
+					else if (D.hasSelection) {
+						let { startLine: e, startColumn: t } = D.getOrderedRange();
+						T.setPosition(e, t), D.clear();
+					} else T.moveLeft(b);
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "ArrowRight") {
+					if (r) D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveRight(b), D.extend(T.line, T.column);
+					else if (D.hasSelection) {
+						let { endLine: e, endColumn: t } = D.getOrderedRange();
+						T.setPosition(e, t), D.clear();
+					} else T.moveRight(b);
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "ArrowUp") {
+					r ? (D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveUp(b), D.extend(T.line, T.column)) : (D.clear(), T.moveUp(b)), E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "ArrowDown") {
+					r ? (D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveDown(b), D.extend(T.line, T.column)) : (D.clear(), T.moveDown(b)), E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "Home") {
+					r ? (D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveToLineStart(), D.extend(T.line, T.column)) : (D.clear(), T.moveToLineStart()), E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "End") {
+					r ? (D.hasSelection || D.setRange(T.line, T.column, T.line, T.column), T.moveToLineEnd(b), D.extend(T.line, T.column)) : (D.clear(), T.moveToLineEnd(b)), E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "Backspace") {
+					if (D.hasSelection) {
+						let e = D.getSelectedText(b), { startLine: t, startColumn: n } = D.getOrderedRange();
+						k.record({
+							type: "delete",
+							line: t,
+							column: n,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: t,
+								column: n
+							}
+						});
+						let r = D.deleteSelectedText(b);
+						T.setPosition(r.line, r.column);
+					} else if (T.column > 0) {
+						let e = b.getLine(T.line).charAt(T.column - 1);
+						k.record({
+							type: "delete",
+							line: T.line,
+							column: T.column - 1,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: T.line,
+								column: T.column - 1
+							}
+						}), b.deleteText(T.line, T.column - 1, T.line, T.column), T.column--;
+					} else if (T.line > 0) {
+						let e = b.getLine(T.line - 1).length;
+						k.record({
+							type: "delete",
+							line: T.line - 1,
+							column: e,
+							text: "\n",
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: T.line - 1,
+								column: e
+							}
+						}), b.deleteText(T.line - 1, e, T.line, 0), T.line--, T.column = e;
+					}
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "Delete") {
+					if (D.hasSelection) {
+						let e = D.getSelectedText(b), { startLine: t, startColumn: n } = D.getOrderedRange();
+						k.record({
+							type: "delete",
+							line: t,
+							column: n,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: t,
+								column: n
+							}
+						});
+						let r = D.deleteSelectedText(b);
+						T.setPosition(r.line, r.column);
+					} else {
+						let e = b.getLine(T.line);
+						if (T.column < e.length) {
+							let t = e.charAt(T.column);
+							k.record({
+								type: "delete",
+								line: T.line,
+								column: T.column,
+								text: t,
+								cursorBefore: {
+									line: T.line,
+									column: T.column
+								},
+								cursorAfter: {
+									line: T.line,
+									column: T.column
+								}
+							}), b.deleteText(T.line, T.column, T.line, T.column + 1);
+						} else T.line < b.getLineCount() - 1 && (k.record({
+							type: "delete",
+							line: T.line,
+							column: T.column,
+							text: "\n",
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: T.line,
+								column: T.column
+							}
+						}), b.deleteText(T.line, T.column, T.line + 1, 0));
+					}
+					E.resetBlink(() => X(!0));
+					return;
+				}
+				if (t === "Enter") {
+					if (D.hasSelection) {
+						let e = D.getSelectedText(b), { startLine: t, startColumn: n } = D.getOrderedRange();
+						k.record({
+							type: "delete",
+							line: t,
+							column: n,
+							text: e,
+							cursorBefore: {
+								line: T.line,
+								column: T.column
+							},
+							cursorAfter: {
+								line: t,
+								column: n
+							}
+						});
+						let r = D.deleteSelectedText(b);
+						T.setPosition(r.line, r.column);
+					}
+					let e = b.getLine(T.line), t = "", n = e.match(/^(\s*)([-*+])\s+(.*)$/);
+					if (n) {
+						let r = n[1], i = n[2];
+						if (n[3].trim() === "") {
+							k.record({
+								type: "delete",
+								line: T.line,
+								column: 0,
+								text: e,
+								cursorBefore: {
+									line: T.line,
+									column: T.column
+								},
+								cursorAfter: {
+									line: T.line,
+									column: 0
+								}
+							}), b.deleteText(T.line, 0, T.line, e.length), T.column = 0, E.resetBlink(() => X(!0));
+							return;
+						}
+						t = `${r}${i} `;
+					}
+					let r = e.match(/^(\s*)(\d+)\.\s+(.*)$/);
+					if (r) {
+						let n = r[1], i = parseInt(r[2]);
+						if (r[3].trim() === "") {
+							k.record({
+								type: "delete",
+								line: T.line,
+								column: 0,
+								text: e,
+								cursorBefore: {
+									line: T.line,
+									column: T.column
+								},
+								cursorAfter: {
+									line: T.line,
+									column: 0
+								}
+							}), b.deleteText(T.line, 0, T.line, e.length), T.column = 0, E.resetBlink(() => X(!0));
+							return;
+						}
+						t = `${n}${i + 1}. `;
+					}
+					let i = e.match(/^(\s*)([-*+])\s+\[([xX ])\]\s+(.*)$/);
+					if (i) {
+						let n = i[1], r = i[2];
+						if (i[4].trim() === "") {
+							k.record({
+								type: "delete",
+								line: T.line,
+								column: 0,
+								text: e,
+								cursorBefore: {
+									line: T.line,
+									column: T.column
+								},
+								cursorAfter: {
+									line: T.line,
+									column: 0
+								}
+							}), b.deleteText(T.line, 0, T.line, e.length), T.column = 0, E.resetBlink(() => X(!0));
+							return;
+						}
+						t = `${n}${r} [ ] `;
+					}
+					let a = "\n" + t;
+					k.record({
+						type: "insert",
+						line: T.line,
+						column: T.column,
+						text: a,
+						cursorBefore: {
+							line: T.line,
+							column: T.column
+						},
+						cursorAfter: {
+							line: T.line + 1,
+							column: t.length
+						}
+					}), b.insertText(T.line, T.column, a), T.line++, T.column = t.length, E.resetBlink(() => X(!0));
+					return;
+				}
+			}
+		}, Ci = (e, t) => {
+			let n = /[\w\u4e00-\u9fa5]/, r = t, i = t;
+			for (; r > 0 && n.test(e[r - 1]);) r--;
+			for (; i < e.length && n.test(e[i]);) i++;
+			return {
+				start: r,
+				end: i
+			};
+		}, wi = (e) => {
+			if (!T || !x || !S || !b) return;
+			let { line: t } = x.canvasToDoc(e.x, e.y, S, ""), n = b.getLineCount() - 1, r = Math.max(0, Math.min(t, n)), i = b.getLine(r), { column: a } = x.canvasToDoc(e.x, e.y, S, i), { start: o, end: s } = Ci(i, Math.max(0, Math.min(a, i.length)));
+			o < s && (D.setRange(r, o, r, s), T.setPosition(r, s), X(!0));
+		}, Ti = (e) => {
+			if (!T || !x || !S || !b) return;
+			let { line: t } = x.canvasToDoc(e.x, e.y, S, ""), n = b.getLineCount() - 1, r = Math.max(0, Math.min(t, n));
+			D.selectLine(r, b), T.setPosition(r, b.getLine(r).length), X(!0);
+		}, Ei = (e) => {
+			if (!T || !b) return;
+			let t = "", n = 0;
+			switch (e) {
+				case "h1":
+					t = "# ", n = t.length;
+					break;
+				case "h2":
+					t = "## ", n = t.length;
+					break;
+				case "bold":
+					D.hasSelection ? (t = `**${D.getSelectedText(b)}**`, n = t.length) : (t = "****", n = 2);
+					break;
+				case "italic":
+					D.hasSelection ? (t = `*${D.getSelectedText(b)}*`, n = t.length) : (t = "**", n = 1);
+					break;
+				case "unordered-list":
+					t = "- ", n = t.length;
+					break;
+				case "ordered-list":
+					t = "1. ", n = t.length;
+					break;
+				case "blockquote":
+					t = "> ", n = t.length;
+					break;
+				case "code-block":
+					t = "```\n\n```", n = 4;
+					break;
+				case "link":
+					t = "[链接文字](url)", n = 1;
+					break;
+				case "image":
+					t = "![图片描述](url)", n = 2;
+					break;
+				case "table":
+					if (N) {
+						N.executeCommand("markdown-table.insertTable", 3, 3);
+						return;
+					}
+					break;
+				case "todo":
+					if (N) {
+						N.executeCommand("todo-list.insertTodo", !1);
+						return;
+					}
+					break;
+				case "math":
+					if (N) {
+						N.executeCommand("math.insertInlineMath");
+						return;
+					}
+					break;
+				case "diagram":
+					if (N) {
+						N.executeCommand("mermaid.insertFlowchart");
+						return;
+					}
+					break;
+				default: return;
+			}
+			let r = {
+				line: T.line,
+				column: T.column
+			};
+			if (D.hasSelection && (e === "bold" || e === "italic")) {
+				let e = D.getSelectedText(b), { startLine: t, startColumn: n } = D.getOrderedRange();
+				k.record({
+					type: "delete",
+					line: t,
+					column: n,
+					text: e,
+					cursorBefore: r,
+					cursorAfter: {
+						line: t,
+						column: n
+					}
+				});
+				let i = D.deleteSelectedText(b);
+				T.setPosition(i.line, i.column);
+			}
+			k.record({
+				type: "insert",
+				line: T.line,
+				column: T.column,
+				text: t,
+				cursorBefore: {
+					line: T.line,
+					column: T.column
+				},
+				cursorAfter: {
+					line: T.line,
+					column: T.column + n
+				}
+			}), b.insertText(T.line, T.column, t), T.column += n, E.resetBlink(() => X(!0));
+		}, Q = (e) => {
+			if (!b) return;
+			let { text: t, matchCase: n, matchWholeWord: r, useRegex: i, jumpTo: a, callback: o } = e;
+			if (!t) {
+				hi.value = [], o && o([]);
+				return;
+			}
+			let s = [], c;
+			try {
+				if (i) c = new RegExp(t, n ? "g" : "gi");
+				else {
+					let e = t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), i = r ? `\\b${e}\\b` : e;
+					c = new RegExp(i, n ? "g" : "gi");
+				}
+			} catch {
+				o && o([]);
+				return;
+			}
+			for (let e = 0; e < b.getLineCount(); e++) {
+				let t = b.getLine(e), n;
+				for (c.lastIndex = 0; (n = c.exec(t)) !== null;) s.push({
+					line: e,
+					startColumn: n.index,
+					endColumn: n.index + n[0].length,
+					text: n[0]
+				}), n.index === c.lastIndex && c.lastIndex++;
+			}
+			if (hi.value = s, o && o(s), typeof a == "number" && s[a]) {
+				W && W.recordBehavior("jump", {
+					from: T.line,
+					to: s[a].line
+				});
+				let e = s[a];
+				T.setPosition(e.line, e.startColumn);
+				let t = e.line * x.lineHeight;
+				(t < x.scrollTop || t > x.scrollTop + x.height) && x.setScrollTop(t - x.height / 3), X(!0);
+			}
+		}, Di = (e) => {
+			if (!b || !T) return;
+			let { searchText: t, replaceText: n, matchCase: r, matchWholeWord: i, useRegex: a, callback: o } = e;
+			Q({
+				text: t,
+				matchCase: r,
+				matchWholeWord: i,
+				useRegex: a,
+				callback: (e) => {
+					if (e.length === 0) return;
+					let t = e.find((e) => e.line === T.line && T.column >= e.startColumn && T.column <= e.endColumn);
+					if (t) {
+						let e = {
+							line: T.line,
+							column: T.column
+						};
+						k.record({
+							type: "delete",
+							line: t.line,
+							column: t.startColumn,
+							text: t.text,
+							cursorBefore: e,
+							cursorAfter: {
+								line: t.line,
+								column: t.startColumn
+							}
+						}), b.deleteText(t.line, t.startColumn, t.line, t.endColumn), k.record({
+							type: "insert",
+							line: t.line,
+							column: t.startColumn,
+							text: n,
+							cursorBefore: {
+								line: t.line,
+								column: t.startColumn
+							},
+							cursorAfter: {
+								line: t.line,
+								column: t.startColumn + n.length
+							}
+						}), b.insertText(t.line, t.startColumn, n), T.setPosition(t.line, t.startColumn + n.length), X(!0);
+					}
+					o && o();
+				}
+			});
+		}, Oi = (e) => {
+			if (!b) return;
+			let { searchText: t, replaceText: n, matchCase: r, matchWholeWord: i, useRegex: a, callback: o } = e;
+			Q({
+				text: t,
+				matchCase: r,
+				matchWholeWord: i,
+				useRegex: a,
+				callback: (e) => {
+					if (e.length === 0) {
+						o && o();
+						return;
+					}
+					for (let t = e.length - 1; t >= 0; t--) {
+						let r = e[t];
+						k.record({
+							type: "delete",
+							line: r.line,
+							column: r.startColumn,
+							text: r.text,
+							cursorBefore: {
+								line: r.line,
+								column: r.startColumn
+							},
+							cursorAfter: {
+								line: r.line,
+								column: r.startColumn
+							}
+						}), b.deleteText(r.line, r.startColumn, r.line, r.endColumn), k.record({
+							type: "insert",
+							line: r.line,
+							column: r.startColumn,
+							text: n,
+							cursorBefore: {
+								line: r.line,
+								column: r.startColumn
+							},
+							cursorAfter: {
+								line: r.line,
+								column: r.startColumn + n.length
+							}
+						}), b.insertText(r.line, r.startColumn, n);
+					}
+					X(!0), o && o();
+				}
+			});
+		}, Ai = (e, t) => {
+			k.startApplying();
+			try {
+				if (t) if (e.type === "insert") {
+					let t = e.text.split("\n"), n = t.length === 1 ? e.line : e.line + t.length - 1, r = t.length === 1 ? e.column + e.text.length : t[t.length - 1].length;
+					b.deleteText(e.line, e.column, n, r), T.setPosition(e.cursorBefore.line, e.cursorBefore.column);
+				} else b.insertText(e.line, e.column, e.text), T.setPosition(e.cursorBefore.line, e.cursorBefore.column);
+				else if (e.type === "insert") b.insertText(e.line, e.column, e.text), T.setPosition(e.cursorAfter.line, e.cursorAfter.column);
+				else {
+					let t = e.text.split("\n"), n = t.length === 1 ? e.line : e.line + t.length - 1, r = t.length === 1 ? e.column + e.text.length : t[t.length - 1].length;
+					b.deleteText(e.line, e.column, n, r), T.setPosition(e.cursorAfter.line, e.cursorAfter.column);
+				}
+				D.clear(), E.resetBlink(() => X(!0));
+			} finally {
+				k.endApplying();
+			}
+		}, ji = (e) => {
+			if (!T || !x || !S || !b || D.hasSelection) return;
+			let { line: t } = x.canvasToDoc(e.x, e.y, S, ""), n = b.getLineCount() - 1, r = Math.max(0, Math.min(t, n)), i = b.getLine(r), { column: a } = x.canvasToDoc(e.x, e.y, S, i), o = Math.max(0, Math.min(a, i.length));
+			D.clear(), T.setPosition(r, o), E.resetBlink(() => X(!0));
+		}, Mi = (e) => {
+			if (!x || !S || !b) return;
+			G = !0, q = !1;
+			let { line: t } = x.canvasToDoc(e.x, e.y, S, ""), n = b.getLineCount() - 1, r = Math.max(0, Math.min(t, n)), i = b.getLine(r), { column: a } = x.canvasToDoc(e.x, e.y, S, i), o = Math.max(0, Math.min(a, i.length));
+			if (K = {
+				line: r,
+				column: o
+			}, D.hasSelection) {
+				let { startLine: e, startColumn: t, endLine: n, endColumn: i } = D.getOrderedRange();
+				if ((r > e || r === e && o >= t) && (r < n || r === n && o <= i)) {
+					J = {
+						startLine: e,
+						startColumn: t,
+						endLine: n,
+						endColumn: i,
+						text: D.getSelectedText(b)
+					};
+					return;
+				}
+			}
+			J = null, D.setRange(r, o, r, o), T.setPosition(r, o), E.resetBlink(() => X(!0));
+		}, Ni = (e) => {
+			if (!G || !x || !S || !b) return;
+			let { line: t } = x.canvasToDoc(e.x, e.y, S, ""), n = b.getLineCount() - 1, r = Math.max(0, Math.min(t, n)), i = b.getLine(r), { column: a } = x.canvasToDoc(e.x, e.y, S, i), o = Math.max(0, Math.min(a, i.length));
+			J && !q && (Math.abs(r - K.line) > 0 || Math.abs(o - K.column) > 2) && (q = !0, d.value.style.cursor = "move"), q ? (T.setPosition(r, o), X()) : K && (D.setRange(K.line, K.column, r, o), T.setPosition(r, o), X());
+		}, Pi = () => {
+			if (!q && !J && D.hasSelection) {
+				let { startLine: e, startColumn: t, endLine: n, endColumn: r } = D.getOrderedRange();
+				(e === n && t === r || isNaN(t) || isNaN(r)) && D.clear();
+			}
+			if (q && J) {
+				let e = T.line, t = T.column, { startLine: n, startColumn: r, endLine: i, endColumn: a } = J;
+				if ((e > n || e === n && t >= r) && (e < i || e === i && t <= a)) D.clear(), E.resetBlink(() => X(!0));
+				else {
+					k.record({
+						type: "delete",
+						line: n,
+						column: r,
+						text: J.text,
+						cursorBefore: {
+							line: n,
+							column: r
+						},
+						cursorAfter: {
+							line: n,
+							column: r
+						}
+					}), b.deleteText(n, r, i, a);
+					let o = e, s = t;
+					if (e > i || e === i && t > a) {
+						let n = J.text.split("\n");
+						n.length === 1 ? e === i && (s = t - J.text.length) : (o = e - (n.length - 1), e === i && (s = t - n[n.length - 1].length));
+					}
+					k.record({
+						type: "insert",
+						line: o,
+						column: s,
+						text: J.text,
+						cursorBefore: {
+							line: o,
+							column: s
+						},
+						cursorAfter: {
+							line: o,
+							column: s + J.text.length
+						}
+					}), b.insertText(o, s, J.text);
+					let c = J.text.split("\n");
+					c.length === 1 ? T.setPosition(o, s + J.text.length) : T.setPosition(o + c.length - 1, c[c.length - 1].length), D.clear(), E.resetBlink(() => X(!0));
+				}
+				d.value.style.cursor = "text";
+			} else J && !q && (D.clear(), K && T.setPosition(K.line, K.column), E.resetBlink(() => X(!0)));
+			if (G = !1, K = null, q = !1, J = null, D.hasSelection) {
+				let { startLine: e, startColumn: t, endLine: n, endColumn: r } = D.getOrderedRange();
+				(e === n && t === r || isNaN(t) || isNaN(r)) && (D.clear(), X(!0));
+			}
+		}, Fi = (e) => {
+			e.preventDefault();
+			let t = e.deltaY;
+			if (x.scrollTop, x.setScrollTop(x.scrollTop + t), W) {
+				let e = Math.abs(t) / 100;
+				W.recordBehavior("scroll", {
+					direction: t > 0 ? "down" : "up",
+					speed: e,
+					delta: Math.abs(t)
+				});
+			}
+			F && x && F.updateScroll(x.scrollTop, x.height, x.totalHeight), Ii(), X();
+		}, Ii = () => {
+			if (!x || s.isSyncing) return;
+			let e = Math.max(0, x.totalHeight - x.height);
+			if (e <= 0) {
+				l("update:scrollPercentage", 0), l("scroll", 0);
+				return;
+			}
+			let t = x.scrollTop / e;
+			l("update:scrollPercentage", t), l("scroll", t);
+		}, Li = () => {
+			if (!u.value || !d.value) return;
+			let e = u.value, t = d.value, n = e.getBoundingClientRect(), r = window.devicePixelRatio || 1, i = Math.floor(n.width), a = Math.floor(n.height);
+			f.value = i, v.value = a, t.width = i * r, t.height = a * r, t.style.width = `${i}px`, t.style.height = `${a}px`, j && (j.scale(r, r), j.imageSmoothingEnabled = !0, j.imageSmoothingQuality = "high", "textRendering" in j && (j.textRendering = "optimizeLegibility"), "fontSmoothing" in j && (j.fontSmoothing = "antialiased"), "webkitFontSmoothing" in j && (j.webkitFontSmoothing = "antialiased"), "mozFontSmoothing" in j && (j.mozFontSmoothing = "antialiased")), x && (x.setSize(f.value, v.value), P && (P.resizeOffscreenCanvas(i * r, a * r), P.markFullRender()), X(!0));
+		};
+		return watch(() => s.modelValue, (e) => {
+			b && b.getText() !== e && b.setText(e);
+		}), onMounted(() => {
+			gi(), Li(), window.addEventListener("resize", Li);
+		}), onBeforeUnmount(() => {
+			E && E.destroy(), w && w.destroy(), S && S.destroy && S.destroy(), N && N.destroy(), P && P.destroy(), F && F.destroy(), W && W.destroy(), window.removeEventListener("resize", Li);
+		}), t({
+			getPerformanceStats: bi,
+			document: b,
+			cursor: T,
+			selection: D
+		}), (t, o) => (openBlock(), createElementBlock("div", _hoisted_1$2, [e.showToolbar ? (openBlock(), createBlock(CanvasToolbar_default, {
+			key: 0,
+			onCommand: Ei
+		})) : createCommentVNode("", !0), createElementVNode("div", {
+			class: "canvas-editor",
+			ref_key: "containerRef",
+			ref: u
+		}, [createElementVNode("canvas", {
+			ref_key: "canvasRef",
+			ref: d,
+			onWheel: Fi,
+			width: f.value,
+			height: v.value
+		}, null, 40, _hoisted_2$2), createVNode(SearchPanel_default, {
+			visible: Y.value,
+			onClose: o[0] ||= (e) => Y.value = !1,
+			onSearch: Q,
+			onReplace: Di,
+			onReplaceAll: Oi
+		}, null, 8, ["visible"])], 512)]));
+	}
+}, [["__scopeId", "data-v-ddb360e3"]]), require_core = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return e instanceof Map ? e.clear = e.delete = e.set = function() {
 			throw Error("map is read-only");
@@ -38,14 +4822,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			for (let t in e) n[t] = e[t];
 		}), n;
 	}
-	var o = "</span>", s = (e) => !!e.scope, l = (e, { prefix: t }) => {
+	var o = "</span>", s = (e) => !!e.scope, c = (e, { prefix: t }) => {
 		if (e.startsWith("language:")) return e.replace("language:", "language-");
 		if (e.includes(".")) {
 			let n = e.split(".");
 			return [`${t}${n.shift()}`, ...n.map((e, t) => `${e}${"_".repeat(t + 1)}`)].join(" ");
 		}
 		return `${t}${e}`;
-	}, u = class {
+	}, l = class {
 		constructor(e, t) {
 			this.buffer = "", this.classPrefix = t.classPrefix, e.walk(this);
 		}
@@ -54,7 +4838,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}
 		openNode(e) {
 			if (!s(e)) return;
-			let t = l(e.scope, { prefix: this.classPrefix });
+			let t = c(e.scope, { prefix: this.classPrefix });
 			this.span(t);
 		}
 		closeNode(e) {
@@ -66,12 +4850,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		span(e) {
 			this.buffer += `<span class="${e}">`;
 		}
-	}, d = (e = {}) => {
+	}, u = (e = {}) => {
 		let t = { children: [] };
 		return Object.assign(t, e), t;
-	}, f = class e {
+	}, d = class e {
 		constructor() {
-			this.rootNode = d(), this.stack = [this.rootNode];
+			this.rootNode = u(), this.stack = [this.rootNode];
 		}
 		get top() {
 			return this.stack[this.stack.length - 1];
@@ -83,7 +4867,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			this.top.children.push(e);
 		}
 		openNode(e) {
-			let t = d({ scope: e });
+			let t = u({ scope: e });
 			this.add(t), this.stack.push(t);
 		}
 		closeNode() {
@@ -106,7 +4890,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e._collapse(t);
 			}));
 		}
-	}, p = class extends f {
+	}, f = class extends d {
 		constructor(e) {
 			super(), this.options = e;
 		}
@@ -124,49 +4908,49 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			t && (n.scope = `language:${t}`), this.add(n);
 		}
 		toHTML() {
-			return new u(this, this.options).value();
+			return new l(this, this.options).value();
 		}
 		finalize() {
 			return this.closeAllNodes(), !0;
 		}
 	};
-	function m(e) {
+	function p(e) {
 		return e ? typeof e == "string" ? e : e.source : null;
 	}
+	function m(e) {
+		return v("(?=", e, ")");
+	}
 	function g(e) {
-		return y("(?=", e, ")");
+		return v("(?:", e, ")*");
 	}
 	function _(e) {
-		return y("(?:", e, ")*");
+		return v("(?:", e, ")?");
 	}
-	function v(e) {
-		return y("(?:", e, ")?");
+	function v(...e) {
+		return e.map((e) => p(e)).join("");
 	}
-	function y(...e) {
-		return e.map((e) => m(e)).join("");
-	}
-	function b(e) {
+	function y(e) {
 		let t = e[e.length - 1];
 		return typeof t == "object" && t.constructor === Object ? (e.splice(e.length - 1, 1), t) : {};
 	}
-	function x(...e) {
-		return "(" + (b(e).capture ? "" : "?:") + e.map((e) => m(e)).join("|") + ")";
+	function b(...e) {
+		return "(" + (y(e).capture ? "" : "?:") + e.map((e) => p(e)).join("|") + ")";
 	}
-	function S(e) {
+	function x(e) {
 		return (/* @__PURE__ */ RegExp(e.toString() + "|")).exec("").length - 1;
 	}
-	function C(e, t) {
+	function S(e, t) {
 		let n = e && e.exec(t);
 		return n && n.index === 0;
 	}
-	var w = /\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\./;
-	function T(e, { joinWith: t }) {
+	var C = /\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\./;
+	function w(e, { joinWith: t }) {
 		let n = 0;
 		return e.map((e) => {
 			n += 1;
-			let t = n, r = m(e), i = "";
+			let t = n, r = p(e), i = "";
 			for (; r.length > 0;) {
-				let e = w.exec(r);
+				let e = C.exec(r);
 				if (!e) {
 					i += r;
 					break;
@@ -176,9 +4960,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			return i;
 		}).map((e) => `(${e})`).join(t);
 	}
-	var E = /\b\B/, D = "[a-zA-Z]\\w*", O = "[a-zA-Z_]\\w*", k = "\\b\\d+(\\.\\d+)?", A = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", j = "\\b(0b[01]+)", M = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", N = (e = {}) => {
+	var T = /\b\B/, E = "[a-zA-Z]\\w*", D = "[a-zA-Z_]\\w*", O = "\\b\\d+(\\.\\d+)?", k = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", A = "\\b(0b[01]+)", j = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", M = (e = {}) => {
 		let t = /^#![ ]*\//;
-		return e.binary && (e.begin = y(t, /.*\b/, e.binary, /\b.*/)), a({
+		return e.binary && (e.begin = v(t, /.*\b/, e.binary, /\b.*/)), a({
 			scope: "meta",
 			begin: t,
 			end: /$/,
@@ -187,22 +4971,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.index !== 0 && t.ignoreMatch();
 			}
 		}, e);
-	}, P = {
+	}, N = {
 		begin: "\\\\[\\s\\S]",
 		relevance: 0
-	}, F = {
+	}, P = {
 		scope: "string",
 		begin: "'",
 		end: "'",
 		illegal: "\\n",
-		contains: [P]
-	}, I = {
+		contains: [N]
+	}, F = {
 		scope: "string",
 		begin: "\"",
 		end: "\"",
 		illegal: "\\n",
-		contains: [P]
-	}, L = { begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/ }, R = function(e, t, n = {}) {
+		contains: [N]
+	}, I = { begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/ }, L = function(e, t, n = {}) {
 		let r = a({
 			scope: "comment",
 			begin: e,
@@ -216,52 +5000,52 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			excludeBegin: !0,
 			relevance: 0
 		});
-		let i = x("I", "a", "is", "so", "us", "to", "at", "if", "in", "it", "on", /[A-Za-z]+['](d|ve|re|ll|t|s|n)/, /[A-Za-z]+[-][a-z]+/, /[A-Za-z][a-z]{2,}/);
-		return r.contains.push({ begin: y(/[ ]+/, "(", i, /[.]?[:]?([.][ ]|[ ])/, "){3}") }), r;
-	}, z = R("//", "$"), B = R("/\\*", "\\*/"), V = R("#", "$"), H = {
+		let i = b("I", "a", "is", "so", "us", "to", "at", "if", "in", "it", "on", /[A-Za-z]+['](d|ve|re|ll|t|s|n)/, /[A-Za-z]+[-][a-z]+/, /[A-Za-z][a-z]{2,}/);
+		return r.contains.push({ begin: v(/[ ]+/, "(", i, /[.]?[:]?([.][ ]|[ ])/, "){3}") }), r;
+	}, R = L("//", "$"), z = L("/\\*", "\\*/"), B = L("#", "$"), V = {
+		scope: "number",
+		begin: O,
+		relevance: 0
+	}, si = {
 		scope: "number",
 		begin: k,
 		relevance: 0
-	}, U = {
+	}, ci = {
 		scope: "number",
 		begin: A,
 		relevance: 0
-	}, xi = {
-		scope: "number",
-		begin: j,
-		relevance: 0
-	}, W = {
+	}, li = {
 		scope: "regexp",
 		begin: /\/(?=[^/\n]*\/)/,
 		end: /\/[gimuy]*/,
-		contains: [P, {
+		contains: [N, {
 			begin: /\[/,
 			end: /\]/,
 			relevance: 0,
-			contains: [P]
+			contains: [N]
 		}]
-	}, Si = {
+	}, ui = {
+		scope: "title",
+		begin: E,
+		relevance: 0
+	}, di = {
 		scope: "title",
 		begin: D,
 		relevance: 0
-	}, Ci = {
-		scope: "title",
-		begin: O,
+	}, fi = {
+		begin: "\\.\\s*" + D,
 		relevance: 0
-	}, wi = {
-		begin: "\\.\\s*" + O,
-		relevance: 0
-	}, G = /* @__PURE__ */ Object.freeze({
+	}, H = /* @__PURE__ */ Object.freeze({
 		__proto__: null,
-		APOS_STRING_MODE: F,
-		BACKSLASH_ESCAPE: P,
-		BINARY_NUMBER_MODE: xi,
-		BINARY_NUMBER_RE: j,
-		COMMENT: R,
-		C_BLOCK_COMMENT_MODE: B,
-		C_LINE_COMMENT_MODE: z,
-		C_NUMBER_MODE: U,
-		C_NUMBER_RE: A,
+		APOS_STRING_MODE: P,
+		BACKSLASH_ESCAPE: N,
+		BINARY_NUMBER_MODE: ci,
+		BINARY_NUMBER_RE: A,
+		COMMENT: L,
+		C_BLOCK_COMMENT_MODE: z,
+		C_LINE_COMMENT_MODE: R,
+		C_NUMBER_MODE: si,
+		C_NUMBER_RE: k,
 		END_SAME_AS_BEGIN: function(e) {
 			return Object.assign(e, {
 				"on:begin": (e, t) => {
@@ -272,53 +5056,53 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			});
 		},
-		HASH_COMMENT_MODE: V,
-		IDENT_RE: D,
-		MATCH_NOTHING_RE: E,
-		METHOD_GUARD: wi,
-		NUMBER_MODE: H,
-		NUMBER_RE: k,
-		PHRASAL_WORDS_MODE: L,
-		QUOTE_STRING_MODE: I,
-		REGEXP_MODE: W,
-		RE_STARTERS_RE: M,
-		SHEBANG: N,
-		TITLE_MODE: Si,
-		UNDERSCORE_IDENT_RE: O,
-		UNDERSCORE_TITLE_MODE: Ci
+		HASH_COMMENT_MODE: B,
+		IDENT_RE: E,
+		MATCH_NOTHING_RE: T,
+		METHOD_GUARD: fi,
+		NUMBER_MODE: V,
+		NUMBER_RE: O,
+		PHRASAL_WORDS_MODE: I,
+		QUOTE_STRING_MODE: F,
+		REGEXP_MODE: li,
+		RE_STARTERS_RE: j,
+		SHEBANG: M,
+		TITLE_MODE: ui,
+		UNDERSCORE_IDENT_RE: D,
+		UNDERSCORE_TITLE_MODE: di
 	});
-	function K(e, t) {
+	function U(e, t) {
 		e.input[e.index - 1] === "." && t.ignoreMatch();
 	}
-	function Ti(e, t) {
+	function pi(e, t) {
 		e.className !== void 0 && (e.scope = e.className, delete e.className);
 	}
-	function q(e, t) {
-		t && e.beginKeywords && (e.begin = "\\b(" + e.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)", e.__beforeBegin = K, e.keywords = e.keywords || e.beginKeywords, delete e.beginKeywords, e.relevance === void 0 && (e.relevance = 0));
+	function mi(e, t) {
+		t && e.beginKeywords && (e.begin = "\\b(" + e.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)", e.__beforeBegin = U, e.keywords = e.keywords || e.beginKeywords, delete e.beginKeywords, e.relevance === void 0 && (e.relevance = 0));
 	}
-	function J(e, t) {
-		Array.isArray(e.illegal) && (e.illegal = x(...e.illegal));
+	function W(e, t) {
+		Array.isArray(e.illegal) && (e.illegal = b(...e.illegal));
 	}
-	function Y(e, t) {
+	function G(e, t) {
 		if (e.match) {
 			if (e.begin || e.end) throw Error("begin & end are not supported with match");
 			e.begin = e.match, delete e.match;
 		}
 	}
-	function Ei(e, t) {
+	function K(e, t) {
 		e.relevance === void 0 && (e.relevance = 1);
 	}
-	var X = (e, t) => {
+	var q = (e, t) => {
 		if (!e.beforeMatch) return;
 		if (e.starts) throw Error("beforeMatch cannot be used with starts");
 		let n = Object.assign({}, e);
 		Object.keys(e).forEach((t) => {
 			delete e[t];
-		}), e.keywords = n.keywords, e.begin = y(n.beforeMatch, g(n.begin)), e.starts = {
+		}), e.keywords = n.keywords, e.begin = v(n.beforeMatch, m(n.begin)), e.starts = {
 			relevance: 0,
 			contains: [Object.assign(n, { endsParent: !0 })]
 		}, e.relevance = 0, delete n.beforeMatch;
-	}, Di = [
+	}, J = [
 		"of",
 		"and",
 		"for",
@@ -330,70 +5114,70 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"parent",
 		"list",
 		"value"
-	], Oi = "keyword";
-	function ki(e, t, n = Oi) {
+	], Y = "keyword";
+	function hi(e, t, n = Y) {
 		let r = Object.create(null);
 		return typeof e == "string" ? i(n, e.split(" ")) : Array.isArray(e) ? i(n, e) : Object.keys(e).forEach(function(n) {
-			Object.assign(r, ki(e[n], t, n));
+			Object.assign(r, hi(e[n], t, n));
 		}), r;
 		function i(e, n) {
 			t && (n = n.map((e) => e.toLowerCase())), n.forEach(function(t) {
 				let n = t.split("|");
-				r[n[0]] = [e, Ai(n[0], n[1])];
+				r[n[0]] = [e, gi(n[0], n[1])];
 			});
 		}
 	}
-	function Ai(e, t) {
-		return t ? Number(t) : ji(e) ? 0 : 1;
+	function gi(e, t) {
+		return t ? Number(t) : _i(e) ? 0 : 1;
 	}
-	function ji(e) {
-		return Di.includes(e.toLowerCase());
+	function _i(e) {
+		return J.includes(e.toLowerCase());
 	}
-	var Mi = {}, Z = (e) => {
+	var vi = {}, X = (e) => {
 		console.error(e);
-	}, Ni = (e, ...t) => {
+	}, yi = (e, ...t) => {
 		console.log(`WARN: ${e}`, ...t);
-	}, Q = (e, t) => {
-		Mi[`${e}/${t}`] || (console.log(`Deprecated as of ${e}. ${t}`), Mi[`${e}/${t}`] = !0);
-	}, Pi = /* @__PURE__ */ Error();
-	function Fi(e, t, { key: n }) {
+	}, Z = (e, t) => {
+		vi[`${e}/${t}`] || (console.log(`Deprecated as of ${e}. ${t}`), vi[`${e}/${t}`] = !0);
+	}, bi = /* @__PURE__ */ Error();
+	function xi(e, t, { key: n }) {
 		let r = 0, i = e[n], a = {}, o = {};
-		for (let e = 1; e <= t.length; e++) o[e + r] = i[e], a[e + r] = !0, r += S(t[e - 1]);
+		for (let e = 1; e <= t.length; e++) o[e + r] = i[e], a[e + r] = !0, r += x(t[e - 1]);
 		e[n] = o, e[n]._emit = a, e[n]._multi = !0;
 	}
-	function Ii(e) {
+	function Si(e) {
 		if (Array.isArray(e.begin)) {
-			if (e.skip || e.excludeBegin || e.returnBegin) throw Z("skip, excludeBegin, returnBegin not compatible with beginScope: {}"), Pi;
-			if (typeof e.beginScope != "object" || e.beginScope === null) throw Z("beginScope must be object"), Pi;
-			Fi(e, e.begin, { key: "beginScope" }), e.begin = T(e.begin, { joinWith: "" });
+			if (e.skip || e.excludeBegin || e.returnBegin) throw X("skip, excludeBegin, returnBegin not compatible with beginScope: {}"), bi;
+			if (typeof e.beginScope != "object" || e.beginScope === null) throw X("beginScope must be object"), bi;
+			xi(e, e.begin, { key: "beginScope" }), e.begin = w(e.begin, { joinWith: "" });
 		}
 	}
-	function Li(e) {
+	function Ci(e) {
 		if (Array.isArray(e.end)) {
-			if (e.skip || e.excludeEnd || e.returnEnd) throw Z("skip, excludeEnd, returnEnd not compatible with endScope: {}"), Pi;
-			if (typeof e.endScope != "object" || e.endScope === null) throw Z("endScope must be object"), Pi;
-			Fi(e, e.end, { key: "endScope" }), e.end = T(e.end, { joinWith: "" });
+			if (e.skip || e.excludeEnd || e.returnEnd) throw X("skip, excludeEnd, returnEnd not compatible with endScope: {}"), bi;
+			if (typeof e.endScope != "object" || e.endScope === null) throw X("endScope must be object"), bi;
+			xi(e, e.end, { key: "endScope" }), e.end = w(e.end, { joinWith: "" });
 		}
 	}
-	function Ri(e) {
+	function wi(e) {
 		e.scope && typeof e.scope == "object" && e.scope !== null && (e.beginScope = e.scope, delete e.scope);
 	}
-	function zi(e) {
-		Ri(e), typeof e.beginScope == "string" && (e.beginScope = { _wrap: e.beginScope }), typeof e.endScope == "string" && (e.endScope = { _wrap: e.endScope }), Ii(e), Li(e);
+	function Ti(e) {
+		wi(e), typeof e.beginScope == "string" && (e.beginScope = { _wrap: e.beginScope }), typeof e.endScope == "string" && (e.endScope = { _wrap: e.endScope }), Si(e), Ci(e);
 	}
-	function Bi(e) {
+	function Ei(e) {
 		function t(t, n) {
-			return new RegExp(m(t), "m" + (e.case_insensitive ? "i" : "") + (e.unicodeRegex ? "u" : "") + (n ? "g" : ""));
+			return new RegExp(p(t), "m" + (e.case_insensitive ? "i" : "") + (e.unicodeRegex ? "u" : "") + (n ? "g" : ""));
 		}
 		class n {
 			constructor() {
 				this.matchIndexes = {}, this.regexes = [], this.matchAt = 1, this.position = 0;
 			}
 			addRule(e, t) {
-				t.position = this.position++, this.matchIndexes[this.matchAt] = t, this.regexes.push([t, e]), this.matchAt += S(e) + 1;
+				t.position = this.position++, this.matchIndexes[this.matchAt] = t, this.regexes.push([t, e]), this.matchAt += x(e) + 1;
 			}
 			compile() {
-				this.regexes.length === 0 && (this.exec = () => null), this.matcherRe = t(T(this.regexes.map((e) => e[1]), { joinWith: "|" }), !0), this.lastIndex = 0;
+				this.regexes.length === 0 && (this.exec = () => null), this.matcherRe = t(w(this.regexes.map((e) => e[1]), { joinWith: "|" }), !0), this.lastIndex = 0;
 			}
 			exec(e) {
 				this.matcherRe.lastIndex = this.lastIndex;
@@ -443,18 +5227,18 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			let a = n;
 			if (n.isCompiled) return a;
 			[
+				pi,
+				G,
 				Ti,
-				Y,
-				zi,
-				X
+				q
 			].forEach((e) => e(n, r)), e.compilerExtensions.forEach((e) => e(n, r)), n.__beforeBegin = null, [
-				q,
-				J,
-				Ei
+				mi,
+				W,
+				K
 			].forEach((e) => e(n, r)), n.isCompiled = !0;
 			let s = null;
-			return typeof n.keywords == "object" && n.keywords.$pattern && (n.keywords = Object.assign({}, n.keywords), s = n.keywords.$pattern, delete n.keywords.$pattern), s ||= /\w+/, n.keywords &&= ki(n.keywords, e.case_insensitive), a.keywordPatternRe = t(s, !0), r && (n.begin ||= /\B|\b/, a.beginRe = t(a.begin), !n.end && !n.endsWithParent && (n.end = /\B|\b/), n.end && (a.endRe = t(a.end)), a.terminatorEnd = m(a.end) || "", n.endsWithParent && r.terminatorEnd && (a.terminatorEnd += (n.end ? "|" : "") + r.terminatorEnd)), n.illegal && (a.illegalRe = t(n.illegal)), n.contains ||= [], n.contains = [].concat(...n.contains.map(function(e) {
-				return Hi(e === "self" ? n : e);
+			return typeof n.keywords == "object" && n.keywords.$pattern && (n.keywords = Object.assign({}, n.keywords), s = n.keywords.$pattern, delete n.keywords.$pattern), s ||= /\w+/, n.keywords &&= hi(n.keywords, e.case_insensitive), a.keywordPatternRe = t(s, !0), r && (n.begin ||= /\B|\b/, a.beginRe = t(a.begin), !n.end && !n.endsWithParent && (n.end = /\B|\b/), n.end && (a.endRe = t(a.end)), a.terminatorEnd = p(a.end) || "", n.endsWithParent && r.terminatorEnd && (a.terminatorEnd += (n.end ? "|" : "") + r.terminatorEnd)), n.illegal && (a.illegalRe = t(n.illegal)), n.contains ||= [], n.contains = [].concat(...n.contains.map(function(e) {
+				return Di(e === "self" ? n : e);
 			})), n.contains.forEach(function(e) {
 				o(e, a);
 			}), n.starts && o(n.starts, r), a.matcher = i(a), a;
@@ -462,24 +5246,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		if (e.compilerExtensions ||= [], e.contains && e.contains.includes("self")) throw Error("ERR: contains `self` is not supported at the top-level of a language.  See documentation.");
 		return e.classNameAliases = a(e.classNameAliases || {}), o(e);
 	}
-	function Vi(e) {
-		return e ? e.endsWithParent || Vi(e.starts) : !1;
+	function Q(e) {
+		return e ? e.endsWithParent || Q(e.starts) : !1;
 	}
-	function Hi(e) {
+	function Di(e) {
 		return e.variants && !e.cachedVariants && (e.cachedVariants = e.variants.map(function(t) {
 			return a(e, { variants: null }, t);
-		})), e.cachedVariants ? e.cachedVariants : Vi(e) ? a(e, { starts: e.starts ? a(e.starts) : null }) : Object.isFrozen(e) ? a(e) : e;
+		})), e.cachedVariants ? e.cachedVariants : Q(e) ? a(e, { starts: e.starts ? a(e.starts) : null }) : Object.isFrozen(e) ? a(e) : e;
 	}
-	var Ui = "11.11.1", Wi = class extends Error {
+	var Oi = "11.11.1", ki = class extends Error {
 		constructor(e, t) {
 			super(e), this.name = "HTMLInjectionError", this.html = t;
 		}
-	}, Gi = i, Ki = a, qi = Symbol("nomatch"), Ji = 7, Yi = function(e) {
-		let t = Object.create(null), i = Object.create(null), a = [], o = !0, s = "Could not find the language '{}', did you forget to load/include a language module?", l = {
+	}, Ai = i, ji = a, Mi = Symbol("nomatch"), Ni = 7, Pi = function(e) {
+		let t = Object.create(null), i = Object.create(null), a = [], o = !0, s = "Could not find the language '{}', did you forget to load/include a language module?", c = {
 			disableAutodetect: !0,
 			name: "Plain text",
 			contains: []
-		}, u = {
+		}, l = {
 			ignoreUnescapedHTML: !1,
 			throwUnescapedHTML: !1,
 			noHighlightRe: /^(no-?highlight)$/i,
@@ -487,94 +5271,94 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			classPrefix: "hljs-",
 			cssSelector: "pre code",
 			languages: null,
-			__emitter: p
+			__emitter: f
 		};
-		function d(e) {
-			return u.noHighlightRe.test(e);
+		function u(e) {
+			return l.noHighlightRe.test(e);
 		}
-		function f(e) {
+		function d(e) {
 			let t = e.className + " ";
 			t += e.parentNode ? e.parentNode.className : "";
-			let n = u.languageDetectRe.exec(t);
+			let n = l.languageDetectRe.exec(t);
 			if (n) {
-				let t = F(n[1]);
-				return t || (Ni(s.replace("{}", n[1])), Ni("Falling back to no-highlight mode for this block.", e)), t ? n[1] : "no-highlight";
+				let t = P(n[1]);
+				return t || (yi(s.replace("{}", n[1])), yi("Falling back to no-highlight mode for this block.", e)), t ? n[1] : "no-highlight";
 			}
-			return t.split(/\s+/).find((e) => d(e) || F(e));
+			return t.split(/\s+/).find((e) => u(e) || P(e));
 		}
-		function m(e, t, n) {
+		function p(e, t, n) {
 			let r = "", i = "";
-			typeof t == "object" ? (r = e, n = t.ignoreIllegals, i = t.language) : (Q("10.7.0", "highlight(lang, code, ...args) has been deprecated."), Q("10.7.0", "Please use highlight(code, options) instead.\nhttps://github.com/highlightjs/highlight.js/issues/2277"), i = e, r = t), n === void 0 && (n = !0);
+			typeof t == "object" ? (r = e, n = t.ignoreIllegals, i = t.language) : (Z("10.7.0", "highlight(lang, code, ...args) has been deprecated."), Z("10.7.0", "Please use highlight(code, options) instead.\nhttps://github.com/highlightjs/highlight.js/issues/2277"), i = e, r = t), n === void 0 && (n = !0);
 			let a = {
 				code: r,
 				language: i
 			};
-			V("before:highlight", a);
-			let o = a.result ? a.result : b(a.language, a.code, n);
-			return o.code = a.code, V("after:highlight", o), o;
+			B("before:highlight", a);
+			let o = a.result ? a.result : y(a.language, a.code, n);
+			return o.code = a.code, B("after:highlight", o), o;
 		}
-		function b(e, n, i, a) {
-			let l = Object.create(null);
-			function d(e, t) {
+		function y(e, n, i, a) {
+			let c = Object.create(null);
+			function u(e, t) {
 				return e.keywords[t];
 			}
-			function f() {
-				if (!M.keywords) {
-					P.addText(I);
+			function d() {
+				if (!j.keywords) {
+					N.addText(F);
 					return;
 				}
 				let e = 0;
-				M.keywordPatternRe.lastIndex = 0;
-				let t = M.keywordPatternRe.exec(I), n = "";
+				j.keywordPatternRe.lastIndex = 0;
+				let t = j.keywordPatternRe.exec(F), n = "";
 				for (; t;) {
-					n += I.substring(e, t.index);
-					let r = k.case_insensitive ? t[0].toLowerCase() : t[0], i = d(M, r);
+					n += F.substring(e, t.index);
+					let r = O.case_insensitive ? t[0].toLowerCase() : t[0], i = u(j, r);
 					if (i) {
 						let [e, a] = i;
-						if (P.addText(n), n = "", l[r] = (l[r] || 0) + 1, l[r] <= Ji && (L += a), e.startsWith("_")) n += t[0];
+						if (N.addText(n), n = "", c[r] = (c[r] || 0) + 1, c[r] <= Ni && (I += a), e.startsWith("_")) n += t[0];
 						else {
-							let n = k.classNameAliases[e] || e;
-							g(t[0], n);
+							let n = O.classNameAliases[e] || e;
+							m(t[0], n);
 						}
 					} else n += t[0];
-					e = M.keywordPatternRe.lastIndex, t = M.keywordPatternRe.exec(I);
+					e = j.keywordPatternRe.lastIndex, t = j.keywordPatternRe.exec(F);
 				}
-				n += I.substring(e), P.addText(n);
+				n += F.substring(e), N.addText(n);
 			}
-			function p() {
-				if (I === "") return;
+			function f() {
+				if (F === "") return;
 				let e = null;
-				if (typeof M.subLanguage == "string") {
-					if (!t[M.subLanguage]) {
-						P.addText(I);
+				if (typeof j.subLanguage == "string") {
+					if (!t[j.subLanguage]) {
+						N.addText(F);
 						return;
 					}
-					e = b(M.subLanguage, I, !0, N[M.subLanguage]), N[M.subLanguage] = e._top;
-				} else e = w(I, M.subLanguage.length ? M.subLanguage : null);
-				M.relevance > 0 && (L += e.relevance), P.__addSublanguage(e._emitter, e.language);
+					e = y(j.subLanguage, F, !0, M[j.subLanguage]), M[j.subLanguage] = e._top;
+				} else e = C(F, j.subLanguage.length ? j.subLanguage : null);
+				j.relevance > 0 && (I += e.relevance), N.__addSublanguage(e._emitter, e.language);
 			}
-			function m() {
-				M.subLanguage == null ? f() : p(), I = "";
+			function p() {
+				j.subLanguage == null ? d() : f(), F = "";
+			}
+			function m(e, t) {
+				e !== "" && (N.startScope(t), N.addText(e), N.endScope());
 			}
 			function g(e, t) {
-				e !== "" && (P.startScope(t), P.addText(e), P.endScope());
-			}
-			function _(e, t) {
 				let n = 1, r = t.length - 1;
 				for (; n <= r;) {
 					if (!e._emit[n]) {
 						n++;
 						continue;
 					}
-					let r = k.classNameAliases[e[n]] || e[n], i = t[n];
-					r ? g(i, r) : (I = i, f(), I = ""), n++;
+					let r = O.classNameAliases[e[n]] || e[n], i = t[n];
+					r ? m(i, r) : (F = i, d(), F = ""), n++;
 				}
 			}
-			function v(e, t) {
-				return e.scope && typeof e.scope == "string" && P.openNode(k.classNameAliases[e.scope] || e.scope), e.beginScope && (e.beginScope._wrap ? (g(I, k.classNameAliases[e.beginScope._wrap] || e.beginScope._wrap), I = "") : e.beginScope._multi && (_(e.beginScope, t), I = "")), M = Object.create(e, { parent: { value: M } }), M;
+			function _(e, t) {
+				return e.scope && typeof e.scope == "string" && N.openNode(O.classNameAliases[e.scope] || e.scope), e.beginScope && (e.beginScope._wrap ? (m(F, O.classNameAliases[e.beginScope._wrap] || e.beginScope._wrap), F = "") : e.beginScope._multi && (g(e.beginScope, t), F = "")), j = Object.create(e, { parent: { value: j } }), j;
 			}
-			function y(e, t, n) {
-				let i = C(e.endRe, n);
+			function v(e, t, n) {
+				let i = S(e.endRe, n);
 				if (i) {
 					if (e["on:end"]) {
 						let n = new r(e);
@@ -585,268 +5369,268 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						return e;
 					}
 				}
-				if (e.endsWithParent) return y(e.parent, t, n);
+				if (e.endsWithParent) return v(e.parent, t, n);
+			}
+			function b(e) {
+				return j.matcher.regexIndex === 0 ? (F += e[0], 1) : (z = !0, 0);
 			}
 			function x(e) {
-				return M.matcher.regexIndex === 0 ? (I += e[0], 1) : (B = !0, 0);
-			}
-			function S(e) {
 				let t = e[0], n = e.rule, i = new r(n), a = [n.__beforeBegin, n["on:begin"]];
-				for (let n of a) if (n && (n(e, i), i.isMatchIgnored)) return x(t);
-				return n.skip ? I += t : (n.excludeBegin && (I += t), m(), !n.returnBegin && !n.excludeBegin && (I = t)), v(n, e), n.returnBegin ? 0 : t.length;
+				for (let n of a) if (n && (n(e, i), i.isMatchIgnored)) return b(t);
+				return n.skip ? F += t : (n.excludeBegin && (F += t), p(), !n.returnBegin && !n.excludeBegin && (F = t)), _(n, e), n.returnBegin ? 0 : t.length;
 			}
-			function T(e) {
-				let t = e[0], r = n.substring(e.index), i = y(M, e, r);
-				if (!i) return qi;
-				let a = M;
-				M.endScope && M.endScope._wrap ? (m(), g(t, M.endScope._wrap)) : M.endScope && M.endScope._multi ? (m(), _(M.endScope, e)) : a.skip ? I += t : (a.returnEnd || a.excludeEnd || (I += t), m(), a.excludeEnd && (I = t));
+			function w(e) {
+				let t = e[0], r = n.substring(e.index), i = v(j, e, r);
+				if (!i) return Mi;
+				let a = j;
+				j.endScope && j.endScope._wrap ? (p(), m(t, j.endScope._wrap)) : j.endScope && j.endScope._multi ? (p(), g(j.endScope, e)) : a.skip ? F += t : (a.returnEnd || a.excludeEnd || (F += t), p(), a.excludeEnd && (F = t));
 				do
-					M.scope && P.closeNode(), !M.skip && !M.subLanguage && (L += M.relevance), M = M.parent;
-				while (M !== i.parent);
-				return i.starts && v(i.starts, e), a.returnEnd ? 0 : t.length;
+					j.scope && N.closeNode(), !j.skip && !j.subLanguage && (I += j.relevance), j = j.parent;
+				while (j !== i.parent);
+				return i.starts && _(i.starts, e), a.returnEnd ? 0 : t.length;
 			}
-			function E() {
+			function T() {
 				let e = [];
-				for (let t = M; t !== k; t = t.parent) t.scope && e.unshift(t.scope);
-				e.forEach((e) => P.openNode(e));
+				for (let t = j; t !== O; t = t.parent) t.scope && e.unshift(t.scope);
+				e.forEach((e) => N.openNode(e));
 			}
-			let D = {};
-			function O(t, r) {
+			let E = {};
+			function D(t, r) {
 				let a = r && r[0];
-				if (I += t, a == null) return m(), 0;
-				if (D.type === "begin" && r.type === "end" && D.index === r.index && a === "") {
-					if (I += n.slice(r.index, r.index + 1), !o) {
+				if (F += t, a == null) return p(), 0;
+				if (E.type === "begin" && r.type === "end" && E.index === r.index && a === "") {
+					if (F += n.slice(r.index, r.index + 1), !o) {
 						let t = /* @__PURE__ */ Error(`0 width match regex (${e})`);
-						throw t.languageName = e, t.badRule = D.rule, t;
+						throw t.languageName = e, t.badRule = E.rule, t;
 					}
 					return 1;
 				}
-				if (D = r, r.type === "begin") return S(r);
+				if (E = r, r.type === "begin") return x(r);
 				if (r.type === "illegal" && !i) {
-					let e = /* @__PURE__ */ Error("Illegal lexeme \"" + a + "\" for mode \"" + (M.scope || "<unnamed>") + "\"");
-					throw e.mode = M, e;
+					let e = /* @__PURE__ */ Error("Illegal lexeme \"" + a + "\" for mode \"" + (j.scope || "<unnamed>") + "\"");
+					throw e.mode = j, e;
 				} else if (r.type === "end") {
-					let e = T(r);
-					if (e !== qi) return e;
+					let e = w(r);
+					if (e !== Mi) return e;
 				}
-				if (r.type === "illegal" && a === "") return I += "\n", 1;
-				if (z > 1e5 && z > r.index * 3) throw /* @__PURE__ */ Error("potential infinite loop, way more iterations than matches");
-				return I += a, a.length;
+				if (r.type === "illegal" && a === "") return F += "\n", 1;
+				if (R > 1e5 && R > r.index * 3) throw /* @__PURE__ */ Error("potential infinite loop, way more iterations than matches");
+				return F += a, a.length;
 			}
-			let k = F(e);
-			if (!k) throw Z(s.replace("{}", e)), Error("Unknown language: \"" + e + "\"");
-			let A = Bi(k), j = "", M = a || A, N = {}, P = new u.__emitter(u);
-			E();
-			let I = "", L = 0, R = 0, z = 0, B = !1;
+			let O = P(e);
+			if (!O) throw X(s.replace("{}", e)), Error("Unknown language: \"" + e + "\"");
+			let k = Ei(O), A = "", j = a || k, M = {}, N = new l.__emitter(l);
+			T();
+			let F = "", I = 0, L = 0, R = 0, z = !1;
 			try {
-				if (k.__emitTokens) k.__emitTokens(n, P);
+				if (O.__emitTokens) O.__emitTokens(n, N);
 				else {
-					for (M.matcher.considerAll();;) {
-						z++, B ? B = !1 : M.matcher.considerAll(), M.matcher.lastIndex = R;
-						let e = M.matcher.exec(n);
+					for (j.matcher.considerAll();;) {
+						R++, z ? z = !1 : j.matcher.considerAll(), j.matcher.lastIndex = L;
+						let e = j.matcher.exec(n);
 						if (!e) break;
-						let t = O(n.substring(R, e.index), e);
-						R = e.index + t;
+						let t = D(n.substring(L, e.index), e);
+						L = e.index + t;
 					}
-					O(n.substring(R));
+					D(n.substring(L));
 				}
-				return P.finalize(), j = P.toHTML(), {
+				return N.finalize(), A = N.toHTML(), {
 					language: e,
-					value: j,
-					relevance: L,
+					value: A,
+					relevance: I,
 					illegal: !1,
-					_emitter: P,
-					_top: M
+					_emitter: N,
+					_top: j
 				};
 			} catch (t) {
 				if (t.message && t.message.includes("Illegal")) return {
 					language: e,
-					value: Gi(n),
+					value: Ai(n),
 					illegal: !0,
 					relevance: 0,
 					_illegalBy: {
 						message: t.message,
-						index: R,
-						context: n.slice(R - 100, R + 100),
+						index: L,
+						context: n.slice(L - 100, L + 100),
 						mode: t.mode,
-						resultSoFar: j
+						resultSoFar: A
 					},
-					_emitter: P
+					_emitter: N
 				};
 				if (o) return {
 					language: e,
-					value: Gi(n),
+					value: Ai(n),
 					illegal: !1,
 					relevance: 0,
 					errorRaised: t,
-					_emitter: P,
-					_top: M
+					_emitter: N,
+					_top: j
 				};
 				throw t;
 			}
 		}
-		function S(e) {
+		function x(e) {
 			let t = {
-				value: Gi(e),
+				value: Ai(e),
 				illegal: !1,
 				relevance: 0,
-				_top: l,
-				_emitter: new u.__emitter(u)
+				_top: c,
+				_emitter: new l.__emitter(l)
 			};
 			return t._emitter.addText(e), t;
 		}
-		function w(e, n) {
-			n = n || u.languages || Object.keys(t);
-			let r = S(e), i = n.filter(F).filter(L).map((t) => b(t, e, !1));
+		function C(e, n) {
+			n = n || l.languages || Object.keys(t);
+			let r = x(e), i = n.filter(P).filter(I).map((t) => y(t, e, !1));
 			i.unshift(r);
 			let [a, o] = i.sort((e, t) => {
 				if (e.relevance !== t.relevance) return t.relevance - e.relevance;
 				if (e.language && t.language) {
-					if (F(e.language).supersetOf === t.language) return 1;
-					if (F(t.language).supersetOf === e.language) return -1;
+					if (P(e.language).supersetOf === t.language) return 1;
+					if (P(t.language).supersetOf === e.language) return -1;
 				}
 				return 0;
 			}), s = a;
 			return s.secondBest = o, s;
 		}
-		function T(e, t, n) {
+		function w(e, t, n) {
 			let r = t && i[t] || n;
 			e.classList.add("hljs"), e.classList.add(`language-${r}`);
 		}
-		function E(e) {
-			let t = null, n = f(e);
-			if (d(n)) return;
-			if (V("before:highlightElement", {
+		function T(e) {
+			let t = null, n = d(e);
+			if (u(n)) return;
+			if (B("before:highlightElement", {
 				el: e,
 				language: n
 			}), e.dataset.highlighted) {
 				console.log("Element previously highlighted. To highlight again, first unset `dataset.highlighted`.", e);
 				return;
 			}
-			if (e.children.length > 0 && (u.ignoreUnescapedHTML || (console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."), console.warn("https://github.com/highlightjs/highlight.js/wiki/security"), console.warn("The element with unescaped HTML:"), console.warn(e)), u.throwUnescapedHTML)) throw new Wi("One of your code blocks includes unescaped HTML.", e.innerHTML);
+			if (e.children.length > 0 && (l.ignoreUnescapedHTML || (console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."), console.warn("https://github.com/highlightjs/highlight.js/wiki/security"), console.warn("The element with unescaped HTML:"), console.warn(e)), l.throwUnescapedHTML)) throw new ki("One of your code blocks includes unescaped HTML.", e.innerHTML);
 			t = e;
-			let r = t.textContent, i = n ? m(r, {
+			let r = t.textContent, i = n ? p(r, {
 				language: n,
 				ignoreIllegals: !0
-			}) : w(r);
-			e.innerHTML = i.value, e.dataset.highlighted = "yes", T(e, n, i.language), e.result = {
+			}) : C(r);
+			e.innerHTML = i.value, e.dataset.highlighted = "yes", w(e, n, i.language), e.result = {
 				language: i.language,
 				re: i.relevance,
 				relevance: i.relevance
 			}, i.secondBest && (e.secondBest = {
 				language: i.secondBest.language,
 				relevance: i.secondBest.relevance
-			}), V("after:highlightElement", {
+			}), B("after:highlightElement", {
 				el: e,
 				result: i,
 				text: r
 			});
 		}
-		function D(e) {
-			u = Ki(u, e);
+		function E(e) {
+			l = ji(l, e);
 		}
-		let O = () => {
-			j(), Q("10.6.0", "initHighlighting() deprecated.  Use highlightAll() now.");
+		let D = () => {
+			A(), Z("10.6.0", "initHighlighting() deprecated.  Use highlightAll() now.");
 		};
-		function k() {
-			j(), Q("10.6.0", "initHighlightingOnLoad() deprecated.  Use highlightAll() now.");
+		function O() {
+			A(), Z("10.6.0", "initHighlightingOnLoad() deprecated.  Use highlightAll() now.");
 		}
-		let A = !1;
-		function j() {
+		let k = !1;
+		function A() {
 			function e() {
-				j();
+				A();
 			}
 			if (document.readyState === "loading") {
-				A || window.addEventListener("DOMContentLoaded", e, !1), A = !0;
+				k || window.addEventListener("DOMContentLoaded", e, !1), k = !0;
 				return;
 			}
-			document.querySelectorAll(u.cssSelector).forEach(E);
+			document.querySelectorAll(l.cssSelector).forEach(T);
 		}
-		function M(n, r) {
+		function j(n, r) {
 			let i = null;
 			try {
 				i = r(e);
 			} catch (e) {
-				if (Z("Language definition for '{}' could not be registered.".replace("{}", n)), o) Z(e);
+				if (X("Language definition for '{}' could not be registered.".replace("{}", n)), o) X(e);
 				else throw e;
-				i = l;
+				i = c;
 			}
-			i.name ||= n, t[n] = i, i.rawDefinition = r.bind(null, e), i.aliases && I(i.aliases, { languageName: n });
+			i.name ||= n, t[n] = i, i.rawDefinition = r.bind(null, e), i.aliases && F(i.aliases, { languageName: n });
 		}
-		function N(e) {
+		function M(e) {
 			delete t[e];
 			for (let t of Object.keys(i)) i[t] === e && delete i[t];
 		}
-		function P() {
+		function N() {
 			return Object.keys(t);
 		}
-		function F(e) {
+		function P(e) {
 			return e = (e || "").toLowerCase(), t[e] || t[i[e]];
 		}
-		function I(e, { languageName: t }) {
+		function F(e, { languageName: t }) {
 			typeof e == "string" && (e = [e]), e.forEach((e) => {
 				i[e.toLowerCase()] = t;
 			});
 		}
-		function L(e) {
-			let t = F(e);
+		function I(e) {
+			let t = P(e);
 			return t && !t.disableAutodetect;
 		}
-		function R(e) {
+		function L(e) {
 			e["before:highlightBlock"] && !e["before:highlightElement"] && (e["before:highlightElement"] = (t) => {
 				e["before:highlightBlock"](Object.assign({ block: t.el }, t));
 			}), e["after:highlightBlock"] && !e["after:highlightElement"] && (e["after:highlightElement"] = (t) => {
 				e["after:highlightBlock"](Object.assign({ block: t.el }, t));
 			});
 		}
-		function z(e) {
-			R(e), a.push(e);
+		function R(e) {
+			L(e), a.push(e);
 		}
-		function B(e) {
+		function z(e) {
 			let t = a.indexOf(e);
 			t !== -1 && a.splice(t, 1);
 		}
-		function V(e, t) {
+		function B(e, t) {
 			let n = e;
 			a.forEach(function(e) {
 				e[n] && e[n](t);
 			});
 		}
-		function H(e) {
-			return Q("10.7.0", "highlightBlock will be removed entirely in v12.0"), Q("10.7.0", "Please use highlightElement now."), E(e);
+		function V(e) {
+			return Z("10.7.0", "highlightBlock will be removed entirely in v12.0"), Z("10.7.0", "Please use highlightElement now."), T(e);
 		}
 		for (let t in Object.assign(e, {
-			highlight: m,
-			highlightAuto: w,
-			highlightAll: j,
-			highlightElement: E,
-			highlightBlock: H,
-			configure: D,
-			initHighlighting: O,
-			initHighlightingOnLoad: k,
-			registerLanguage: M,
-			unregisterLanguage: N,
-			listLanguages: P,
-			getLanguage: F,
-			registerAliases: I,
-			autoDetection: L,
-			inherit: Ki,
-			addPlugin: z,
-			removePlugin: B
+			highlight: p,
+			highlightAuto: C,
+			highlightAll: A,
+			highlightElement: T,
+			highlightBlock: V,
+			configure: E,
+			initHighlighting: D,
+			initHighlightingOnLoad: O,
+			registerLanguage: j,
+			unregisterLanguage: M,
+			listLanguages: N,
+			getLanguage: P,
+			registerAliases: F,
+			autoDetection: I,
+			inherit: ji,
+			addPlugin: R,
+			removePlugin: z
 		}), e.debugMode = function() {
 			o = !1;
 		}, e.safeMode = function() {
 			o = !0;
-		}, e.versionString = Ui, e.regex = {
-			concat: y,
-			lookahead: g,
-			either: x,
-			optional: v,
-			anyNumberOfTimes: _
-		}, G) typeof G[t] == "object" && n(G[t]);
-		return Object.assign(e, G), e;
-	}, $ = Yi({});
-	$.newInstance = () => Yi({}), t.exports = $, $.HighlightJS = $, $.default = $;
+		}, e.versionString = Oi, e.regex = {
+			concat: v,
+			lookahead: m,
+			either: b,
+			optional: _,
+			anyNumberOfTimes: g
+		}, H) typeof H[t] == "object" && n(H[t]);
+		return Object.assign(e, H), e;
+	}, $ = Pi({});
+	$.newInstance = () => Pi({}), t.exports = $, $.HighlightJS = $, $.default = $;
 })), require__1c = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		let t = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]+", n = "далее возврат вызватьисключение выполнить для если и из или иначе иначеесли исключение каждого конецесли конецпопытки конеццикла не новый перейти перем по пока попытка прервать продолжить тогда цикл экспорт ", r = "null истина ложь неопределено", i = e.inherit(e.NUMBER_MODE), a = {
@@ -867,7 +5651,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			match: /[;()+\-:=,]/,
 			className: "punctuation",
 			relevance: 0
-		}, l = e.inherit(e.C_LINE_COMMENT_MODE), u = {
+		}, c = e.inherit(e.C_LINE_COMMENT_MODE), l = {
 			className: "meta",
 			begin: "#|&",
 			end: "$",
@@ -875,13 +5659,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				$pattern: t,
 				keyword: n + "загрузитьизфайла вебклиент вместо внешнеесоединение клиент конецобласти мобильноеприложениеклиент мобильноеприложениесервер наклиенте наклиентенасервере наклиентенасерверебезконтекста насервере насерверебезконтекста область перед после сервер толстыйклиентобычноеприложение толстыйклиентуправляемоеприложение тонкийклиент "
 			},
-			contains: [l]
-		}, d = {
+			contains: [c]
+		}, u = {
 			className: "symbol",
 			begin: "~",
 			end: ";|:",
 			excludeEnd: !0
-		}, f = {
+		}, d = {
 			className: "function",
 			variants: [{
 				begin: "процедура|функция",
@@ -911,7 +5695,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						a,
 						o
 					]
-				}, l]
+				}, c]
 			}, e.inherit(e.TITLE_MODE, { begin: t })]
 		};
 		return {
@@ -926,10 +5710,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				literal: r
 			},
 			contains: [
-				u,
-				f,
 				l,
 				d,
+				c,
+				u,
 				i,
 				a,
 				o,
@@ -1550,7 +6334,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			a,
 			e.REGEXP_MODE
 		];
-		let l = o.contains.concat([e.C_BLOCK_COMMENT_MODE, e.C_LINE_COMMENT_MODE]);
+		let c = o.contains.concat([e.C_BLOCK_COMMENT_MODE, e.C_LINE_COMMENT_MODE]);
 		return {
 			name: "ArcGIS Arcade",
 			case_insensitive: !0,
@@ -1600,7 +6384,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 										excludeBegin: !0,
 										excludeEnd: !0,
 										keywords: r,
-										contains: l
+										contains: c
 									}
 								]
 							}]
@@ -1621,7 +6405,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						end: /\)/,
 						excludeBegin: !0,
 						excludeEnd: !0,
-						contains: l
+						contains: c
 					}],
 					illegal: /\[|%/
 				},
@@ -1655,11 +6439,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /\)([^()\\ ]{0,16})"/
 				})
 			]
-		}, l = {
+		}, c = {
 			className: "number",
 			variants: [{ begin: "[+-]?(?:(?:[0-9](?:'?[0-9])*\\.(?:[0-9](?:'?[0-9])*)?|\\.[0-9](?:'?[0-9])*)(?:[Ee][+-]?[0-9](?:'?[0-9])*)?|[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*|0[Xx](?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*(?:\\.(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)?)?|\\.[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)[Pp][+-]?[0-9](?:'?[0-9])*)(?:[Ff](?:16|32|64|128)?|(BF|bf)16|[Ll]|)" }, { begin: "[+-]?\\b(?:0[Bb][01](?:'?[01])*|0[Xx][0-9A-Fa-f](?:'?[0-9A-Fa-f])*|0(?:'?[0-7])*|[1-9](?:'?[0-9])*)(?:[Uu](?:LL?|ll?)|[Uu][Zz]?|(?:LL?|ll?)[Uu]?|[Zz][Uu]|)" }],
 			relevance: 0
-		}, u = {
+		}, l = {
 			className: "meta",
 			begin: /#\s*[a-z]+\b/,
 			end: /$/,
@@ -1677,11 +6461,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				n,
 				e.C_BLOCK_COMMENT_MODE
 			]
-		}, d = {
+		}, u = {
 			className: "title",
 			begin: t.optional(i) + e.IDENT_RE,
 			relevance: 0
-		}, f = t.optional(i) + e.IDENT_RE + "\\s*\\(", p = /* @__PURE__ */ "alignas.alignof.and.and_eq.asm.atomic_cancel.atomic_commit.atomic_noexcept.auto.bitand.bitor.break.case.catch.class.co_await.co_return.co_yield.compl.concept.const_cast|10.consteval.constexpr.constinit.continue.decltype.default.delete.do.dynamic_cast|10.else.enum.explicit.export.extern.false.final.for.friend.goto.if.import.inline.module.mutable.namespace.new.noexcept.not.not_eq.nullptr.operator.or.or_eq.override.private.protected.public.reflexpr.register.reinterpret_cast|10.requires.return.sizeof.static_assert.static_cast|10.struct.switch.synchronized.template.this.thread_local.throw.transaction_safe.transaction_safe_dynamic.true.try.typedef.typeid.typename.union.using.virtual.volatile.while.xor.xor_eq".split("."), m = [
+		}, d = t.optional(i) + e.IDENT_RE + "\\s*\\(", f = /* @__PURE__ */ "alignas.alignof.and.and_eq.asm.atomic_cancel.atomic_commit.atomic_noexcept.auto.bitand.bitor.break.case.catch.class.co_await.co_return.co_yield.compl.concept.const_cast|10.consteval.constexpr.constinit.continue.decltype.default.delete.do.dynamic_cast|10.else.enum.explicit.export.extern.false.final.for.friend.goto.if.import.inline.module.mutable.namespace.new.noexcept.not.not_eq.nullptr.operator.or.or_eq.override.private.protected.public.reflexpr.register.reinterpret_cast|10.requires.return.sizeof.static_assert.static_cast|10.struct.switch.synchronized.template.this.thread_local.throw.transaction_safe.transaction_safe_dynamic.true.try.typedef.typeid.typename.union.using.virtual.volatile.while.xor.xor_eq".split("."), p = [
 			"bool",
 			"char",
 			"char16_t",
@@ -1698,9 +6482,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"signed",
 			"const",
 			"static"
-		], g = /* @__PURE__ */ "any.auto_ptr.barrier.binary_semaphore.bitset.complex.condition_variable.condition_variable_any.counting_semaphore.deque.false_type.flat_map.flat_set.future.imaginary.initializer_list.istringstream.jthread.latch.lock_guard.multimap.multiset.mutex.optional.ostringstream.packaged_task.pair.promise.priority_queue.queue.recursive_mutex.recursive_timed_mutex.scoped_lock.set.shared_future.shared_lock.shared_mutex.shared_timed_mutex.shared_ptr.stack.string_view.stringstream.timed_mutex.thread.true_type.tuple.unique_lock.unique_ptr.unordered_map.unordered_multimap.unordered_multiset.unordered_set.variant.vector.weak_ptr.wstring.wstring_view".split("."), _ = /* @__PURE__ */ "abort.abs.acos.apply.as_const.asin.atan.atan2.calloc.ceil.cerr.cin.clog.cos.cosh.cout.declval.endl.exchange.exit.exp.fabs.floor.fmod.forward.fprintf.fputs.free.frexp.fscanf.future.invoke.isalnum.isalpha.iscntrl.isdigit.isgraph.islower.isprint.ispunct.isspace.isupper.isxdigit.labs.launder.ldexp.log.log10.make_pair.make_shared.make_shared_for_overwrite.make_tuple.make_unique.malloc.memchr.memcmp.memcpy.memset.modf.move.pow.printf.putchar.puts.realloc.scanf.sin.sinh.snprintf.sprintf.sqrt.sscanf.std.stderr.stdin.stdout.strcat.strchr.strcmp.strcpy.strcspn.strlen.strncat.strncmp.strncpy.strpbrk.strrchr.strspn.strstr.swap.tan.tanh.terminate.to_underlying.tolower.toupper.vfprintf.visit.vprintf.vsprintf".split("."), v = {
-			type: m,
-			keyword: p,
+		], m = /* @__PURE__ */ "any.auto_ptr.barrier.binary_semaphore.bitset.complex.condition_variable.condition_variable_any.counting_semaphore.deque.false_type.flat_map.flat_set.future.imaginary.initializer_list.istringstream.jthread.latch.lock_guard.multimap.multiset.mutex.optional.ostringstream.packaged_task.pair.promise.priority_queue.queue.recursive_mutex.recursive_timed_mutex.scoped_lock.set.shared_future.shared_lock.shared_mutex.shared_timed_mutex.shared_ptr.stack.string_view.stringstream.timed_mutex.thread.true_type.tuple.unique_lock.unique_ptr.unordered_map.unordered_multimap.unordered_multiset.unordered_set.variant.vector.weak_ptr.wstring.wstring_view".split("."), g = /* @__PURE__ */ "abort.abs.acos.apply.as_const.asin.atan.atan2.calloc.ceil.cerr.cin.clog.cos.cosh.cout.declval.endl.exchange.exit.exp.fabs.floor.fmod.forward.fprintf.fputs.free.frexp.fscanf.future.invoke.isalnum.isalpha.iscntrl.isdigit.isgraph.islower.isprint.ispunct.isspace.isupper.isxdigit.labs.launder.ldexp.log.log10.make_pair.make_shared.make_shared_for_overwrite.make_tuple.make_unique.malloc.memchr.memcmp.memcpy.memset.modf.move.pow.printf.putchar.puts.realloc.scanf.sin.sinh.snprintf.sprintf.sqrt.sscanf.std.stderr.stdin.stdout.strcat.strchr.strcmp.strcpy.strcspn.strlen.strncat.strncmp.strncpy.strpbrk.strrchr.strspn.strstr.swap.tan.tanh.terminate.to_underlying.tolower.toupper.vfprintf.visit.vprintf.vsprintf".split("."), _ = {
+			type: p,
+			keyword: f,
 			literal: [
 				"NULL",
 				"false",
@@ -1709,21 +6493,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"true"
 			],
 			built_in: ["_Pragma"],
-			_type_hints: g
-		}, y = {
+			_type_hints: m
+		}, v = {
 			className: "function.dispatch",
 			relevance: 0,
-			keywords: { _hint: _ },
+			keywords: { _hint: g },
 			begin: t.concat(/\b/, /(?!decltype)/, /(?!if)/, /(?!for)/, /(?!switch)/, /(?!while)/, e.IDENT_RE, t.lookahead(/(<[^<>]+>|)\s*\(/))
-		}, b = [
-			y,
-			u,
+		}, y = [
+			v,
+			l,
 			o,
 			n,
 			e.C_BLOCK_COMMENT_MODE,
-			l,
+			c,
 			s
-		], x = {
+		], b = {
 			variants: [
 				{
 					begin: /=/,
@@ -1738,33 +6522,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /;/
 				}
 			],
-			keywords: v,
-			contains: b.concat([{
+			keywords: _,
+			contains: y.concat([{
 				begin: /\(/,
 				end: /\)/,
-				keywords: v,
-				contains: b.concat(["self"]),
+				keywords: _,
+				contains: y.concat(["self"]),
 				relevance: 0
 			}]),
 			relevance: 0
-		}, S = {
+		}, x = {
 			className: "function",
-			begin: "(" + a + "[\\*&\\s]+)+" + f,
+			begin: "(" + a + "[\\*&\\s]+)+" + d,
 			returnBegin: !0,
 			end: /[{;=]/,
 			excludeEnd: !0,
-			keywords: v,
+			keywords: _,
 			illegal: /[^\w\s\*&:<>.]/,
 			contains: [
 				{
 					begin: r,
-					keywords: v,
+					keywords: _,
 					relevance: 0
 				},
 				{
-					begin: f,
+					begin: d,
 					returnBegin: !0,
-					contains: [d],
+					contains: [u],
 					relevance: 0
 				},
 				{
@@ -1774,7 +6558,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{
 					begin: /:/,
 					endsWithParent: !0,
-					contains: [s, l]
+					contains: [s, c]
 				},
 				{
 					relevance: 0,
@@ -1784,25 +6568,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "params",
 					begin: /\(/,
 					end: /\)/,
-					keywords: v,
+					keywords: _,
 					relevance: 0,
 					contains: [
 						n,
 						e.C_BLOCK_COMMENT_MODE,
 						s,
-						l,
+						c,
 						o,
 						{
 							begin: /\(/,
 							end: /\)/,
-							keywords: v,
+							keywords: _,
 							relevance: 0,
 							contains: [
 								"self",
 								n,
 								e.C_BLOCK_COMMENT_MODE,
 								s,
-								l,
+								c,
 								o
 							]
 						}
@@ -1811,7 +6595,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				o,
 				n,
 				e.C_BLOCK_COMMENT_MODE,
-				u
+				l
 			]
 		};
 		return {
@@ -1825,20 +6609,20 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"hxx",
 				"cxx"
 			],
-			keywords: v,
+			keywords: _,
 			illegal: "</",
 			classNameAliases: { "function.dispatch": "built_in" },
-			contains: [].concat(x, S, y, b, [
-				u,
+			contains: [].concat(b, x, v, y, [
+				l,
 				{
 					begin: "\\b(deque|list|queue|priority_queue|pair|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array|tuple|optional|variant|function|flat_map|flat_set)\\s*<(?!<)",
 					end: ">",
-					keywords: v,
+					keywords: _,
 					contains: ["self", o]
 				},
 				{
 					begin: e.IDENT_RE + "::",
-					keywords: v
+					keywords: _
 				},
 				{
 					match: [
@@ -1967,7 +6751,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, o = e.inherit(a, {
 			begin: /\(/,
 			end: /\)/
-		}), s = e.inherit(e.APOS_STRING_MODE, { className: "string" }), l = e.inherit(e.QUOTE_STRING_MODE, { className: "string" }), u = {
+		}), s = e.inherit(e.APOS_STRING_MODE, { className: "string" }), c = e.inherit(e.QUOTE_STRING_MODE, { className: "string" }), l = {
 			endsWithParent: !0,
 			illegal: /</,
 			relevance: 0,
@@ -2021,7 +6805,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 10,
 					contains: [
 						a,
-						l,
+						c,
 						s,
 						o,
 						{
@@ -2034,7 +6818,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 								contains: [
 									a,
 									o,
-									l,
+									c,
 									s
 								]
 							}]
@@ -2054,7 +6838,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					variants: [{
 						begin: /<\?xml/,
 						relevance: 10,
-						contains: [l]
+						contains: [c]
 					}, { begin: /<\?[a-z][a-z0-9]+/ }]
 				},
 				{
@@ -2062,7 +6846,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: /<style(?=\s|>)/,
 					end: />/,
 					keywords: { name: "style" },
-					contains: [u],
+					contains: [l],
 					starts: {
 						end: /<\/style>/,
 						returnEnd: !0,
@@ -2074,7 +6858,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: /<script(?=\s|>)/,
 					end: />/,
 					keywords: { name: "script" },
-					contains: [u],
+					contains: [l],
 					starts: {
 						end: /<\/script>/,
 						returnEnd: !0,
@@ -2097,7 +6881,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						className: "name",
 						begin: n,
 						relevance: 0,
-						starts: u
+						starts: l
 					}]
 				},
 				{
@@ -2786,11 +7570,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		};
 		i.contains.push(s);
-		let l = { match: /\\"/ }, u = {
+		let c = { match: /\\"/ }, l = {
 			className: "string",
 			begin: /'/,
 			end: /'/
-		}, d = { match: /\\'/ }, f = {
+		}, u = { match: /\\'/ }, d = {
 			begin: /\$?\(\(/,
 			end: /\)\)/,
 			contains: [
@@ -2801,7 +7585,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.NUMBER_MODE,
 				n
 			]
-		}, p = e.SHEBANG({
+		}, f = e.SHEBANG({
 			binary: `(${[
 				"fish",
 				"bash",
@@ -2814,13 +7598,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"scsh"
 			].join("|")})`,
 			relevance: 10
-		}), m = {
+		}), p = {
 			className: "function",
 			begin: /\w[\w\d_]*\s*\(\s*\)\s*\{/,
 			returnBegin: !0,
 			contains: [e.inherit(e.TITLE_MODE, { begin: /\w[\w\d_]*/ })],
 			relevance: 0
-		}, g = [
+		}, m = [
 			"if",
 			"then",
 			"else",
@@ -2838,7 +7622,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"coproc",
 			"function",
 			"select"
-		], _ = ["true", "false"], v = { match: /(\/[a-z._-]+)+/ }, y = [
+		], g = ["true", "false"], _ = { match: /(\/[a-z._-]+)+/ }, v = [
 			"break",
 			"cd",
 			"continue",
@@ -2857,7 +7641,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"trap",
 			"umask",
 			"unset"
-		], b = [
+		], y = [
 			"alias",
 			"bind",
 			"builtin",
@@ -2880,35 +7664,35 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"typeset",
 			"ulimit",
 			"unalias"
-		], x = /* @__PURE__ */ "autoload.bg.bindkey.bye.cap.chdir.clone.comparguments.compcall.compctl.compdescribe.compfiles.compgroups.compquote.comptags.comptry.compvalues.dirs.disable.disown.echotc.echoti.emulate.fc.fg.float.functions.getcap.getln.history.integer.jobs.kill.limit.log.noglob.popd.print.pushd.pushln.rehash.sched.setcap.setopt.stat.suspend.ttyctl.unfunction.unhash.unlimit.unsetopt.vared.wait.whence.where.which.zcompile.zformat.zftp.zle.zmodload.zparseopts.zprof.zpty.zregexparse.zsocket.zstyle.ztcp".split("."), S = /* @__PURE__ */ "chcon.chgrp.chown.chmod.cp.dd.df.dir.dircolors.ln.ls.mkdir.mkfifo.mknod.mktemp.mv.realpath.rm.rmdir.shred.sync.touch.truncate.vdir.b2sum.base32.base64.cat.cksum.comm.csplit.cut.expand.fmt.fold.head.join.md5sum.nl.numfmt.od.paste.ptx.pr.sha1sum.sha224sum.sha256sum.sha384sum.sha512sum.shuf.sort.split.sum.tac.tail.tr.tsort.unexpand.uniq.wc.arch.basename.chroot.date.dirname.du.echo.env.expr.factor.groups.hostid.id.link.logname.nice.nohup.nproc.pathchk.pinky.printenv.printf.pwd.readlink.runcon.seq.sleep.stat.stdbuf.stty.tee.test.timeout.tty.uname.unlink.uptime.users.who.whoami.yes".split(".");
+		], b = /* @__PURE__ */ "autoload.bg.bindkey.bye.cap.chdir.clone.comparguments.compcall.compctl.compdescribe.compfiles.compgroups.compquote.comptags.comptry.compvalues.dirs.disable.disown.echotc.echoti.emulate.fc.fg.float.functions.getcap.getln.history.integer.jobs.kill.limit.log.noglob.popd.print.pushd.pushln.rehash.sched.setcap.setopt.stat.suspend.ttyctl.unfunction.unhash.unlimit.unsetopt.vared.wait.whence.where.which.zcompile.zformat.zftp.zle.zmodload.zparseopts.zprof.zpty.zregexparse.zsocket.zstyle.ztcp".split("."), x = /* @__PURE__ */ "chcon.chgrp.chown.chmod.cp.dd.df.dir.dircolors.ln.ls.mkdir.mkfifo.mknod.mktemp.mv.realpath.rm.rmdir.shred.sync.touch.truncate.vdir.b2sum.base32.base64.cat.cksum.comm.csplit.cut.expand.fmt.fold.head.join.md5sum.nl.numfmt.od.paste.ptx.pr.sha1sum.sha224sum.sha256sum.sha384sum.sha512sum.shuf.sort.split.sum.tac.tail.tr.tsort.unexpand.uniq.wc.arch.basename.chroot.date.dirname.du.echo.env.expr.factor.groups.hostid.id.link.logname.nice.nohup.nproc.pathchk.pinky.printenv.printf.pwd.readlink.runcon.seq.sleep.stat.stdbuf.stty.tee.test.timeout.tty.uname.unlink.uptime.users.who.whoami.yes".split(".");
 		return {
 			name: "Bash",
 			aliases: ["sh", "zsh"],
 			keywords: {
 				$pattern: /\b[a-z][a-z0-9._-]+\b/,
-				keyword: g,
-				literal: _,
+				keyword: m,
+				literal: g,
 				built_in: [
+					...v,
 					...y,
-					...b,
 					"set",
 					"shopt",
-					...x,
-					...S
+					...b,
+					...x
 				]
 			},
 			contains: [
-				p,
-				e.SHEBANG(),
-				m,
 				f,
+				e.SHEBANG(),
+				p,
+				d,
 				a,
 				o,
-				v,
+				_,
 				s,
+				c,
 				l,
 				u,
-				d,
 				n
 			]
 		};
@@ -3042,7 +7826,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /\)([^()\\ ]{0,16})"/
 				})
 			]
-		}, l = {
+		}, c = {
 			className: "number",
 			variants: [
 				{ match: /\b(0b[01']+)/ },
@@ -3051,7 +7835,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ match: /(-?)\b\d+(?:'\d+)*(?:\.\d*(?:'\d*)*)?(?:[eE][-+]?\d+)?/ }
 			],
 			relevance: 0
-		}, u = {
+		}, l = {
 			className: "meta",
 			begin: /#\s*[a-z]+\b/,
 			end: /$/,
@@ -3069,23 +7853,23 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				n,
 				e.C_BLOCK_COMMENT_MODE
 			]
-		}, d = {
+		}, u = {
 			className: "title",
 			begin: t.optional(i) + e.IDENT_RE,
 			relevance: 0
-		}, f = t.optional(i) + e.IDENT_RE + "\\s*\\(", p = {
+		}, d = t.optional(i) + e.IDENT_RE + "\\s*\\(", f = {
 			keyword: /* @__PURE__ */ "asm.auto.break.case.continue.default.do.else.enum.extern.for.fortran.goto.if.inline.register.restrict.return.sizeof.typeof.typeof_unqual.struct.switch.typedef.union.volatile.while._Alignas._Alignof._Atomic._Generic._Noreturn._Static_assert._Thread_local.alignas.alignof.noreturn.static_assert.thread_local._Pragma".split("."),
 			type: /* @__PURE__ */ "float.double.signed.unsigned.int.short.long.char.void._Bool._BitInt._Complex._Imaginary._Decimal32._Decimal64._Decimal96._Decimal128._Decimal64x._Decimal128x._Float16._Float32._Float64._Float128._Float32x._Float64x._Float128x.const.static.constexpr.complex.bool.imaginary".split("."),
 			literal: "true false NULL",
 			built_in: "std string wstring cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream auto_ptr deque list queue stack vector map set pair bitset multiset multimap unordered_set unordered_map unordered_multiset unordered_multimap priority_queue make_pair array shared_ptr abort terminate abs acos asin atan2 atan calloc ceil cosh cos exit exp fabs floor fmod fprintf fputs free frexp fscanf future isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct isspace isupper isxdigit tolower toupper labs ldexp log10 log malloc realloc memchr memcmp memcpy memset modf pow printf putchar puts scanf sinh sin snprintf sprintf sqrt sscanf strcat strchr strcmp strcpy strcspn strlen strncat strncmp strncpy strpbrk strrchr strspn strstr tanh tan vfprintf vprintf vsprintf endl initializer_list unique_ptr"
-		}, m = [
-			u,
+		}, p = [
+			l,
 			o,
 			n,
 			e.C_BLOCK_COMMENT_MODE,
-			l,
+			c,
 			s
-		], g = {
+		], m = {
 			variants: [
 				{
 					begin: /=/,
@@ -3100,32 +7884,32 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /;/
 				}
 			],
-			keywords: p,
-			contains: m.concat([{
+			keywords: f,
+			contains: p.concat([{
 				begin: /\(/,
 				end: /\)/,
-				keywords: p,
-				contains: m.concat(["self"]),
+				keywords: f,
+				contains: p.concat(["self"]),
 				relevance: 0
 			}]),
 			relevance: 0
-		}, _ = {
-			begin: "(" + a + "[\\*&\\s]+)+" + f,
+		}, g = {
+			begin: "(" + a + "[\\*&\\s]+)+" + d,
 			returnBegin: !0,
 			end: /[{;=]/,
 			excludeEnd: !0,
-			keywords: p,
+			keywords: f,
 			illegal: /[^\w\s\*&:<>.]/,
 			contains: [
 				{
 					begin: r,
-					keywords: p,
+					keywords: f,
 					relevance: 0
 				},
 				{
-					begin: f,
+					begin: d,
 					returnBegin: !0,
-					contains: [e.inherit(d, { className: "title.function" })],
+					contains: [e.inherit(u, { className: "title.function" })],
 					relevance: 0
 				},
 				{
@@ -3136,25 +7920,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "params",
 					begin: /\(/,
 					end: /\)/,
-					keywords: p,
+					keywords: f,
 					relevance: 0,
 					contains: [
 						n,
 						e.C_BLOCK_COMMENT_MODE,
 						s,
-						l,
+						c,
 						o,
 						{
 							begin: /\(/,
 							end: /\)/,
-							keywords: p,
+							keywords: f,
 							relevance: 0,
 							contains: [
 								"self",
 								n,
 								e.C_BLOCK_COMMENT_MODE,
 								s,
-								l,
+								c,
 								o
 							]
 						}
@@ -3163,20 +7947,20 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				o,
 				n,
 				e.C_BLOCK_COMMENT_MODE,
-				u
+				l
 			]
 		};
 		return {
 			name: "C",
 			aliases: ["h"],
-			keywords: p,
+			keywords: f,
 			disableAutodetect: !0,
 			illegal: "</",
-			contains: [].concat(g, _, m, [
-				u,
+			contains: [].concat(m, g, p, [
+				l,
 				{
 					begin: e.IDENT_RE + "::",
-					keywords: p
+					keywords: f
 				},
 				{
 					className: "class",
@@ -3186,9 +7970,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			]),
 			exports: {
-				preprocessor: u,
+				preprocessor: l,
 				strings: s,
-				keywords: p
+				keywords: f
 			}
 		};
 	}
@@ -3215,7 +7999,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "string",
 			begin: "\"",
 			end: "\""
-		}, l = {
+		}, c = {
 			match: [
 				/procedure/,
 				/\s+/,
@@ -3237,7 +8021,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					e.NUMBER_MODE
 				]
 			}, ...r]
-		}, u = {
+		}, l = {
 			match: [
 				/OBJECT/,
 				/\s+/,
@@ -3275,8 +8059,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				o,
 				s,
 				e.NUMBER_MODE,
-				u,
-				l
+				l,
+				c
 			]
 		};
 	}
@@ -3492,46 +8276,46 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: /#"/,
 			end: /"/,
 			contains: [e.BACKSLASH_ESCAPE]
-		}, l = e.inherit(e.QUOTE_STRING_MODE, { illegal: null }), u = {
+		}, c = e.inherit(e.QUOTE_STRING_MODE, { illegal: null }), l = {
 			scope: "punctuation",
 			match: /,/,
 			relevance: 0
-		}, d = e.COMMENT(";", "$", { relevance: 0 }), f = {
+		}, u = e.COMMENT(";", "$", { relevance: 0 }), d = {
 			className: "literal",
 			begin: /\b(true|false|nil)\b/
-		}, p = {
+		}, f = {
 			begin: "\\[|(#::?" + t + ")?\\{",
 			end: "[\\]\\}]",
 			relevance: 0
-		}, m = {
+		}, p = {
 			className: "symbol",
 			begin: "[:]{1,2}" + t
-		}, g = {
+		}, m = {
 			begin: "\\(",
 			end: "\\)"
-		}, _ = {
+		}, g = {
 			endsWithParent: !0,
 			relevance: 0
-		}, v = {
+		}, _ = {
 			keywords: r,
 			className: "name",
 			begin: t,
 			relevance: 0,
-			starts: _
-		}, y = [
-			u,
-			g,
+			starts: g
+		}, v = [
+			l,
+			m,
 			o,
 			s,
-			l,
-			d,
-			m,
+			c,
+			u,
 			p,
-			a,
 			f,
+			a,
+			d,
 			i
 		];
-		return g.contains = [
+		return m.contains = [
 			{
 				beginKeywords: n,
 				keywords: {
@@ -3545,25 +8329,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 0,
 					excludeEnd: !0,
 					endsParent: !0
-				}].concat(y)
+				}].concat(v)
 			},
-			v,
-			_
-		], _.contains = y, p.contains = y, {
+			_,
+			g
+		], g.contains = v, f.contains = v, {
 			name: "Clojure",
 			aliases: ["clj", "edn"],
 			illegal: /\S/,
 			contains: [
-				u,
-				g,
+				l,
+				m,
 				o,
 				s,
-				l,
-				d,
-				m,
+				c,
+				u,
 				p,
+				f,
 				a,
-				f
+				d
 			]
 		};
 	}
@@ -3734,7 +8518,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			}
 		];
 		o.contains = s;
-		let l = e.inherit(e.TITLE_MODE, { begin: a }), u = {
+		let c = e.inherit(e.TITLE_MODE, { begin: a }), l = {
 			className: "params",
 			begin: "\\([^\\(]",
 			returnBegin: !0,
@@ -3744,7 +8528,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				keywords: t,
 				contains: ["self"].concat(s)
 			}]
-		}, d = {
+		}, u = {
 			variants: [{ match: [
 				/class\s+/,
 				a,
@@ -3775,7 +8559,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: "^\\s*" + a + "\\s*=\\s*(\\(.*\\)\\s*)?\\B[-=]>",
 					end: "[-=]>",
 					returnBegin: !0,
-					contains: [l, u]
+					contains: [c, l]
 				},
 				{
 					begin: /[:\(,=]\s*/,
@@ -3785,10 +8569,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						begin: "(\\(.*\\)\\s*)?\\B[-=]>",
 						end: "[-=]>",
 						returnBegin: !0,
-						contains: [u]
+						contains: [l]
 					}]
 				},
-				d,
+				u,
 				{
 					begin: a + ":",
 					end: ":",
@@ -3922,11 +8706,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /\)([^()\\ ]{0,16})"/
 				})
 			]
-		}, l = {
+		}, c = {
 			className: "number",
 			variants: [{ begin: "[+-]?(?:(?:[0-9](?:'?[0-9])*\\.(?:[0-9](?:'?[0-9])*)?|\\.[0-9](?:'?[0-9])*)(?:[Ee][+-]?[0-9](?:'?[0-9])*)?|[0-9](?:'?[0-9])*[Ee][+-]?[0-9](?:'?[0-9])*|0[Xx](?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*(?:\\.(?:[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)?)?|\\.[0-9A-Fa-f](?:'?[0-9A-Fa-f])*)[Pp][+-]?[0-9](?:'?[0-9])*)(?:[Ff](?:16|32|64|128)?|(BF|bf)16|[Ll]|)" }, { begin: "[+-]?\\b(?:0[Bb][01](?:'?[01])*|0[Xx][0-9A-Fa-f](?:'?[0-9A-Fa-f])*|0(?:'?[0-7])*|[1-9](?:'?[0-9])*)(?:[Uu](?:LL?|ll?)|[Uu][Zz]?|(?:LL?|ll?)[Uu]?|[Zz][Uu]|)" }],
 			relevance: 0
-		}, u = {
+		}, l = {
 			className: "meta",
 			begin: /#\s*[a-z]+\b/,
 			end: /$/,
@@ -3944,11 +8728,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				n,
 				e.C_BLOCK_COMMENT_MODE
 			]
-		}, d = {
+		}, u = {
 			className: "title",
 			begin: t.optional(i) + e.IDENT_RE,
 			relevance: 0
-		}, f = t.optional(i) + e.IDENT_RE + "\\s*\\(", p = /* @__PURE__ */ "alignas.alignof.and.and_eq.asm.atomic_cancel.atomic_commit.atomic_noexcept.auto.bitand.bitor.break.case.catch.class.co_await.co_return.co_yield.compl.concept.const_cast|10.consteval.constexpr.constinit.continue.decltype.default.delete.do.dynamic_cast|10.else.enum.explicit.export.extern.false.final.for.friend.goto.if.import.inline.module.mutable.namespace.new.noexcept.not.not_eq.nullptr.operator.or.or_eq.override.private.protected.public.reflexpr.register.reinterpret_cast|10.requires.return.sizeof.static_assert.static_cast|10.struct.switch.synchronized.template.this.thread_local.throw.transaction_safe.transaction_safe_dynamic.true.try.typedef.typeid.typename.union.using.virtual.volatile.while.xor.xor_eq".split("."), m = [
+		}, d = t.optional(i) + e.IDENT_RE + "\\s*\\(", f = /* @__PURE__ */ "alignas.alignof.and.and_eq.asm.atomic_cancel.atomic_commit.atomic_noexcept.auto.bitand.bitor.break.case.catch.class.co_await.co_return.co_yield.compl.concept.const_cast|10.consteval.constexpr.constinit.continue.decltype.default.delete.do.dynamic_cast|10.else.enum.explicit.export.extern.false.final.for.friend.goto.if.import.inline.module.mutable.namespace.new.noexcept.not.not_eq.nullptr.operator.or.or_eq.override.private.protected.public.reflexpr.register.reinterpret_cast|10.requires.return.sizeof.static_assert.static_cast|10.struct.switch.synchronized.template.this.thread_local.throw.transaction_safe.transaction_safe_dynamic.true.try.typedef.typeid.typename.union.using.virtual.volatile.while.xor.xor_eq".split("."), p = [
 			"bool",
 			"char",
 			"char16_t",
@@ -3965,9 +8749,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"signed",
 			"const",
 			"static"
-		], g = /* @__PURE__ */ "any.auto_ptr.barrier.binary_semaphore.bitset.complex.condition_variable.condition_variable_any.counting_semaphore.deque.false_type.flat_map.flat_set.future.imaginary.initializer_list.istringstream.jthread.latch.lock_guard.multimap.multiset.mutex.optional.ostringstream.packaged_task.pair.promise.priority_queue.queue.recursive_mutex.recursive_timed_mutex.scoped_lock.set.shared_future.shared_lock.shared_mutex.shared_timed_mutex.shared_ptr.stack.string_view.stringstream.timed_mutex.thread.true_type.tuple.unique_lock.unique_ptr.unordered_map.unordered_multimap.unordered_multiset.unordered_set.variant.vector.weak_ptr.wstring.wstring_view".split("."), _ = /* @__PURE__ */ "abort.abs.acos.apply.as_const.asin.atan.atan2.calloc.ceil.cerr.cin.clog.cos.cosh.cout.declval.endl.exchange.exit.exp.fabs.floor.fmod.forward.fprintf.fputs.free.frexp.fscanf.future.invoke.isalnum.isalpha.iscntrl.isdigit.isgraph.islower.isprint.ispunct.isspace.isupper.isxdigit.labs.launder.ldexp.log.log10.make_pair.make_shared.make_shared_for_overwrite.make_tuple.make_unique.malloc.memchr.memcmp.memcpy.memset.modf.move.pow.printf.putchar.puts.realloc.scanf.sin.sinh.snprintf.sprintf.sqrt.sscanf.std.stderr.stdin.stdout.strcat.strchr.strcmp.strcpy.strcspn.strlen.strncat.strncmp.strncpy.strpbrk.strrchr.strspn.strstr.swap.tan.tanh.terminate.to_underlying.tolower.toupper.vfprintf.visit.vprintf.vsprintf".split("."), v = {
-			type: m,
-			keyword: p,
+		], m = /* @__PURE__ */ "any.auto_ptr.barrier.binary_semaphore.bitset.complex.condition_variable.condition_variable_any.counting_semaphore.deque.false_type.flat_map.flat_set.future.imaginary.initializer_list.istringstream.jthread.latch.lock_guard.multimap.multiset.mutex.optional.ostringstream.packaged_task.pair.promise.priority_queue.queue.recursive_mutex.recursive_timed_mutex.scoped_lock.set.shared_future.shared_lock.shared_mutex.shared_timed_mutex.shared_ptr.stack.string_view.stringstream.timed_mutex.thread.true_type.tuple.unique_lock.unique_ptr.unordered_map.unordered_multimap.unordered_multiset.unordered_set.variant.vector.weak_ptr.wstring.wstring_view".split("."), g = /* @__PURE__ */ "abort.abs.acos.apply.as_const.asin.atan.atan2.calloc.ceil.cerr.cin.clog.cos.cosh.cout.declval.endl.exchange.exit.exp.fabs.floor.fmod.forward.fprintf.fputs.free.frexp.fscanf.future.invoke.isalnum.isalpha.iscntrl.isdigit.isgraph.islower.isprint.ispunct.isspace.isupper.isxdigit.labs.launder.ldexp.log.log10.make_pair.make_shared.make_shared_for_overwrite.make_tuple.make_unique.malloc.memchr.memcmp.memcpy.memset.modf.move.pow.printf.putchar.puts.realloc.scanf.sin.sinh.snprintf.sprintf.sqrt.sscanf.std.stderr.stdin.stdout.strcat.strchr.strcmp.strcpy.strcspn.strlen.strncat.strncmp.strncpy.strpbrk.strrchr.strspn.strstr.swap.tan.tanh.terminate.to_underlying.tolower.toupper.vfprintf.visit.vprintf.vsprintf".split("."), _ = {
+			type: p,
+			keyword: f,
 			literal: [
 				"NULL",
 				"false",
@@ -3976,21 +8760,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"true"
 			],
 			built_in: ["_Pragma"],
-			_type_hints: g
-		}, y = {
+			_type_hints: m
+		}, v = {
 			className: "function.dispatch",
 			relevance: 0,
-			keywords: { _hint: _ },
+			keywords: { _hint: g },
 			begin: t.concat(/\b/, /(?!decltype)/, /(?!if)/, /(?!for)/, /(?!switch)/, /(?!while)/, e.IDENT_RE, t.lookahead(/(<[^<>]+>|)\s*\(/))
-		}, b = [
-			y,
-			u,
+		}, y = [
+			v,
+			l,
 			o,
 			n,
 			e.C_BLOCK_COMMENT_MODE,
-			l,
+			c,
 			s
-		], x = {
+		], b = {
 			variants: [
 				{
 					begin: /=/,
@@ -4005,33 +8789,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /;/
 				}
 			],
-			keywords: v,
-			contains: b.concat([{
+			keywords: _,
+			contains: y.concat([{
 				begin: /\(/,
 				end: /\)/,
-				keywords: v,
-				contains: b.concat(["self"]),
+				keywords: _,
+				contains: y.concat(["self"]),
 				relevance: 0
 			}]),
 			relevance: 0
-		}, S = {
+		}, x = {
 			className: "function",
-			begin: "(" + a + "[\\*&\\s]+)+" + f,
+			begin: "(" + a + "[\\*&\\s]+)+" + d,
 			returnBegin: !0,
 			end: /[{;=]/,
 			excludeEnd: !0,
-			keywords: v,
+			keywords: _,
 			illegal: /[^\w\s\*&:<>.]/,
 			contains: [
 				{
 					begin: r,
-					keywords: v,
+					keywords: _,
 					relevance: 0
 				},
 				{
-					begin: f,
+					begin: d,
 					returnBegin: !0,
-					contains: [d],
+					contains: [u],
 					relevance: 0
 				},
 				{
@@ -4041,7 +8825,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{
 					begin: /:/,
 					endsWithParent: !0,
-					contains: [s, l]
+					contains: [s, c]
 				},
 				{
 					relevance: 0,
@@ -4051,25 +8835,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "params",
 					begin: /\(/,
 					end: /\)/,
-					keywords: v,
+					keywords: _,
 					relevance: 0,
 					contains: [
 						n,
 						e.C_BLOCK_COMMENT_MODE,
 						s,
-						l,
+						c,
 						o,
 						{
 							begin: /\(/,
 							end: /\)/,
-							keywords: v,
+							keywords: _,
 							relevance: 0,
 							contains: [
 								"self",
 								n,
 								e.C_BLOCK_COMMENT_MODE,
 								s,
-								l,
+								c,
 								o
 							]
 						}
@@ -4078,7 +8862,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				o,
 				n,
 				e.C_BLOCK_COMMENT_MODE,
-				u
+				l
 			]
 		};
 		return {
@@ -4092,20 +8876,20 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"hxx",
 				"cxx"
 			],
-			keywords: v,
+			keywords: _,
 			illegal: "</",
 			classNameAliases: { "function.dispatch": "built_in" },
-			contains: [].concat(x, S, y, b, [
-				u,
+			contains: [].concat(b, x, v, y, [
+				l,
 				{
 					begin: "\\b(deque|list|queue|priority_queue|pair|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array|tuple|optional|variant|function|flat_map|flat_set)\\s*<(?!<)",
 					end: ">",
-					keywords: v,
+					keywords: _,
 					contains: ["self", o]
 				},
 				{
 					begin: e.IDENT_RE + "::",
-					keywords: v
+					keywords: _
 				},
 				{
 					match: [
@@ -4224,14 +9008,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			}],
 			keywords: i
 		};
-		function l(e, t) {
+		function c(e, t) {
 			let n = [{
 				begin: e,
 				end: t
 			}];
 			return n[0].contains = n, n;
 		}
-		let u = {
+		let l = {
 			className: "string",
 			contains: [e.BACKSLASH_ESCAPE, a],
 			variants: [
@@ -4250,22 +9034,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{
 					begin: "%[Qwi]?\\(",
 					end: "\\)",
-					contains: l("\\(", "\\)")
+					contains: c("\\(", "\\)")
 				},
 				{
 					begin: "%[Qwi]?\\[",
 					end: "\\]",
-					contains: l("\\[", "\\]")
+					contains: c("\\[", "\\]")
 				},
 				{
 					begin: "%[Qwi]?\\{",
 					end: /\}/,
-					contains: l(/\{/, /\}/)
+					contains: c(/\{/, /\}/)
 				},
 				{
 					begin: "%[Qwi]?<",
 					end: ">",
-					contains: l("<", ">")
+					contains: c("<", ">")
 				},
 				{
 					begin: "%[Qwi]?\\|",
@@ -4277,28 +9061,28 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			],
 			relevance: 0
-		}, d = {
+		}, u = {
 			className: "string",
 			variants: [
 				{
 					begin: "%q\\(",
 					end: "\\)",
-					contains: l("\\(", "\\)")
+					contains: c("\\(", "\\)")
 				},
 				{
 					begin: "%q\\[",
 					end: "\\]",
-					contains: l("\\[", "\\]")
+					contains: c("\\[", "\\]")
 				},
 				{
 					begin: "%q\\{",
 					end: /\}/,
-					contains: l(/\{/, /\}/)
+					contains: c(/\{/, /\}/)
 				},
 				{
 					begin: "%q<",
 					end: ">",
-					contains: l("<", ">")
+					contains: c("<", ">")
 				},
 				{
 					begin: "%q\\|",
@@ -4310,7 +9094,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			],
 			relevance: 0
-		}, f = {
+		}, d = {
 			begin: "(?!%\\})(" + e.RE_STARTERS_RE + "|\\n|\\b(case|if|select|unless|until|when|while)\\b)\\s*",
 			keywords: "case if select unless until when while",
 			contains: [{
@@ -4325,10 +9109,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}]
 			}],
 			relevance: 0
-		}, p = [
+		}, f = [
 			s,
+			l,
 			u,
-			d,
 			{
 				className: "regexp",
 				contains: [e.BACKSLASH_ESCAPE, a],
@@ -4336,22 +9120,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					{
 						begin: "%r\\(",
 						end: "\\)",
-						contains: l("\\(", "\\)")
+						contains: c("\\(", "\\)")
 					},
 					{
 						begin: "%r\\[",
 						end: "\\]",
-						contains: l("\\[", "\\]")
+						contains: c("\\[", "\\]")
 					},
 					{
 						begin: "%r\\{",
 						end: /\}/,
-						contains: l(/\{/, /\}/)
+						contains: c(/\{/, /\}/)
 					},
 					{
 						begin: "%r<",
 						end: ">",
-						contains: l("<", ">")
+						contains: c("<", ">")
 					},
 					{
 						begin: "%r\\|",
@@ -4360,7 +9144,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				],
 				relevance: 0
 			},
-			f,
+			d,
 			{
 				className: "meta",
 				begin: "@\\[",
@@ -4421,7 +9205,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			{
 				className: "symbol",
 				begin: ":",
-				contains: [u, { begin: n }],
+				contains: [l, { begin: n }],
 				relevance: 0
 			},
 			{
@@ -4436,11 +9220,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				relevance: 0
 			}
 		];
-		return a.contains = p, s.contains = p.slice(1), {
+		return a.contains = f, s.contains = f.slice(1), {
 			name: "Crystal",
 			aliases: ["cr"],
 			keywords: i,
-			contains: p
+			contains: f
 		};
 	}
 	t.exports = n;
@@ -4509,12 +9293,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: "@\"",
 			end: "\"",
 			contains: [{ begin: "\"\"" }]
-		}, l = e.inherit(s, { illegal: /\n/ }), u = {
+		}, c = e.inherit(s, { illegal: /\n/ }), l = {
 			className: "subst",
 			begin: /\{/,
 			end: /\}/,
 			keywords: r
-		}, d = e.inherit(u, { illegal: /\n/ }), f = {
+		}, u = e.inherit(l, { illegal: /\n/ }), d = {
 			className: "string",
 			begin: /\$"/,
 			end: "\"",
@@ -4523,9 +9307,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: /\{\{/ },
 				{ begin: /\}\}/ },
 				e.BACKSLASH_ESCAPE,
-				d
+				u
 			]
-		}, p = {
+		}, f = {
 			className: "string",
 			begin: /\$@"/,
 			end: "\"",
@@ -4533,46 +9317,46 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: /\{\{/ },
 				{ begin: /\}\}/ },
 				{ begin: "\"\"" },
-				u
+				l
 			]
-		}, m = e.inherit(p, {
+		}, p = e.inherit(f, {
 			illegal: /\n/,
 			contains: [
 				{ begin: /\{\{/ },
 				{ begin: /\}\}/ },
 				{ begin: "\"\"" },
-				d
+				u
 			]
 		});
-		u.contains = [
-			p,
+		l.contains = [
 			f,
+			d,
 			s,
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE,
 			a,
 			e.C_BLOCK_COMMENT_MODE
-		], d.contains = [
-			m,
-			f,
-			l,
+		], u.contains = [
+			p,
+			d,
+			c,
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE,
 			a,
 			e.inherit(e.C_BLOCK_COMMENT_MODE, { illegal: /\n/ })
 		];
-		let g = { variants: [
+		let m = { variants: [
 			o,
-			p,
 			f,
+			d,
 			s,
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE
-		] }, _ = {
+		] }, g = {
 			begin: "<",
 			end: ">",
 			contains: [{ beginKeywords: "in out" }, i]
-		}, v = e.IDENT_RE + "(<" + e.IDENT_RE + "(\\s*,\\s*" + e.IDENT_RE + ")*>)?(\\[\\])?", y = {
+		}, _ = e.IDENT_RE + "(<" + e.IDENT_RE + "(\\s*,\\s*" + e.IDENT_RE + ")*>)?(\\[\\])?", v = {
 			begin: "@" + e.IDENT_RE,
 			relevance: 0
 		};
@@ -4607,7 +9391,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "$",
 					keywords: { keyword: "if else elif endif define undef warning error line region endregion pragma checksum" }
 				},
-				g,
+				m,
 				a,
 				{
 					beginKeywords: "class interface",
@@ -4617,7 +9401,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					contains: [
 						{ beginKeywords: "where class" },
 						i,
-						_,
+						g,
 						e.C_LINE_COMMENT_MODE,
 						e.C_BLOCK_COMMENT_MODE
 					]
@@ -4640,7 +9424,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					illegal: /[^\s:]/,
 					contains: [
 						i,
-						_,
+						g,
 						e.C_LINE_COMMENT_MODE,
 						e.C_BLOCK_COMMENT_MODE
 					]
@@ -4663,7 +9447,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					className: "function",
-					begin: "(" + v + "\\s+)+" + e.IDENT_RE + "\\s*(<[^=]+>\\s*)?\\(",
+					begin: "(" + _ + "\\s+)+" + e.IDENT_RE + "\\s*(<[^=]+>\\s*)?\\(",
 					returnBegin: !0,
 					end: /\s*[{;=]/,
 					excludeEnd: !0,
@@ -4676,7 +9460,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						{
 							begin: e.IDENT_RE + "\\s*(<[^=]+>\\s*)?\\(",
 							returnBegin: !0,
-							contains: [e.TITLE_MODE, _],
+							contains: [e.TITLE_MODE, g],
 							relevance: 0
 						},
 						{ match: /\(\)/ },
@@ -4689,7 +9473,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							keywords: r,
 							relevance: 0,
 							contains: [
-								g,
+								m,
 								a,
 								e.C_BLOCK_COMMENT_MODE
 							]
@@ -4698,7 +9482,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						e.C_BLOCK_COMMENT_MODE
 					]
 				},
-				y
+				v
 			]
 		};
 	}
@@ -4777,7 +9561,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "attr",
 			begin: /--[A-Za-z_][A-Za-z0-9_-]*/
 		}
-	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), l = [
+	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), c = [
 		"after",
 		"backdrop",
 		"before",
@@ -4792,9 +9576,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"selection",
 		"slotted",
 		"spelling-error"
-	].sort().reverse(), u = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
-	function d(e) {
-		let t = e.regex, r = n(e), i = { begin: /-(webkit|moz|ms|o)-(?=[a-z])/ }, d = /@-?\w[\w]*(-\w+)*/, f = [e.APOS_STRING_MODE, e.QUOTE_STRING_MODE];
+	].sort().reverse(), l = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
+	function u(e) {
+		let t = e.regex, r = n(e), i = { begin: /-(webkit|moz|ms|o)-(?=[a-z])/ }, u = /@-?\w[\w]*(-\w+)*/, d = [e.APOS_STRING_MODE, e.QUOTE_STRING_MODE];
 		return {
 			name: "CSS",
 			case_insensitive: !0,
@@ -4818,12 +9602,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				r.ATTRIBUTE_SELECTOR_MODE,
 				{
 					className: "selector-pseudo",
-					variants: [{ begin: ":(" + s.join("|") + ")" }, { begin: ":(:)?(" + l.join("|") + ")" }]
+					variants: [{ begin: ":(" + s.join("|") + ")" }, { begin: ":(:)?(" + c.join("|") + ")" }]
 				},
 				r.CSS_VARIABLE,
 				{
 					className: "attribute",
-					begin: "\\b(" + u.join("|") + ")\\b"
+					begin: "\\b(" + l.join("|") + ")\\b"
 				},
 				{
 					begin: /:/,
@@ -4833,13 +9617,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						r.HEXCOLOR,
 						r.IMPORTANT,
 						r.CSS_NUMBER_MODE,
-						...f,
+						...d,
 						{
 							begin: /(url|data-uri)\(/,
 							end: /\)/,
 							relevance: 0,
 							keywords: { built_in: "url data-uri" },
-							contains: [...f, {
+							contains: [...d, {
 								className: "string",
 								begin: /[^)]/,
 								endsWithParent: !0,
@@ -4856,7 +9640,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					illegal: /:/,
 					contains: [{
 						className: "keyword",
-						begin: d
+						begin: u
 					}, {
 						begin: /\s/,
 						endsWithParent: !0,
@@ -4872,7 +9656,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 								begin: /[a-z-]+(?=:)/,
 								className: "attribute"
 							},
-							...f,
+							...d,
 							r.CSS_NUMBER_MODE
 						]
 					}]
@@ -4884,7 +9668,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		};
 	}
-	t.exports = d;
+	t.exports = u;
 })), require_d = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		let t = {
@@ -4907,7 +9691,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: "'(" + i + "|.)",
 			end: "'",
 			illegal: "."
-		}, l = {
+		}, c = {
 			className: "string",
 			begin: "\"",
 			contains: [{
@@ -4915,37 +9699,37 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				relevance: 0
 			}],
 			end: "\"[cwd]?"
-		}, u = {
+		}, l = {
 			className: "string",
 			begin: "[rq]\"",
 			end: "\"[cwd]?",
 			relevance: 5
-		}, d = {
+		}, u = {
 			className: "string",
 			begin: "`",
 			end: "`[cwd]?"
-		}, f = {
+		}, d = {
 			className: "string",
 			begin: "x\"[\\da-fA-F\\s\\n\\r]*\"[cwd]?",
 			relevance: 10
-		}, p = {
+		}, f = {
 			className: "string",
 			begin: "q\"\\{",
 			end: "\\}\""
-		}, m = {
+		}, p = {
 			className: "meta",
 			begin: "^#!",
 			end: "$",
 			relevance: 5
-		}, g = {
+		}, m = {
 			className: "meta",
 			begin: "#(line)",
 			end: "$",
 			relevance: 5
-		}, _ = {
+		}, g = {
 			className: "keyword",
 			begin: "@[a-zA-Z_][a-zA-Z_\\d]*"
-		}, v = e.COMMENT("\\/\\+", "\\+\\/", {
+		}, _ = e.COMMENT("\\/\\+", "\\+\\/", {
 			contains: ["self"],
 			relevance: 10
 		});
@@ -4955,18 +9739,18 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			contains: [
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
-				v,
-				f,
+				_,
+				d,
+				c,
 				l,
 				u,
-				d,
-				p,
+				f,
 				o,
 				a,
 				s,
+				p,
 				m,
-				g,
-				_
+				g
 			]
 		};
 	}
@@ -5075,7 +9859,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					excludeEnd: !0
 				}
 			]
-		}, l = {
+		}, c = {
 			className: "strong",
 			contains: [],
 			variants: [{
@@ -5085,7 +9869,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: /\*{2}(?!\s)/,
 				end: /\*{2}/
 			}]
-		}, u = {
+		}, l = {
 			className: "emphasis",
 			contains: [],
 			variants: [{
@@ -5096,17 +9880,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /_/,
 				relevance: 0
 			}]
-		}, d = e.inherit(l, { contains: [] }), f = e.inherit(u, { contains: [] });
-		l.contains.push(f), u.contains.push(d);
-		let p = [n, s];
+		}, u = e.inherit(c, { contains: [] }), d = e.inherit(l, { contains: [] });
+		c.contains.push(d), l.contains.push(u);
+		let f = [n, s];
 		return [
+			c,
 			l,
 			u,
-			d,
-			f
+			d
 		].forEach((e) => {
-			e.contains = e.contains.concat(p);
-		}), p = p.concat(l, u), {
+			e.contains = e.contains.concat(f);
+		}), f = f.concat(c, l), {
 			name: "Markdown",
 			aliases: [
 				"md",
@@ -5119,24 +9903,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					variants: [{
 						begin: "^#{1,6}",
 						end: "$",
-						contains: p
+						contains: f
 					}, {
 						begin: "(?=^.+?\\n[=-]{2,}$)",
 						contains: [{ begin: "^[=-]*$" }, {
 							begin: "^",
 							end: "\\n",
-							contains: p
+							contains: f
 						}]
 					}]
 				},
 				n,
 				a,
+				c,
 				l,
-				u,
 				{
 					className: "quote",
 					begin: "^>\\s+",
-					contains: p,
+					contains: f,
 					end: "$"
 				},
 				i,
@@ -5676,15 +10460,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: "<",
 			end: ">",
 			contains: [n, i]
-		}, l = {
+		}, c = {
 			className: "title.class",
 			begin: /[a-zA-Z_][a-zA-Z\d_@-]*(?=\s\{)/,
 			relevance: .2
-		}, u = {
+		}, l = {
 			className: "title.class",
 			begin: /^\/(?=\s*\{)/,
 			relevance: 10
-		}, d = {
+		}, u = {
 			match: /[a-z][a-z-,]+(?=;)/,
 			relevance: 0,
 			scope: "attr"
@@ -5692,11 +10476,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		return {
 			name: "Device Tree",
 			contains: [
-				u,
+				l,
 				i,
 				a,
 				o,
-				l,
+				c,
 				{
 					relevance: 0,
 					match: [
@@ -5709,7 +10493,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						3: "operator"
 					}
 				},
-				d,
+				u,
 				s,
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
@@ -5821,7 +10605,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			match: /\\[\s\S]/,
 			scope: "char.escape",
 			relevance: 0
-		}, s = "[/|([{<\"']", l = [
+		}, s = "[/|([{<\"']", c = [
 			{
 				begin: /"/,
 				end: /"/
@@ -5854,42 +10638,42 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: /</,
 				end: />/
 			}
-		], u = (e) => ({
+		], l = (e) => ({
 			scope: "char.escape",
 			begin: t.concat(/\\/, e),
 			relevance: 0
-		}), d = {
+		}), u = {
 			className: "string",
 			begin: "~[a-z](?=" + s + ")",
-			contains: l.map((t) => e.inherit(t, { contains: [
-				u(t.end),
+			contains: c.map((t) => e.inherit(t, { contains: [
+				l(t.end),
 				o,
 				i
 			] }))
-		}, f = {
+		}, d = {
 			className: "string",
 			begin: "~[A-Z](?=" + s + ")",
-			contains: l.map((t) => e.inherit(t, { contains: [u(t.end)] }))
-		}, p = {
+			contains: c.map((t) => e.inherit(t, { contains: [l(t.end)] }))
+		}, f = {
 			className: "regex",
 			variants: [{
 				begin: "~r(?=" + s + ")",
-				contains: l.map((n) => e.inherit(n, {
+				contains: c.map((n) => e.inherit(n, {
 					end: t.concat(n.end, /[uismxfU]{0,7}/),
 					contains: [
-						u(n.end),
+						l(n.end),
 						o,
 						i
 					]
 				}))
 			}, {
 				begin: "~R(?=" + s + ")",
-				contains: l.map((n) => e.inherit(n, {
+				contains: c.map((n) => e.inherit(n, {
 					end: t.concat(n.end, /[uismxfU]{0,7}/),
-					contains: [u(n.end)]
+					contains: [l(n.end)]
 				}))
 			}]
-		}, m = {
+		}, p = {
 			className: "string",
 			contains: [e.BACKSLASH_ESCAPE, i],
 			variants: [
@@ -5930,7 +10714,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /"/
 				}
 			]
-		}, g = {
+		}, m = {
 			className: "function",
 			beginKeywords: "def defp defmacro defmacrop",
 			end: /\B\b/,
@@ -5938,23 +10722,23 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: n,
 				endsParent: !0
 			})]
-		}, _ = e.inherit(g, {
+		}, g = e.inherit(m, {
 			className: "class",
 			beginKeywords: "defimpl defmodule defprotocol defrecord",
 			end: /\bdo\b|$|;/
-		}), v = [
-			m,
+		}), _ = [
 			p,
 			f,
 			d,
+			u,
 			e.HASH_COMMENT_MODE,
-			_,
 			g,
+			m,
 			{ begin: "::" },
 			{
 				className: "symbol",
 				begin: ":(?![\\s:])",
-				contains: [m, { begin: "[a-zA-Z_]\\w*[!?=]?|[-+~]@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?" }],
+				contains: [p, { begin: "[a-zA-Z_]\\w*[!?=]?|[-+~]@|<<|>>|=~|===?|<=>|[<>]=?|\\*\\*|[-/+%^&*~`|]|\\[\\]=?" }],
 				relevance: 0
 			},
 			{
@@ -5973,11 +10757,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: "(\\$\\W)|((\\$|@@?)(\\w+))"
 			}
 		];
-		return i.contains = v, {
+		return i.contains = _, {
 			name: "Elixir",
 			aliases: ["ex", "exs"],
 			keywords: r,
-			contains: v
+			contains: _
 		};
 	}
 	t.exports = n;
@@ -6151,24 +10935,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			className: "doctag",
 			begin: "@[A-Za-z]+"
-		}, l = {
+		}, c = {
 			begin: "#<",
 			end: ">"
-		}, u = [
+		}, l = [
 			e.COMMENT("#", "$", { contains: [s] }),
 			e.COMMENT("^=begin", "^=end", {
 				contains: [s],
 				relevance: 10
 			}),
 			e.COMMENT("^__END__", e.MATCH_NOTHING_RE)
-		], d = {
+		], u = {
 			className: "subst",
 			begin: /#\{/,
 			end: /\}/,
 			keywords: o
-		}, f = {
+		}, d = {
 			className: "string",
-			contains: [e.BACKSLASH_ESCAPE, d],
+			contains: [e.BACKSLASH_ESCAPE, u],
 			variants: [
 				{
 					begin: /'/,
@@ -6225,33 +11009,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					contains: [e.END_SAME_AS_BEGIN({
 						begin: /(\w+)/,
 						end: /(\w+)/,
-						contains: [e.BACKSLASH_ESCAPE, d]
+						contains: [e.BACKSLASH_ESCAPE, u]
 					})]
 				}
 			]
-		}, p = "[0-9](_?[0-9])*", m = {
+		}, f = "[0-9](_?[0-9])*", p = {
 			className: "number",
 			relevance: 0,
 			variants: [
-				{ begin: `\\b([1-9](_?[0-9])*|0)(\\.(${p}))?([eE][+-]?(${p})|r)?i?\\b` },
+				{ begin: `\\b([1-9](_?[0-9])*|0)(\\.(${f}))?([eE][+-]?(${f})|r)?i?\\b` },
 				{ begin: "\\b0[dD][0-9](_?[0-9])*r?i?\\b" },
 				{ begin: "\\b0[bB][0-1](_?[0-1])*r?i?\\b" },
 				{ begin: "\\b0[oO][0-7](_?[0-7])*r?i?\\b" },
 				{ begin: "\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*r?i?\\b" },
 				{ begin: "\\b0(_?[0-7])+r?i?\\b" }
 			]
-		}, g = { variants: [{ match: /\(\)/ }, {
+		}, m = { variants: [{ match: /\(\)/ }, {
 			className: "params",
 			begin: /\(/,
 			end: /(?=\))/,
 			excludeBegin: !0,
 			endsParent: !0,
 			keywords: o
-		}] }, _ = {
+		}] }, g = {
 			match: [/(include|extend)\s+/, i],
 			scope: { 2: "title.class" },
 			keywords: o
-		}, v = {
+		}, _ = {
 			variants: [{ match: [
 				/class\s+/,
 				i,
@@ -6263,11 +11047,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				4: "title.class.inherited"
 			},
 			keywords: o
-		}, y = {
+		}, v = {
 			relevance: 0,
 			match: /\b[A-Z][A-Z_0-9]+\b/,
 			className: "variable.constant"
-		}, b = {
+		}, y = {
 			match: [
 				/def/,
 				/\s+/,
@@ -6277,23 +11061,23 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				1: "keyword",
 				3: "title.function"
 			},
-			contains: [g]
-		}, x = [
-			f,
-			v,
+			contains: [m]
+		}, b = [
+			d,
 			_,
+			g,
 			{
 				relevance: 0,
 				match: [i, /\.new[. (]/],
 				scope: { 1: "title.class" }
 			},
-			y,
+			v,
 			{
 				relevance: 0,
 				match: r,
 				scope: "title.class"
 			},
-			b,
+			y,
 			{ begin: e.IDENT_RE + "::" },
 			{
 				className: "symbol",
@@ -6303,10 +11087,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			{
 				className: "symbol",
 				begin: ":(?!\\s)",
-				contains: [f, { begin: n }],
+				contains: [d, { begin: n }],
 				relevance: 0
 			},
-			m,
+			p,
 			{
 				className: "variable",
 				begin: "(\\$\\W)|((\\$|@@?)(\\w+))(?=[^@$?])(?![A-Za-z])(?![@$?'])"
@@ -6325,7 +11109,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				keywords: "unless",
 				contains: [{
 					className: "regexp",
-					contains: [e.BACKSLASH_ESCAPE, d],
+					contains: [e.BACKSLASH_ESCAPE, u],
 					illegal: /\n/,
 					variants: [
 						{
@@ -6349,16 +11133,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							end: "\\][a-z]*"
 						}
 					]
-				}].concat(l, u),
+				}].concat(c, l),
 				relevance: 0
 			}
-		].concat(l, u);
-		d.contains = x, g.contains = x;
-		let S = [{
+		].concat(c, l);
+		u.contains = b, m.contains = b;
+		let x = [{
 			begin: /^\s*=>/,
 			starts: {
 				end: "$",
-				contains: x
+				contains: b
 			}
 		}, {
 			className: "meta.prompt",
@@ -6366,10 +11150,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			starts: {
 				end: "$",
 				keywords: o,
-				contains: x
+				contains: b
 			}
 		}];
-		return u.unshift(l), {
+		return l.unshift(c), {
 			name: "Ruby",
 			aliases: [
 				"rb",
@@ -6380,7 +11164,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			],
 			keywords: o,
 			illegal: /\/\*/,
-			contains: [e.SHEBANG({ binary: "ruby" })].concat(S, u, x)
+			contains: [e.SHEBANG({ binary: "ruby" })].concat(x, l, b)
 		};
 	}
 	t.exports = n;
@@ -6462,17 +11246,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				returnEnd: !0,
 				relevance: 0
 			}]
-		}, l = {
+		}, c = {
 			begin: /\{/,
 			end: /\}/,
 			relevance: 0
-		}, u = {
+		}, l = {
 			begin: "\\b_([A-Z][A-Za-z0-9_]*)?",
 			relevance: 0
-		}, d = {
+		}, u = {
 			begin: "[A-Z][a-zA-Z0-9_]*",
 			relevance: 0
-		}, f = {
+		}, d = {
 			begin: "#" + e.UNDERSCORE_IDENT_RE,
 			relevance: 0,
 			returnBegin: !0,
@@ -6484,13 +11268,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /\}/,
 				relevance: 0
 			}]
-		}, p = {
+		}, f = {
 			scope: "string",
 			match: /\$(\\([^0-9]|[0-9]{1,3}|)|.)/
-		}, m = {
+		}, p = {
 			scope: "string",
 			match: /"""("*)(?!")[\s\S]*?"""\1/
-		}, g = {
+		}, m = {
 			scope: "string",
 			contains: [e.BACKSLASH_ESCAPE],
 			variants: [
@@ -6536,44 +11320,44 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /#/
 				}
 			]
-		}, _ = {
+		}, g = {
 			beginKeywords: "fun receive if try case maybe",
 			end: "end",
 			keywords: r
 		};
-		_.contains = [
+		g.contains = [
 			i,
 			o,
 			e.inherit(e.APOS_STRING_MODE, { className: "" }),
-			_,
-			s,
 			g,
+			s,
 			m,
+			p,
 			e.QUOTE_STRING_MODE,
 			a,
+			c,
 			l,
 			u,
 			d,
-			f,
-			p
+			f
 		];
-		let v = [
+		let _ = [
 			i,
 			o,
-			_,
-			s,
 			g,
+			s,
 			m,
+			p,
 			e.QUOTE_STRING_MODE,
 			a,
+			c,
 			l,
 			u,
 			d,
-			f,
-			p
+			f
 		];
-		s.contains[1].contains = v, l.contains = v, f.contains[1].contains = v;
-		let y = [
+		s.contains[1].contains = _, c.contains = _, d.contains[1].contains = _;
+		let v = [
 			"-module",
 			"-record",
 			"-undef",
@@ -6598,11 +11382,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"-spec",
 			"-on_load",
 			"-nifs"
-		], b = {
+		], y = {
 			className: "params",
 			begin: "\\(",
 			end: "\\)",
-			contains: v
+			contains: _
 		};
 		return {
 			name: "Erlang",
@@ -6616,11 +11400,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "->",
 					returnBegin: !0,
 					illegal: "\\(|#|//|/\\*|\\\\|:|;",
-					contains: [b, e.inherit(e.TITLE_MODE, { begin: t })],
+					contains: [y, e.inherit(e.TITLE_MODE, { begin: t })],
 					starts: {
 						end: ";|\\.",
 						keywords: r,
-						contains: v
+						contains: _
 					}
 				},
 				i,
@@ -6632,24 +11416,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					returnBegin: !0,
 					keywords: {
 						$pattern: "-" + e.IDENT_RE,
-						keyword: y.map((e) => `${e}|1.5`).join(" ")
+						keyword: v.map((e) => `${e}|1.5`).join(" ")
 					},
 					contains: [
-						b,
-						g,
+						y,
 						m,
+						p,
 						e.QUOTE_STRING_MODE
 					]
 				},
 				a,
-				g,
 				m,
+				p,
 				e.QUOTE_STRING_MODE,
-				f,
-				u,
 				d,
 				l,
-				p,
+				u,
+				c,
+				f,
 				{ begin: /\.$/ }
 			]
 		};
@@ -6859,7 +11643,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 	function s(...e) {
 		return "(" + (o(e).capture ? "" : "?:") + e.map((e) => r(e)).join("|") + ")";
 	}
-	function l(e) {
+	function c(e) {
 		let t = /* @__PURE__ */ "abstract.and.as.assert.base.begin.class.default.delegate.do.done.downcast.downto.elif.else.end.exception.extern.finally.fixed.for.fun.function.global.if.in.inherit.inline.interface.internal.lazy.let.match.member.module.mutable.namespace.new.of.open.or.override.private.public.rec.return.static.struct.then.to.try.type.upcast.use.val.void.when.while.with.yield".split("."), r = {
 			scope: "keyword",
 			match: /\b(yield|return|let|do|match|use)!/
@@ -6877,7 +11661,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"time",
 			"help",
 			"quit"
-		], l = [
+		], c = [
 			"true",
 			"false",
 			"null",
@@ -6889,24 +11673,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"infinityf",
 			"nan",
 			"nanf"
-		], u = [
+		], l = [
 			"__LINE__",
 			"__SOURCE_DIRECTORY__",
 			"__SOURCE_FILE__"
-		], d = /* @__PURE__ */ "bool.byte.sbyte.int8.int16.int32.uint8.uint16.uint32.int.uint.int64.uint64.nativeint.unativeint.decimal.float.double.float32.single.char.string.unit.bigint.option.voption.list.array.seq.byref.exn.inref.nativeptr.obj.outref.voidptr.Result".split("."), f = {
+		], u = /* @__PURE__ */ "bool.byte.sbyte.int8.int16.int32.uint8.uint16.uint32.int.uint.int64.uint64.nativeint.unativeint.decimal.float.double.float32.single.char.string.unit.bigint.option.voption.list.array.seq.byref.exn.inref.nativeptr.obj.outref.voidptr.Result".split("."), d = {
 			keyword: t,
-			literal: l,
+			literal: c,
 			built_in: /* @__PURE__ */ "not.ref.raise.reraise.dict.readOnlyDict.set.get.enum.sizeof.typeof.typedefof.nameof.nullArg.invalidArg.invalidOp.id.fst.snd.ignore.lock.using.box.unbox.tryUnbox.printf.printfn.sprintf.eprintf.eprintfn.fprintf.fprintfn.failwith.failwithf".split("."),
-			"variable.constant": u
-		}, p = { variants: [e.COMMENT(/\(\*(?!\))/, /\*\)/, { contains: ["self"] }), e.C_LINE_COMMENT_MODE] }, m = /[a-zA-Z_](\w|')*/, g = {
+			"variable.constant": l
+		}, f = { variants: [e.COMMENT(/\(\*(?!\))/, /\*\)/, { contains: ["self"] }), e.C_LINE_COMMENT_MODE] }, p = /[a-zA-Z_](\w|')*/, m = {
 			scope: "variable",
 			begin: /``/,
 			end: /``/
-		}, _ = /\B('|\^)/, v = {
+		}, g = /\B('|\^)/, _ = {
 			scope: "symbol",
-			variants: [{ match: a(_, /``.*?``/) }, { match: a(_, e.UNDERSCORE_IDENT_RE) }],
+			variants: [{ match: a(g, /``.*?``/) }, { match: a(g, e.UNDERSCORE_IDENT_RE) }],
 			relevance: 0
-		}, y = function({ includeEqual: e }) {
+		}, v = function({ includeEqual: e }) {
 			let t;
 			t = e ? "!%&*+-/<=>@^|~?" : "!%&*+-/<>@^|~?";
 			let r = a("[", ...Array.from(t).map(n), "]"), o = s(r, /\./);
@@ -6915,47 +11699,47 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				match: s(s(a(a(o, i(o)), o, "*"), a(r, "+")), /:\?>/, /:\?/, /:>/, /:=/, /::?/, /\$/),
 				relevance: 0
 			};
-		}, b = y({ includeEqual: !0 }), x = y({ includeEqual: !1 }), S = function(t, n) {
+		}, y = v({ includeEqual: !0 }), b = v({ includeEqual: !1 }), x = function(t, n) {
 			return {
 				begin: a(t, i(a(/\s*/, s(/\w/, /'/, /\^/, /#/, /``/, /\(/, /{\|/)))),
 				beginScope: n,
 				end: i(s(/\n/, /=/)),
 				relevance: 0,
-				keywords: e.inherit(f, { type: d }),
+				keywords: e.inherit(d, { type: u }),
 				contains: [
-					p,
-					v,
-					e.inherit(g, { scope: null }),
-					x
+					f,
+					_,
+					e.inherit(m, { scope: null }),
+					b
 				]
 			};
-		}, C = S(/:/, "operator"), w = S(/\bof\b/, "keyword"), T = {
+		}, S = x(/:/, "operator"), C = x(/\bof\b/, "keyword"), w = {
 			begin: [
 				/(^|\s+)/,
 				/type/,
 				/\s+/,
-				m
+				p
 			],
 			beginScope: {
 				2: "keyword",
 				4: "title.class"
 			},
 			end: i(/\(|=|$/),
-			keywords: f,
+			keywords: d,
 			contains: [
-				p,
-				e.inherit(g, { scope: null }),
-				v,
+				f,
+				e.inherit(m, { scope: null }),
+				_,
 				{
 					scope: "operator",
 					match: /<|>/
 				},
-				C
+				S
 			]
-		}, E = {
+		}, T = {
 			scope: "computation-expression",
 			match: /\b[_a-z]\w*(?=\s*\{)/
-		}, D = {
+		}, E = {
 			begin: [
 				/^\s*/,
 				a(/#/, s(...o)),
@@ -6963,27 +11747,27 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			],
 			beginScope: { 2: "meta" },
 			end: i(/\s|$/)
-		}, O = { variants: [e.BINARY_NUMBER_MODE, e.C_NUMBER_MODE] }, k = {
+		}, D = { variants: [e.BINARY_NUMBER_MODE, e.C_NUMBER_MODE] }, O = {
 			scope: "string",
 			begin: /"/,
 			end: /"/,
 			contains: [e.BACKSLASH_ESCAPE]
-		}, A = {
+		}, k = {
 			scope: "string",
 			begin: /@"/,
 			end: /"/,
 			contains: [{ match: /""/ }, e.BACKSLASH_ESCAPE]
-		}, j = {
+		}, A = {
 			scope: "string",
 			begin: /"""/,
 			end: /"""/,
 			relevance: 2
-		}, M = {
+		}, j = {
 			scope: "subst",
 			begin: /\{/,
 			end: /\}/,
-			keywords: f
-		}, N = {
+			keywords: d
+		}, M = {
 			scope: "string",
 			begin: /\$"/,
 			end: /"/,
@@ -6991,9 +11775,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ match: /\{\{/ },
 				{ match: /\}\}/ },
 				e.BACKSLASH_ESCAPE,
-				M
+				j
 			]
-		}, P = {
+		}, N = {
 			scope: "string",
 			begin: /(\$@|@\$)"/,
 			end: /"/,
@@ -7002,84 +11786,84 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ match: /\}\}/ },
 				{ match: /""/ },
 				e.BACKSLASH_ESCAPE,
-				M
+				j
 			]
-		}, F = {
+		}, P = {
 			scope: "string",
 			begin: /\$"""/,
 			end: /"""/,
 			contains: [
 				{ match: /\{\{/ },
 				{ match: /\}\}/ },
-				M
+				j
 			],
 			relevance: 2
-		}, I = {
+		}, F = {
 			scope: "string",
 			match: a(/'/, s(/[^\\']/, /\\(?:.|\d{3}|x[a-fA-F\d]{2}|u[a-fA-F\d]{4}|U[a-fA-F\d]{8})/), /'/)
 		};
-		M.contains = [
-			P,
+		j.contains = [
 			N,
-			A,
+			M,
 			k,
-			I,
+			O,
+			F,
 			r,
-			p,
-			g,
-			C,
+			f,
+			m,
+			S,
+			T,
 			E,
 			D,
-			O,
-			v,
-			b
+			_,
+			y
 		];
-		let L = { variants: [
-			F,
+		let I = { variants: [
 			P,
 			N,
-			j,
+			M,
 			A,
 			k,
-			I
+			O,
+			F
 		] };
 		return {
 			name: "F#",
 			aliases: ["fs", "f#"],
-			keywords: f,
+			keywords: d,
 			illegal: /\/\*/,
 			classNameAliases: { "computation-expression": "keyword" },
 			contains: [
 				r,
-				L,
-				p,
-				g,
-				T,
+				I,
+				f,
+				m,
+				w,
 				{
 					scope: "meta",
 					begin: /\[</,
 					end: />\]/,
 					relevance: 2,
 					contains: [
-						g,
-						j,
+						m,
 						A,
 						k,
-						I,
-						O
+						O,
+						F,
+						D
 					]
 				},
-				w,
 				C,
+				S,
+				T,
 				E,
 				D,
-				O,
-				v,
-				b
+				_,
+				y
 			]
 		};
 	}
-	t.exports = l;
+	t.exports = c;
 })), require_gams = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		let t = e.regex, n = {
@@ -7118,7 +11902,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.APOS_STRING_MODE,
 				e.C_NUMBER_MODE
 			]
-		}, s = /[a-z0-9&#*=?@\\><:,()$[\]_.{}!+%^-]+/, l = {
+		}, s = /[a-z0-9&#*=?@\\><:,()$[\]_.{}!+%^-]+/, c = {
 			begin: /[a-z][a-z0-9_]*(\([a-z0-9_, ]*\))?[ \t]+/,
 			excludeBegin: !0,
 			end: "$",
@@ -7165,7 +11949,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						e.QUOTE_STRING_MODE,
 						e.APOS_STRING_MODE,
 						o,
-						l
+						c
 					]
 				},
 				{
@@ -7176,7 +11960,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						{
 							beginKeywords: "table",
 							end: "$",
-							contains: [l]
+							contains: [c]
 						},
 						e.COMMENT("^\\*", "$"),
 						e.C_LINE_COMMENT_MODE,
@@ -7276,30 +12060,30 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				contains: [].concat(a)
 			}, {});
 			return s.contains.push(o), s.contains.push(e.C_NUMBER_MODE), s.contains.push(e.C_BLOCK_COMMENT_MODE), s.contains.push(n), s;
-		}, l = {
+		}, c = {
 			className: "built_in",
 			begin: "\\b(" + t.built_in.split(" ").join("|") + ")\\b"
-		}, u = {
+		}, l = {
 			className: "string",
 			begin: "\"",
 			end: "\"",
 			contains: [e.BACKSLASH_ESCAPE],
 			relevance: 0
-		}, d = {
+		}, u = {
 			begin: e.UNDERSCORE_IDENT_RE + "\\s*\\(",
 			returnBegin: !0,
 			keywords: t,
 			relevance: 0,
 			contains: [
 				{ beginKeywords: t.keyword },
-				l,
+				c,
 				{
 					className: "built_in",
 					begin: e.UNDERSCORE_IDENT_RE,
 					relevance: 0
 				}
 			]
-		}, f = {
+		}, d = {
 			begin: /\(/,
 			end: /\)/,
 			relevance: 0,
@@ -7311,13 +12095,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.C_NUMBER_MODE,
 				e.C_BLOCK_COMMENT_MODE,
 				n,
-				l,
-				d,
+				c,
 				u,
+				l,
 				"self"
 			]
 		};
-		return d.contains.push(f), {
+		return u.contains.push(d), {
 			name: "GAUSS",
 			aliases: ["gss"],
 			case_insensitive: !0,
@@ -7328,7 +12112,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
 				n,
-				u,
+				l,
 				r,
 				{
 					className: "keyword",
@@ -7343,14 +12127,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					contains: [
 						e.C_BLOCK_COMMENT_MODE,
 						n,
-						f
+						d
 					]
 				},
 				{
 					variants: [{ begin: e.UNDERSCORE_IDENT_RE + "\\." + e.UNDERSCORE_IDENT_RE }, { begin: e.UNDERSCORE_IDENT_RE + "\\s*=" }],
 					relevance: 0
 				},
-				d,
+				u,
 				i
 			]
 		};
@@ -7406,7 +12190,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			let n = e.input[e.index - 1];
 			n >= "0" && n <= "9" || n !== "_" && t.ignoreMatch();
 		}
-		let a = /[+-]?((\.\d+)|(\d+)(\.\d*)?)/, o = /[GM]\s*\d+(\.\d+)?/, s = /T\s*\d+/, l = /O\s*\d+/, u = /O<.+>/, d = /[ABCUVWXYZ]\s*/, f = /[FHIJKPQRS]\s*/;
+		let a = /[+-]?((\.\d+)|(\d+)(\.\d*)?)/, o = /[GM]\s*\d+(\.\d+)?/, s = /T\s*\d+/, c = /O\s*\d+/, l = /O<.+>/, u = /[ABCUVWXYZ]\s*/, d = /[FHIJKPQRS]\s*/;
 		return {
 			name: "G-code (ISO 6983)",
 			aliases: ["nc"],
@@ -7437,14 +12221,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{
 					scope: "symbol",
 					variants: [
+						{ match: t.concat(r, c) },
+						{
+							begin: c,
+							"on:begin": i
+						},
 						{ match: t.concat(r, l) },
 						{
 							begin: l,
-							"on:begin": i
-						},
-						{ match: t.concat(r, u) },
-						{
-							begin: u,
 							"on:begin": i
 						},
 						{ match: /\*\s*\d+\s*$/ }
@@ -7460,15 +12244,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					scope: "property",
-					variants: [{ match: t.concat(r, d, a) }, {
-						begin: t.concat(d, a),
+					variants: [{ match: t.concat(r, u, a) }, {
+						begin: t.concat(u, a),
 						"on:begin": i
 					}]
 				},
 				{
 					scope: "params",
-					variants: [{ match: t.concat(r, f, a) }, {
-						begin: t.concat(f, a),
+					variants: [{ match: t.concat(r, d, a) }, {
+						begin: t.concat(d, a),
 						"on:begin": i
 					}]
 				}
@@ -7846,7 +12630,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			},
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE
-		], { className: "string" }), l = {
+		], { className: "string" }), c = {
 			match: [
 				/(class|interface|trait|enum|record|extends|implements)/,
 				/\s+/,
@@ -7856,7 +12640,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				1: "keyword",
 				3: "title.class"
 			}
-		}, u = [
+		}, l = [
 			"byte",
 			"short",
 			"char",
@@ -7866,14 +12650,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"float",
 			"double",
 			"void"
-		], d = /* @__PURE__ */ "def.as.in.assert.trait.abstract.static.volatile.transient.public.private.protected.synchronized.final.class.interface.enum.if.else.for.while.switch.case.break.default.continue.throw.throws.try.catch.finally.implements.extends.new.import.package.return.instanceof.var".split(".");
+		], u = /* @__PURE__ */ "def.as.in.assert.trait.abstract.static.volatile.transient.public.private.protected.synchronized.final.class.interface.enum.if.else.for.while.switch.case.break.default.continue.throw.throws.try.catch.finally.implements.extends.new.import.package.return.instanceof.var".split(".");
 		return {
 			name: "Groovy",
 			keywords: {
 				"variable.language": "this super",
 				literal: "true false null",
-				type: u,
-				keyword: d
+				type: l,
+				keyword: u
 			},
 			contains: [
 				e.SHEBANG({
@@ -7884,7 +12668,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				s,
 				a,
 				o,
-				l,
+				c,
 				{
 					className: "meta",
 					begin: "@[A-Za-z]+",
@@ -8027,12 +12811,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"undefined",
 				"null"
 			]
-		}, i = /""|"[^"]+"/, a = /''|'[^']+'/, o = /\[\]|\[[^\]]+\]/, s = /[^\s!"#%&'()*+,.\/;<=>@\[\\\]^`{|}~]+/, l = /(\.|\/)/, u = t.either(i, a, o, s), d = t.concat(t.optional(/\.|\.\/|\//), u, t.anyNumberOfTimes(t.concat(l, u))), f = t.concat("(", o, "|", s, ")(?==)"), p = { begin: d }, m = e.inherit(p, { keywords: r }), g = {
+		}, i = /""|"[^"]+"/, a = /''|'[^']+'/, o = /\[\]|\[[^\]]+\]/, s = /[^\s!"#%&'()*+,.\/;<=>@\[\\\]^`{|}~]+/, c = /(\.|\/)/, l = t.either(i, a, o, s), u = t.concat(t.optional(/\.|\.\/|\//), l, t.anyNumberOfTimes(t.concat(c, l))), d = t.concat("(", o, "|", s, ")(?==)"), f = { begin: u }, p = e.inherit(f, { keywords: r }), m = {
 			begin: /\(/,
 			end: /\)/
-		}, _ = {
+		}, g = {
 			className: "attr",
-			begin: f,
+			begin: d,
 			relevance: 0,
 			starts: {
 				begin: /=/,
@@ -8041,11 +12825,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					e.NUMBER_MODE,
 					e.QUOTE_STRING_MODE,
 					e.APOS_STRING_MODE,
-					m,
-					g
+					p,
+					m
 				] }
 			}
-		}, v = {
+		}, _ = {
 			contains: [
 				e.NUMBER_MODE,
 				e.QUOTE_STRING_MODE,
@@ -8056,28 +12840,28 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /\|/,
 					contains: [{ begin: /\w+/ }]
 				},
-				_,
-				m,
-				g
+				g,
+				p,
+				m
 			],
 			returnEnd: !0
 		};
-		g.contains = [e.inherit(p, {
+		m.contains = [e.inherit(f, {
 			className: "name",
 			keywords: n,
-			starts: e.inherit(v, { end: /\)/ })
+			starts: e.inherit(_, { end: /\)/ })
 		})];
-		let y = e.inherit(p, {
+		let v = e.inherit(f, {
 			keywords: n,
 			className: "name",
-			starts: e.inherit(v, { end: /\}\}/ })
-		}), b = e.inherit(p, {
+			starts: e.inherit(_, { end: /\}\}/ })
+		}), y = e.inherit(f, {
 			keywords: n,
 			className: "name"
-		}), x = e.inherit(p, {
+		}), b = e.inherit(f, {
 			className: "name",
 			keywords: n,
-			starts: e.inherit(v, { end: /\}\}/ })
+			starts: e.inherit(_, { end: /\}\}/ })
 		});
 		return {
 			name: "Handlebars",
@@ -8104,7 +12888,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "template-tag",
 					begin: /\{\{\{\{(?!\/)/,
 					end: /\}\}\}\}/,
-					contains: [y],
+					contains: [v],
 					starts: {
 						end: /\{\{\{\{\//,
 						returnEnd: !0,
@@ -8115,13 +12899,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "template-tag",
 					begin: /\{\{\{\{\//,
 					end: /\}\}\}\}/,
-					contains: [b]
+					contains: [y]
 				},
 				{
 					className: "template-tag",
 					begin: /\{\{#/,
 					end: /\}\}/,
-					contains: [y]
+					contains: [v]
 				},
 				{
 					className: "template-tag",
@@ -8139,19 +12923,19 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "template-tag",
 					begin: /\{\{\//,
 					end: /\}\}/,
-					contains: [b]
+					contains: [y]
 				},
 				{
 					className: "template-variable",
 					begin: /\{\{\{/,
 					end: /\}\}\}/,
-					contains: [x]
+					contains: [b]
 				},
 				{
 					className: "template-variable",
 					begin: /\{\{/,
 					end: /\}\}/,
-					contains: [x]
+					contains: [b]
 				}
 			]
 		};
@@ -8171,7 +12955,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "type",
 			begin: "\\b[A-Z][\\w']*",
 			relevance: 0
-		}, l = {
+		}, c = {
 			begin: "\\(",
 			end: "\\)",
 			illegal: "\"",
@@ -8185,11 +12969,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.inherit(e.TITLE_MODE, { begin: "[_a-z][\\w']*" }),
 				i
 			]
-		}, u = {
+		}, l = {
 			begin: /\{/,
 			end: /\}/,
-			contains: l.contains
-		}, d = {
+			contains: c.contains
+		}, u = {
 			className: "number",
 			relevance: 0,
 			variants: [
@@ -8209,14 +12993,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					beginKeywords: "module",
 					end: "where",
 					keywords: "module where",
-					contains: [l, i],
+					contains: [c, i],
 					illegal: "\\W\\.|;"
 				},
 				{
 					begin: "\\bimport\\b",
 					end: "$",
 					keywords: "import qualified as hiding",
-					contains: [l, i],
+					contains: [c, i],
 					illegal: "\\W\\.|;"
 				},
 				{
@@ -8226,7 +13010,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					keywords: "class family instance where",
 					contains: [
 						s,
-						l,
+						c,
 						i
 					]
 				},
@@ -8238,8 +13022,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					contains: [
 						a,
 						s,
+						c,
 						l,
-						u,
 						i
 					]
 				},
@@ -8248,7 +13032,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "$",
 					contains: [
 						s,
-						l,
+						c,
 						i
 					]
 				},
@@ -8284,7 +13068,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					}]
 				},
 				e.QUOTE_STRING_MODE,
-				d,
+				u,
 				s,
 				e.inherit(e.TITLE_MODE, { begin: "^[_a-z][\\w']*" }),
 				{ begin: `(?!-)${r}--+|--+(?!-)${r}` },
@@ -8567,57 +13351,57 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, a = e.inherit(e.QUOTE_STRING_MODE, { illegal: null }), o = e.COMMENT(";", "$", { relevance: 0 }), s = {
 			className: "literal",
 			begin: /\b([Tt]rue|[Ff]alse|nil|None)\b/
-		}, l = {
+		}, c = {
 			begin: "[\\[\\{]",
 			end: "[\\]\\}]",
 			relevance: 0
-		}, u = {
+		}, l = {
 			className: "comment",
 			begin: "\\^" + t
-		}, d = e.COMMENT("\\^\\{", "\\}"), f = {
+		}, u = e.COMMENT("\\^\\{", "\\}"), d = {
 			className: "symbol",
 			begin: "[:]{1,2}" + t
-		}, p = {
+		}, f = {
 			begin: "\\(",
 			end: "\\)"
-		}, m = {
+		}, p = {
 			endsWithParent: !0,
 			relevance: 0
-		}, g = {
+		}, m = {
 			className: "name",
 			relevance: 0,
 			keywords: n,
 			begin: t,
-			starts: m
-		}, _ = [
-			p,
-			a,
-			u,
-			d,
-			o,
+			starts: p
+		}, g = [
 			f,
+			a,
 			l,
+			u,
+			o,
+			d,
+			c,
 			i,
 			s,
 			r
 		];
-		return p.contains = [
+		return f.contains = [
 			e.COMMENT("comment", ""),
-			g,
-			m
-		], m.contains = _, l.contains = _, {
+			m,
+			p
+		], p.contains = g, c.contains = g, {
 			name: "Hy",
 			aliases: ["hylang"],
 			illegal: /\S/,
 			contains: [
 				e.SHEBANG(),
-				p,
-				a,
-				u,
-				d,
-				o,
 				f,
+				a,
 				l,
+				u,
+				o,
+				d,
+				c,
 				i,
 				s
 			]
@@ -8721,7 +13505,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"self"
 			],
 			relevance: 0
-		}, l = t.either(/[A-Za-z0-9_-]+/, /"(\\"|[^"])*"/, /'[^']*'/);
+		}, c = t.either(/[A-Za-z0-9_-]+/, /"(\\"|[^"])*"/, /'[^']*'/);
 		return {
 			name: "TOML, also INI",
 			aliases: ["toml"],
@@ -8735,7 +13519,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /\]+/
 				},
 				{
-					begin: t.concat(l, "(\\s*\\.\\s*", l, ")*", t.lookahead(/\s*=\s*[^#\s]/)),
+					begin: t.concat(c, "(\\s*\\.\\s*", c, ")*", t.lookahead(/\s*=\s*[^#\s]/)),
 					className: "attr",
 					starts: {
 						end: /$/,
@@ -8840,18 +13624,18 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: "\\.\\s*" + e.UNDERSCORE_IDENT_RE,
 			keywords: o,
 			relevance: 0
-		}, l = {
+		}, c = {
 			className: "type",
 			begin: ":[ \\t]*(" + "IApplication IAccessRights IAccountRepository IAccountSelectionRestrictions IAction IActionList IAdministrationHistoryDescription IAnchors IApplication IArchiveInfo IAttachment IAttachmentList ICheckListBox ICheckPointedList IColumn IComponent IComponentDescription IComponentToken IComponentTokenFactory IComponentTokenInfo ICompRecordInfo IConnection IContents IControl IControlJob IControlJobInfo IControlList ICrypto ICrypto2 ICustomJob ICustomJobInfo ICustomListBox ICustomObjectWizardStep ICustomWork ICustomWorkInfo IDataSet IDataSetAccessInfo IDataSigner IDateCriterion IDateRequisite IDateRequisiteDescription IDateValue IDeaAccessRights IDeaObjectInfo IDevelopmentComponentLock IDialog IDialogFactory IDialogPickRequisiteItems IDialogsFactory IDICSFactory IDocRequisite IDocumentInfo IDualListDialog IECertificate IECertificateInfo IECertificates IEditControl IEditorForm IEdmsExplorer IEdmsObject IEdmsObjectDescription IEdmsObjectFactory IEdmsObjectInfo IEDocument IEDocumentAccessRights IEDocumentDescription IEDocumentEditor IEDocumentFactory IEDocumentInfo IEDocumentStorage IEDocumentVersion IEDocumentVersionListDialog IEDocumentVersionSource IEDocumentWizardStep IEDocVerSignature IEDocVersionState IEnabledMode IEncodeProvider IEncrypter IEvent IEventList IException IExternalEvents IExternalHandler IFactory IField IFileDialog IFolder IFolderDescription IFolderDialog IFolderFactory IFolderInfo IForEach IForm IFormTitle IFormWizardStep IGlobalIDFactory IGlobalIDInfo IGrid IHasher IHistoryDescription IHyperLinkControl IImageButton IImageControl IInnerPanel IInplaceHint IIntegerCriterion IIntegerList IIntegerRequisite IIntegerValue IISBLEditorForm IJob IJobDescription IJobFactory IJobForm IJobInfo ILabelControl ILargeIntegerCriterion ILargeIntegerRequisite ILargeIntegerValue ILicenseInfo ILifeCycleStage IList IListBox ILocalIDInfo ILocalization ILock IMemoryDataSet IMessagingFactory IMetadataRepository INotice INoticeInfo INumericCriterion INumericRequisite INumericValue IObject IObjectDescription IObjectImporter IObjectInfo IObserver IPanelGroup IPickCriterion IPickProperty IPickRequisite IPickRequisiteDescription IPickRequisiteItem IPickRequisiteItems IPickValue IPrivilege IPrivilegeList IProcess IProcessFactory IProcessMessage IProgress IProperty IPropertyChangeEvent IQuery IReference IReferenceCriterion IReferenceEnabledMode IReferenceFactory IReferenceHistoryDescription IReferenceInfo IReferenceRecordCardWizardStep IReferenceRequisiteDescription IReferencesFactory IReferenceValue IRefRequisite IReport IReportFactory IRequisite IRequisiteDescription IRequisiteDescriptionList IRequisiteFactory IRichEdit IRouteStep IRule IRuleList ISchemeBlock IScript IScriptFactory ISearchCriteria ISearchCriterion ISearchDescription ISearchFactory ISearchFolderInfo ISearchForObjectDescription ISearchResultRestrictions ISecuredContext ISelectDialog IServerEvent IServerEventFactory IServiceDialog IServiceFactory ISignature ISignProvider ISignProvider2 ISignProvider3 ISimpleCriterion IStringCriterion IStringList IStringRequisite IStringRequisiteDescription IStringValue ISystemDialogsFactory ISystemInfo ITabSheet ITask ITaskAbortReasonInfo ITaskCardWizardStep ITaskDescription ITaskFactory ITaskInfo ITaskRoute ITextCriterion ITextRequisite ITextValue ITreeListSelectDialog IUser IUserList IValue IView IWebBrowserControl IWizard IWizardAction IWizardFactory IWizardFormElement IWizardParam IWizardPickParam IWizardReferenceParam IWizardStep IWorkAccessRights IWorkDescription IWorkflowAskableParam IWorkflowAskableParams IWorkflowBlock IWorkflowBlockResult IWorkflowEnabledMode IWorkflowParam IWorkflowPickParam IWorkflowReferenceParam IWorkState IWorkTreeCustomNode IWorkTreeJobNode IWorkTreeTaskNode IXMLEditorForm SBCrypto".replace(/\s/g, "|") + ")",
 			end: "[ \\t]*=",
 			excludeEnd: !0
-		}, u = {
+		}, l = {
 			className: "variable",
 			keywords: o,
 			begin: t,
 			relevance: 0,
-			contains: [l, s]
-		}, d = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]*\\(";
+			contains: [c, s]
+		}, u = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]*\\(";
 		return {
 			name: "ISBL",
 			case_insensitive: !0,
@@ -8860,7 +13644,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			contains: [
 				{
 					className: "function",
-					begin: d,
+					begin: u,
 					end: "\\)$",
 					returnBegin: !0,
 					keywords: o,
@@ -8872,21 +13656,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 								$pattern: t,
 								built_in: "AddSubString AdjustLineBreaks AmountInWords Analysis ArrayDimCount ArrayHighBound ArrayLowBound ArrayOf ArrayReDim Assert Assigned BeginOfMonth BeginOfPeriod BuildProfilingOperationAnalysis CallProcedure CanReadFile CArrayElement CDataSetRequisite ChangeDate ChangeReferenceDataset Char CharPos CheckParam CheckParamValue CompareStrings ConstantExists ControlState ConvertDateStr Copy CopyFile CreateArray CreateCachedReference CreateConnection CreateDialog CreateDualListDialog CreateEditor CreateException CreateFile CreateFolderDialog CreateInputDialog CreateLinkFile CreateList CreateLock CreateMemoryDataSet CreateObject CreateOpenDialog CreateProgress CreateQuery CreateReference CreateReport CreateSaveDialog CreateScript CreateSQLPivotFunction CreateStringList CreateTreeListSelectDialog CSelectSQL CSQL CSubString CurrentUserID CurrentUserName CurrentVersion DataSetLocateEx DateDiff DateTimeDiff DateToStr DayOfWeek DeleteFile DirectoryExists DisableCheckAccessRights DisableCheckFullShowingRestriction DisableMassTaskSendingRestrictions DropTable DupeString EditText EnableCheckAccessRights EnableCheckFullShowingRestriction EnableMassTaskSendingRestrictions EndOfMonth EndOfPeriod ExceptionExists ExceptionsOff ExceptionsOn Execute ExecuteProcess Exit ExpandEnvironmentVariables ExtractFileDrive ExtractFileExt ExtractFileName ExtractFilePath ExtractParams FileExists FileSize FindFile FindSubString FirmContext ForceDirectories Format FormatDate FormatNumeric FormatSQLDate FormatString FreeException GetComponent GetComponentLaunchParam GetConstant GetLastException GetReferenceRecord GetRefTypeByRefID GetTableID GetTempFolder IfThen In IndexOf InputDialog InputDialogEx InteractiveMode IsFileLocked IsGraphicFile IsNumeric Length LoadString LoadStringFmt LocalTimeToUTC LowerCase Max MessageBox MessageBoxEx MimeDecodeBinary MimeDecodeString MimeEncodeBinary MimeEncodeString Min MoneyInWords MoveFile NewID Now OpenFile Ord Precision Raise ReadCertificateFromFile ReadFile ReferenceCodeByID ReferenceNumber ReferenceRequisiteMode ReferenceRequisiteValue RegionDateSettings RegionNumberSettings RegionTimeSettings RegRead RegWrite RenameFile Replace Round SelectServerCode SelectSQL ServerDateTime SetConstant SetManagedFolderFieldsState ShowConstantsInputDialog ShowMessage Sleep Split SQL SQL2XLSTAB SQLProfilingSendReport StrToDate SubString SubStringCount SystemSetting Time TimeDiff Today Transliterate Trim UpperCase UserStatus UTCToLocalTime ValidateXML VarIsClear VarIsEmpty VarIsNull WorkTimeDiff WriteFile WriteFileEx WriteObjectHistory Анализ БазаДанных БлокЕсть БлокЕстьРасш БлокИнфо БлокСнять БлокСнятьРасш БлокУстановить Ввод ВводМеню ВедС ВедСпр ВерхняяГраницаМассива ВнешПрогр Восст ВременнаяПапка Время ВыборSQL ВыбратьЗапись ВыделитьСтр Вызвать Выполнить ВыпПрогр ГрафическийФайл ГруппаДополнительно ДатаВремяСерв ДеньНедели ДиалогДаНет ДлинаСтр ДобПодстр ЕПусто ЕслиТо ЕЧисло ЗамПодстр ЗаписьСправочника ЗначПоляСпр ИДТипСпр ИзвлечьДиск ИзвлечьИмяФайла ИзвлечьПуть ИзвлечьРасширение ИзмДат ИзменитьРазмерМассива ИзмеренийМассива ИмяОрг ИмяПоляСпр Индекс ИндикаторЗакрыть ИндикаторОткрыть ИндикаторШаг ИнтерактивныйРежим ИтогТблСпр КодВидВедСпр КодВидСпрПоИД КодПоAnalit КодСимвола КодСпр КолПодстр КолПроп КонМес Конст КонстЕсть КонстЗнач КонТран КопироватьФайл КопияСтр КПериод КСтрТблСпр Макс МаксСтрТблСпр Массив Меню МенюРасш Мин НаборДанныхНайтиРасш НаимВидСпр НаимПоAnalit НаимСпр НастроитьПереводыСтрок НачМес НачТран НижняяГраницаМассива НомерСпр НПериод Окно Окр Окружение ОтлИнфДобавить ОтлИнфУдалить Отчет ОтчетАнал ОтчетИнт ПапкаСуществует Пауза ПВыборSQL ПереименоватьФайл Переменные ПереместитьФайл Подстр ПоискПодстр ПоискСтр ПолучитьИДТаблицы ПользовательДополнительно ПользовательИД ПользовательИмя ПользовательСтатус Прервать ПроверитьПараметр ПроверитьПараметрЗнач ПроверитьУсловие РазбСтр РазнВремя РазнДат РазнДатаВремя РазнРабВремя РегУстВрем РегУстДат РегУстЧсл РедТекст РеестрЗапись РеестрСписокИменПарам РеестрЧтение РеквСпр РеквСпрПр Сегодня Сейчас Сервер СерверПроцессИД СертификатФайлСчитать СжПроб Символ СистемаДиректумКод СистемаИнформация СистемаКод Содержит СоединениеЗакрыть СоединениеОткрыть СоздатьДиалог СоздатьДиалогВыбораИзДвухСписков СоздатьДиалогВыбораПапки СоздатьДиалогОткрытияФайла СоздатьДиалогСохраненияФайла СоздатьЗапрос СоздатьИндикатор СоздатьИсключение СоздатьКэшированныйСправочник СоздатьМассив СоздатьНаборДанных СоздатьОбъект СоздатьОтчет СоздатьПапку СоздатьРедактор СоздатьСоединение СоздатьСписок СоздатьСписокСтрок СоздатьСправочник СоздатьСценарий СоздСпр СостСпр Сохр СохрСпр СписокСистем Спр Справочник СпрБлокЕсть СпрБлокСнять СпрБлокСнятьРасш СпрБлокУстановить СпрИзмНабДан СпрКод СпрНомер СпрОбновить СпрОткрыть СпрОтменить СпрПарам СпрПолеЗнач СпрПолеИмя СпрРекв СпрРеквВведЗн СпрРеквНовые СпрРеквПр СпрРеквПредЗн СпрРеквРежим СпрРеквТипТекст СпрСоздать СпрСост СпрСохранить СпрТблИтог СпрТблСтр СпрТблСтрКол СпрТблСтрМакс СпрТблСтрМин СпрТблСтрПред СпрТблСтрСлед СпрТблСтрСозд СпрТблСтрУд СпрТекПредст СпрУдалить СравнитьСтр СтрВерхРегистр СтрНижнРегистр СтрТблСпр СумПроп Сценарий СценарийПарам ТекВерсия ТекОрг Точн Тран Транслитерация УдалитьТаблицу УдалитьФайл УдСпр УдСтрТблСпр Уст УстановкиКонстант ФайлАтрибутСчитать ФайлАтрибутУстановить ФайлВремя ФайлВремяУстановить ФайлВыбрать ФайлЗанят ФайлЗаписать ФайлИскать ФайлКопировать ФайлМожноЧитать ФайлОткрыть ФайлПереименовать ФайлПерекодировать ФайлПереместить ФайлПросмотреть ФайлРазмер ФайлСоздать ФайлСсылкаСоздать ФайлСуществует ФайлСчитать ФайлУдалить ФмтSQLДат ФмтДат ФмтСтр ФмтЧсл Формат ЦМассивЭлемент ЦНаборДанныхРеквизит ЦПодстр "
 							},
-							begin: d,
+							begin: u,
 							end: "\\(",
 							returnBegin: !0,
 							excludeEnd: !0
 						},
 						s,
-						u,
+						l,
 						r,
 						n,
 						a
 					]
 				},
-				l,
+				c,
 				s,
-				u,
+				l,
 				r,
 				n,
 				a
@@ -8940,7 +13724,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /\)/,
 				contains: ["self"]
 			}]
-		}, l = {
+		}, c = {
 			className: "params",
 			begin: /\(/,
 			end: /\)/,
@@ -9020,7 +13804,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						3: "title.class"
 					},
 					contains: [
-						l,
+						c,
 						e.C_LINE_COMMENT_MODE,
 						e.C_BLOCK_COMMENT_MODE
 					]
@@ -9097,7 +13881,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"encodeURIComponent",
 		"escape",
 		"unescape"
-	], l = [
+	], c = [
 		"arguments",
 		"this",
 		"super",
@@ -9108,15 +13892,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"sessionStorage",
 		"module",
 		"global"
-	], u = [].concat(s, a, o);
-	function d(e) {
-		let t = e.regex, d = (e, { after: t }) => {
+	], l = [].concat(s, a, o);
+	function u(e) {
+		let t = e.regex, u = (e, { after: t }) => {
 			let n = "</" + e[0].slice(1);
 			return e.input.indexOf(n, t) !== -1;
-		}, f = n, p = {
+		}, d = n, f = {
 			begin: "<>",
 			end: "</>"
-		}, m = /<[A-Za-z0-9\\._:-]+\s*\/>/, g = {
+		}, p = /<[A-Za-z0-9\\._:-]+\s*\/>/, m = {
 			begin: /<[A-Za-z0-9\\._:-]+/,
 			end: /\/[A-Za-z0-9\\._:-]+>|\/>/,
 			isTrulyOpeningTag: (e, t) => {
@@ -9125,7 +13909,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					t.ignoreMatch();
 					return;
 				}
-				r === ">" && (d(e, { after: n }) || t.ignoreMatch());
+				r === ">" && (u(e, { after: n }) || t.ignoreMatch());
 				let i, a = e.input.substring(n);
 				if (i = a.match(/^\s*=/)) {
 					t.ignoreMatch();
@@ -9136,17 +13920,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					return;
 				}
 			}
-		}, _ = {
+		}, g = {
 			$pattern: n,
 			keyword: r,
 			literal: i,
-			built_in: u,
-			"variable.language": l
-		}, v = "[0-9](_?[0-9])*", y = `\\.(${v})`, b = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", x = {
+			built_in: l,
+			"variable.language": c
+		}, _ = "[0-9](_?[0-9])*", v = `\\.(${_})`, y = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", b = {
 			className: "number",
 			variants: [
-				{ begin: `(\\b(${b})((${y})|\\.)?|(${y}))[eE][+-]?(${v})\\b` },
-				{ begin: `\\b(${b})\\b((${y})\\b|\\.)?|(${y})\\b` },
+				{ begin: `(\\b(${y})((${v})|\\.)?|(${v}))[eE][+-]?(${_})\\b` },
+				{ begin: `\\b(${y})\\b((${v})\\b|\\.)?|(${v})\\b` },
 				{ begin: "\\b(0|[1-9](_?[0-9])*)n\\b" },
 				{ begin: "\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*n?\\b" },
 				{ begin: "\\b0[bB][0-1](_?[0-1])*n?\\b" },
@@ -9154,45 +13938,45 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: "\\b0[0-7]+n?\\b" }
 			],
 			relevance: 0
-		}, S = {
+		}, x = {
 			className: "subst",
 			begin: "\\$\\{",
 			end: "\\}",
-			keywords: _,
+			keywords: g,
 			contains: []
-		}, C = {
+		}, S = {
 			begin: ".?html`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "xml"
 			}
-		}, w = {
+		}, C = {
 			begin: ".?css`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "css"
 			}
-		}, T = {
+		}, w = {
 			begin: ".?gql`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "graphql"
 			}
-		}, E = {
+		}, T = {
 			className: "string",
 			begin: "`",
 			end: "`",
-			contains: [e.BACKSLASH_ESCAPE, S]
-		}, D = {
+			contains: [e.BACKSLASH_ESCAPE, x]
+		}, E = {
 			className: "comment",
 			variants: [
 				e.COMMENT(/\/\*\*(?!\/)/, "\\*/", {
@@ -9215,7 +13999,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							},
 							{
 								className: "variable",
-								begin: f + "(?=\\s*(-)|$)",
+								begin: d + "(?=\\s*(-)|$)",
 								endsParent: !0,
 								relevance: 0
 							},
@@ -9229,44 +14013,44 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.C_BLOCK_COMMENT_MODE,
 				e.C_LINE_COMMENT_MODE
 			]
-		}, O = [
+		}, D = [
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE,
+			S,
 			C,
 			w,
 			T,
-			E,
 			{ match: /\$\d+/ },
-			x
+			b
 		];
-		S.contains = O.concat({
+		x.contains = D.concat({
 			begin: /\{/,
 			end: /\}/,
-			keywords: _,
-			contains: ["self"].concat(O)
+			keywords: g,
+			contains: ["self"].concat(D)
 		});
-		let k = [].concat(D, S.contains), A = k.concat([{
+		let O = [].concat(E, x.contains), k = O.concat([{
 			begin: /(\s*)\(/,
 			end: /\)/,
-			keywords: _,
-			contains: ["self"].concat(k)
-		}]), j = {
+			keywords: g,
+			contains: ["self"].concat(O)
+		}]), A = {
 			className: "params",
 			begin: /(\s*)\(/,
 			end: /\)/,
 			excludeBegin: !0,
 			excludeEnd: !0,
-			keywords: _,
-			contains: A
-		}, M = { variants: [{
+			keywords: g,
+			contains: k
+		}, j = { variants: [{
 			match: [
 				/class/,
 				/\s+/,
-				f,
+				d,
 				/\s+/,
 				/extends/,
 				/\s+/,
-				t.concat(f, "(", t.concat(/\./, f), ")*")
+				t.concat(d, "(", t.concat(/\./, d), ")*")
 			],
 			scope: {
 				1: "keyword",
@@ -9278,27 +14062,27 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			match: [
 				/class/,
 				/\s+/,
-				f
+				d
 			],
 			scope: {
 				1: "keyword",
 				3: "title.class"
 			}
-		}] }, N = {
+		}] }, M = {
 			relevance: 0,
 			match: t.either(/\bJSON/, /\b[A-Z][a-z]+([A-Z][a-z]*|\d)*/, /\b[A-Z]{2,}([A-Z][a-z]+|\d)+([A-Z][a-z]*)*/, /\b[A-Z]{2,}[a-z]+([A-Z][a-z]+|\d)*([A-Z][a-z]*)*/),
 			className: "title.class",
 			keywords: { _: [...a, ...o] }
-		}, P = {
+		}, N = {
 			label: "use_strict",
 			className: "meta",
 			relevance: 10,
 			begin: /^\s*['"]use (strict|asm)['"]/
-		}, F = {
+		}, P = {
 			variants: [{ match: [
 				/function/,
 				/\s+/,
-				f,
+				d,
 				/(?=\s*\()/
 			] }, { match: [/function/, /\s*(?=\()/] }],
 			className: {
@@ -9306,59 +14090,59 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				3: "title.function"
 			},
 			label: "func.def",
-			contains: [j],
+			contains: [A],
 			illegal: /%/
-		}, I = {
+		}, F = {
 			relevance: 0,
 			match: /\b[A-Z][A-Z_0-9]+\b/,
 			className: "variable.constant"
 		};
-		function L(e) {
+		function I(e) {
 			return t.concat("(?!", e.join("|"), ")");
 		}
-		let R = {
-			match: t.concat(/\b/, L([
+		let L = {
+			match: t.concat(/\b/, I([
 				...s,
 				"super",
 				"import"
-			].map((e) => `${e}\\s*\\(`)), f, t.lookahead(/\s*\(/)),
+			].map((e) => `${e}\\s*\\(`)), d, t.lookahead(/\s*\(/)),
 			className: "title.function",
 			relevance: 0
-		}, z = {
-			begin: t.concat(/\./, t.lookahead(t.concat(f, /(?![0-9A-Za-z$_(])/))),
-			end: f,
+		}, R = {
+			begin: t.concat(/\./, t.lookahead(t.concat(d, /(?![0-9A-Za-z$_(])/))),
+			end: d,
 			excludeBegin: !0,
 			keywords: "prototype",
 			className: "property",
 			relevance: 0
-		}, B = {
+		}, z = {
 			match: [
 				/get|set/,
 				/\s+/,
-				f,
+				d,
 				/(?=\()/
 			],
 			className: {
 				1: "keyword",
 				3: "title.function"
 			},
-			contains: [{ begin: /\(\)/ }, j]
-		}, V = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + e.UNDERSCORE_IDENT_RE + ")\\s*=>", H = {
+			contains: [{ begin: /\(\)/ }, A]
+		}, B = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + e.UNDERSCORE_IDENT_RE + ")\\s*=>", V = {
 			match: [
 				/const|var|let/,
 				/\s+/,
-				f,
+				d,
 				/\s*/,
 				/=\s*/,
 				/(async\s*)?/,
-				t.lookahead(V)
+				t.lookahead(B)
 			],
 			keywords: "async",
 			className: {
 				1: "keyword",
 				3: "title.function"
 			},
-			contains: [j]
+			contains: [A]
 		};
 		return {
 			name: "JavaScript",
@@ -9368,10 +14152,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"mjs",
 				"cjs"
 			],
-			keywords: _,
+			keywords: g,
 			exports: {
-				PARAMS_CONTAINS: A,
-				CLASS_REFERENCE: N
+				PARAMS_CONTAINS: k,
+				CLASS_REFERENCE: M
 			},
 			illegal: /#(?![$_A-z])/,
 			contains: [
@@ -9380,33 +14164,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					binary: "node",
 					relevance: 5
 				}),
-				P,
+				N,
 				e.APOS_STRING_MODE,
 				e.QUOTE_STRING_MODE,
+				S,
 				C,
 				w,
 				T,
 				E,
-				D,
 				{ match: /\$\d+/ },
-				x,
-				N,
+				b,
+				M,
 				{
 					scope: "attr",
-					match: f + t.lookahead(":"),
+					match: d + t.lookahead(":"),
 					relevance: 0
 				},
-				H,
+				V,
 				{
 					begin: "(" + e.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
 					keywords: "return throw case",
 					relevance: 0,
 					contains: [
-						D,
+						E,
 						e.REGEXP_MODE,
 						{
 							className: "function",
-							begin: V,
+							begin: B,
 							returnBegin: !0,
 							end: "\\s*=>",
 							contains: [{
@@ -9426,8 +14210,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 										end: /\)/,
 										excludeBegin: !0,
 										excludeEnd: !0,
-										keywords: _,
-										contains: A
+										keywords: g,
+										contains: k
 									}
 								]
 							}]
@@ -9443,34 +14227,34 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						{
 							variants: [
 								{
-									begin: p.begin,
-									end: p.end
+									begin: f.begin,
+									end: f.end
 								},
-								{ match: m },
+								{ match: p },
 								{
-									begin: g.begin,
-									"on:begin": g.isTrulyOpeningTag,
-									end: g.end
+									begin: m.begin,
+									"on:begin": m.isTrulyOpeningTag,
+									end: m.end
 								}
 							],
 							subLanguage: "xml",
 							contains: [{
-								begin: g.begin,
-								end: g.end,
+								begin: m.begin,
+								end: m.end,
 								skip: !0,
 								contains: ["self"]
 							}]
 						}
 					]
 				},
-				F,
+				P,
 				{ beginKeywords: "while if switch catch for" },
 				{
 					begin: "\\b(?!function)" + e.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
 					returnBegin: !0,
 					label: "func.def",
-					contains: [j, e.inherit(e.TITLE_MODE, {
-						begin: f,
+					contains: [A, e.inherit(e.TITLE_MODE, {
+						begin: d,
 						className: "title.function"
 					})]
 				},
@@ -9478,25 +14262,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					match: /\.\.\./,
 					relevance: 0
 				},
-				z,
+				R,
 				{
-					match: "\\$" + f,
+					match: "\\$" + d,
 					relevance: 0
 				},
 				{
 					match: [/\bconstructor(?=\s*\()/],
 					className: { 1: "title.function" },
-					contains: [j]
+					contains: [A]
 				},
-				R,
-				I,
-				M,
-				B,
+				L,
+				F,
+				j,
+				z,
 				{ match: /\$[(.]/ }
 			]
 		};
 	}
-	t.exports = d;
+	t.exports = u;
 })), require_jboss_cli = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return {
@@ -9602,7 +14386,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			className: "variable",
 			begin: "\\$" + t
-		}, l = {
+		}, c = {
 			className: "string",
 			contains: [
 				e.BACKSLASH_ESCAPE,
@@ -9617,7 +14401,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: /\w*"/,
 				end: /"\w*/
 			}]
-		}, u = {
+		}, l = {
 			className: "string",
 			contains: [
 				e.BACKSLASH_ESCAPE,
@@ -9626,16 +14410,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			],
 			begin: "`",
 			end: "`"
-		}, d = {
+		}, u = {
 			className: "meta",
 			begin: "@" + t
 		};
 		return r.name = "Julia", r.contains = [
 			i,
 			a,
+			c,
 			l,
 			u,
-			d,
 			{
 				className: "comment",
 				variants: [{
@@ -9739,10 +14523,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		};
 		i.contains.push(s);
-		let l = {
+		let c = {
 			className: "meta",
 			begin: "@(?:file|property|field|get|set|receiver|param|setparam|delegate)\\s*:(?:\\s*" + e.UNDERSCORE_IDENT_RE + ")?"
-		}, u = {
+		}, l = {
 			className: "meta",
 			begin: "@" + e.UNDERSCORE_IDENT_RE,
 			contains: [{
@@ -9750,15 +14534,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /\)/,
 				contains: [e.inherit(s, { className: "string" }), "self"]
 			}]
-		}, d = a, f = e.COMMENT("/\\*", "\\*/", { contains: [e.C_BLOCK_COMMENT_MODE] }), p = { variants: [{
+		}, u = a, d = e.COMMENT("/\\*", "\\*/", { contains: [e.C_BLOCK_COMMENT_MODE] }), f = { variants: [{
 			className: "type",
 			begin: e.UNDERSCORE_IDENT_RE
 		}, {
 			begin: /\(/,
 			end: /\)/,
 			contains: []
-		}] }, m = p;
-		return m.variants[1].contains = [p], p.variants[1].contains = [m], {
+		}] }, p = f;
+		return p.variants[1].contains = [f], f.variants[1].contains = [p], {
 			name: "Kotlin",
 			aliases: ["kt", "kts"],
 			keywords: t,
@@ -9771,11 +14555,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					}]
 				}),
 				e.C_LINE_COMMENT_MODE,
-				f,
+				d,
 				n,
 				r,
+				c,
 				l,
-				u,
 				{
 					className: "function",
 					beginKeywords: "fun",
@@ -9811,21 +14595,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 									end: /[=,\/]/,
 									endsWithParent: !0,
 									contains: [
-										p,
+										f,
 										e.C_LINE_COMMENT_MODE,
-										f
+										d
 									],
 									relevance: 0
 								},
 								e.C_LINE_COMMENT_MODE,
-								f,
+								d,
+								c,
 								l,
-								u,
 								s,
 								e.C_NUMBER_MODE
 							]
 						},
-						f
+						d
 					]
 				},
 				{
@@ -9857,8 +14641,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							excludeBegin: !0,
 							returnEnd: !0
 						},
-						l,
-						u
+						c,
+						l
 					]
 				},
 				s,
@@ -9868,7 +14652,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "$",
 					illegal: "\n"
 				},
-				d
+				u
 			]
 		};
 	}
@@ -9891,10 +14675,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			className: "meta",
 			begin: "\\[/noprocess|" + n
-		}, l = {
+		}, c = {
 			className: "symbol",
 			begin: "'" + t + "'"
-		}, u = [
+		}, l = [
 			e.C_LINE_COMMENT_MODE,
 			e.C_BLOCK_COMMENT_MODE,
 			e.inherit(e.C_NUMBER_MODE, { begin: e.C_NUMBER_RE + "|(-?infinity|NaN)\\b" }),
@@ -9926,7 +14710,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			{
 				begin: /(->|\.)\s*/,
 				relevance: 0,
-				contains: [l]
+				contains: [c]
 			},
 			{
 				className: "class",
@@ -9974,7 +14758,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							},
 							o,
 							s
-						].concat(u)
+						].concat(l)
 					}
 				},
 				{
@@ -9988,7 +14772,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "lasso9$",
 					relevance: 10
 				}
-			].concat(u)
+			].concat(l)
 		};
 	}
 	t.exports = n;
@@ -10084,25 +14868,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			relevance: 0,
 			endsParent: !0,
 			contains: [o, ...a]
-		}), l = {
+		}), c = {
 			begin: /\[/,
 			end: /\]/,
 			endsParent: !0,
 			relevance: 0,
 			contains: [o, ...a]
-		}, u = {
+		}, l = {
 			begin: /\s+/,
 			relevance: 0
-		}, d = [s], f = [l], p = function(e, t) {
+		}, u = [s], d = [c], f = function(e, t) {
 			return {
-				contains: [u],
+				contains: [l],
 				starts: {
 					relevance: 0,
 					contains: e,
 					starts: t
 				}
 			};
-		}, m = function(e, t) {
+		}, p = function(e, t) {
 			return {
 				begin: "\\\\" + e + "(?![a-zA-Z@:_])",
 				keywords: {
@@ -10110,10 +14894,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					keyword: "\\" + e
 				},
 				relevance: 0,
-				contains: [u],
+				contains: [l],
 				starts: t
 			};
-		}, g = function(t, n) {
+		}, m = function(t, n) {
 			return e.inherit({
 				begin: "\\\\begin(?=[ 	]*(\\r?\\n[ 	]*)?\\{" + t + "\\})",
 				keywords: {
@@ -10121,20 +14905,20 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					keyword: "\\begin"
 				},
 				relevance: 0
-			}, p(d, n));
-		}, _ = (t = "string") => e.END_SAME_AS_BEGIN({
+			}, f(u, n));
+		}, g = (t = "string") => e.END_SAME_AS_BEGIN({
 			className: t,
 			begin: /(.|\r?\n)/,
 			end: /(.|\r?\n)/,
 			excludeBegin: !0,
 			excludeEnd: !0,
 			endsParent: !0
-		}), v = function(e) {
+		}), _ = function(e) {
 			return {
 				className: "string",
 				end: "(?=\\\\end\\{" + e + "\\})"
 			};
-		}, y = (e = "string") => ({
+		}, v = (e = "string") => ({
 			relevance: 0,
 			begin: /\{/,
 			starts: {
@@ -10156,22 +14940,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			name: "LaTeX",
 			aliases: ["tex"],
 			contains: [...[
-				...["verb", "lstinline"].map((e) => m(e, { contains: [_()] })),
-				m("mint", p(d, { contains: [_()] })),
-				m("mintinline", p(d, { contains: [y(), _()] })),
-				m("url", { contains: [y("link"), y("link")] }),
-				m("hyperref", { contains: [y("link")] }),
-				m("href", p(f, { contains: [y("link")] })),
+				...["verb", "lstinline"].map((e) => p(e, { contains: [g()] })),
+				p("mint", f(u, { contains: [g()] })),
+				p("mintinline", f(u, { contains: [v(), g()] })),
+				p("url", { contains: [v("link"), v("link")] }),
+				p("hyperref", { contains: [v("link")] }),
+				p("href", f(d, { contains: [v("link")] })),
 				...[].concat(...["", "\\*"].map((e) => [
-					g("verbatim" + e, v("verbatim" + e)),
-					g("filecontents" + e, p(d, v("filecontents" + e))),
+					m("verbatim" + e, _("verbatim" + e)),
+					m("filecontents" + e, f(u, _("filecontents" + e))),
 					...[
 						"",
 						"B",
 						"L"
-					].map((t) => g(t + "Verbatim" + e, p(f, v(t + "Verbatim" + e))))
+					].map((t) => m(t + "Verbatim" + e, f(d, _(t + "Verbatim" + e))))
 				])),
-				g("minted", p(f, p(d, v("minted"))))
+				m("minted", f(d, f(u, _("minted"))))
 			], ...a]
 		};
 	}
@@ -10298,7 +15082,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "attr",
 			begin: /--[A-Za-z_][A-Za-z0-9_-]*/
 		}
-	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), l = [
+	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), c = [
 		"after",
 		"backdrop",
 		"before",
@@ -10313,54 +15097,54 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"selection",
 		"slotted",
 		"spelling-error"
-	].sort().reverse(), u = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse(), d = s.concat(l).sort().reverse();
-	function f(e) {
-		let t = n(e), r = d, i = "[\\w-]+", f = "(" + i + "|@\\{[\\w-]+\\})", p = [], m = [], g = function(e) {
+	].sort().reverse(), l = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse(), u = s.concat(c).sort().reverse();
+	function d(e) {
+		let t = n(e), r = u, i = "[\\w-]+", d = "(" + i + "|@\\{[\\w-]+\\})", f = [], p = [], m = function(e) {
 			return {
 				className: "string",
 				begin: "~?" + e + ".*?" + e
 			};
-		}, _ = function(e, t, n) {
+		}, g = function(e, t, n) {
 			return {
 				className: e,
 				begin: t,
 				relevance: n
 			};
-		}, v = {
+		}, _ = {
 			$pattern: /[a-z-]+/,
 			keyword: "and or not only",
 			attribute: o.join(" ")
-		}, y = {
+		}, v = {
 			begin: "\\(",
 			end: "\\)",
-			contains: m,
-			keywords: v,
+			contains: p,
+			keywords: _,
 			relevance: 0
 		};
-		m.push(e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, g("'"), g("\""), t.CSS_NUMBER_MODE, {
+		p.push(e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, m("'"), m("\""), t.CSS_NUMBER_MODE, {
 			begin: "(url|data-uri)\\(",
 			starts: {
 				className: "string",
 				end: "[\\)\\n]",
 				excludeEnd: !0
 			}
-		}, t.HEXCOLOR, y, _("variable", "@@?" + i, 10), _("variable", "@\\{" + i + "\\}"), _("built_in", "~?`[^`]*?`"), {
+		}, t.HEXCOLOR, v, g("variable", "@@?" + i, 10), g("variable", "@\\{" + i + "\\}"), g("built_in", "~?`[^`]*?`"), {
 			className: "attribute",
 			begin: i + "\\s*:",
 			end: ":",
 			returnBegin: !0,
 			excludeEnd: !0
 		}, t.IMPORTANT, { beginKeywords: "and not" }, t.FUNCTION_DISPATCH);
-		let b = m.concat({
+		let y = p.concat({
 			begin: /\{/,
 			end: /\}/,
-			contains: p
-		}), x = {
+			contains: f
+		}), b = {
 			beginKeywords: "when",
 			endsWithParent: !0,
-			contains: [{ beginKeywords: "and not" }].concat(m)
-		}, S = {
-			begin: f + "\\s*:",
+			contains: [{ beginKeywords: "and not" }].concat(p)
+		}, x = {
+			begin: d + "\\s*:",
 			returnBegin: !0,
 			end: /[;}]/,
 			relevance: 0,
@@ -10369,27 +15153,27 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				t.CSS_VARIABLE,
 				{
 					className: "attribute",
-					begin: "\\b(" + u.join("|") + ")\\b",
+					begin: "\\b(" + l.join("|") + ")\\b",
 					end: /(?=:)/,
 					starts: {
 						endsWithParent: !0,
 						illegal: "[<=$]",
 						relevance: 0,
-						contains: m
+						contains: p
 					}
 				}
 			]
-		}, C = {
+		}, S = {
 			className: "keyword",
 			begin: "@(import|media|charset|font-face|(-[a-z]+-)?keyframes|supports|document|namespace|page|viewport|host)\\b",
 			starts: {
 				end: "[;{}]",
-				keywords: v,
+				keywords: _,
 				returnEnd: !0,
-				contains: m,
+				contains: p,
 				relevance: 0
 			}
-		}, w = {
+		}, C = {
 			className: "variable",
 			variants: [{
 				begin: "@" + i + "\\s*:",
@@ -10398,14 +15182,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			starts: {
 				end: "[;}]",
 				returnEnd: !0,
-				contains: b
+				contains: y
 			}
-		}, T = {
+		}, w = {
 			variants: [{
 				begin: "[\\.#:&\\[>]",
 				end: "[;{}]"
 			}, {
-				begin: f,
+				begin: d,
 				end: /\{/
 			}],
 			returnBegin: !0,
@@ -10415,18 +15199,18 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			contains: [
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
-				x,
-				_("keyword", "all\\b"),
-				_("variable", "@\\{" + i + "\\}"),
+				b,
+				g("keyword", "all\\b"),
+				g("variable", "@\\{" + i + "\\}"),
 				{
 					begin: "\\b(" + a.join("|") + ")\\b",
 					className: "selector-tag"
 				},
 				t.CSS_NUMBER_MODE,
-				_("selector-tag", f, 0),
-				_("selector-id", "#" + f),
-				_("selector-class", "\\." + f, 0),
-				_("selector-tag", "&", 0),
+				g("selector-tag", d, 0),
+				g("selector-id", "#" + d),
+				g("selector-class", "\\." + d, 0),
+				g("selector-tag", "&", 0),
 				t.ATTRIBUTE_SELECTOR_MODE,
 				{
 					className: "selector-pseudo",
@@ -10434,30 +15218,30 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					className: "selector-pseudo",
-					begin: ":(:)?(" + l.join("|") + ")"
+					begin: ":(:)?(" + c.join("|") + ")"
 				},
 				{
 					begin: /\(/,
 					end: /\)/,
 					relevance: 0,
-					contains: b
+					contains: y
 				},
 				{ begin: "!important" },
 				t.FUNCTION_DISPATCH
 			]
-		}, E = {
+		}, T = {
 			begin: `[\\w-]+:(:)?(${r.join("|")})`,
 			returnBegin: !0,
-			contains: [T]
+			contains: [w]
 		};
-		return p.push(e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, C, w, E, S, T, x, t.FUNCTION_DISPATCH), {
+		return f.push(e.C_LINE_COMMENT_MODE, e.C_BLOCK_COMMENT_MODE, S, C, T, x, w, b, t.FUNCTION_DISPATCH), {
 			name: "Less",
 			case_insensitive: !0,
 			illegal: "[=>'/<($\"]",
-			contains: p
+			contains: f
 		};
 	}
-	t.exports = f;
+	t.exports = d;
 })), require_lisp = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		let t = "[a-zA-Z_\\-+\\*\\/<=>&#][a-zA-Z0-9_\\-+*\\/<=>&#!]*", n = "\\|[^]*?\\|", r = "(-|\\+)?\\d+(\\.\\d+|\\/\\d+)?((d|e|f|l|s|D|E|F|L|S)(\\+|-)?\\d+)?", i = {
@@ -10478,21 +15262,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: "\\)"
 				}
 			]
-		}, o = e.inherit(e.QUOTE_STRING_MODE, { illegal: null }), s = e.COMMENT(";", "$", { relevance: 0 }), l = {
+		}, o = e.inherit(e.QUOTE_STRING_MODE, { illegal: null }), s = e.COMMENT(";", "$", { relevance: 0 }), c = {
 			begin: "\\*",
 			end: "\\*"
-		}, u = {
+		}, l = {
 			className: "symbol",
 			begin: "[:&]" + t
-		}, d = {
+		}, u = {
 			begin: t,
 			relevance: 0
-		}, f = { begin: n }, p = {
+		}, d = { begin: n }, f = {
 			contains: [
 				a,
 				o,
+				c,
 				l,
-				u,
 				{
 					begin: "\\(",
 					end: "\\)",
@@ -10501,10 +15285,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						i,
 						o,
 						a,
-						d
+						u
 					]
 				},
-				d
+				u
 			],
 			variants: [
 				{
@@ -10518,31 +15302,31 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{ begin: "'" + n }
 			]
-		}, m = { variants: [{ begin: "'" + t }, { begin: "#'" + t + "(::[a-zA-Z_\\-+\\*\\/<=>&#][a-zA-Z0-9_\\-+*\\/<=>&#!]*)*" }] }, g = {
+		}, p = { variants: [{ begin: "'" + t }, { begin: "#'" + t + "(::[a-zA-Z_\\-+\\*\\/<=>&#][a-zA-Z0-9_\\-+*\\/<=>&#!]*)*" }] }, m = {
 			begin: "\\(\\s*",
 			end: "\\)"
-		}, _ = {
+		}, g = {
 			endsWithParent: !0,
 			relevance: 0
 		};
-		return g.contains = [{
+		return m.contains = [{
 			className: "name",
 			variants: [{
 				begin: t,
 				relevance: 0
 			}, { begin: n }]
-		}, _], _.contains = [
+		}, g], g.contains = [
+			f,
 			p,
 			m,
-			g,
 			i,
 			a,
 			o,
 			s,
+			c,
 			l,
-			u,
-			f,
-			d
+			d,
+			u
 		], {
 			name: "Lisp",
 			illegal: /\S/,
@@ -10552,10 +15336,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				i,
 				o,
 				s,
+				f,
 				p,
 				m,
-				g,
-				d
+				u
 			]
 		};
 	}
@@ -10696,12 +15480,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			begin: /#\{/,
 			end: /\}/,
 			keywords: t
-		}, l = {
+		}, c = {
 			className: "subst",
 			begin: /#[A-Za-z$_]/,
 			end: /(?:-[0-9A-Za-z$_]|[0-9A-Za-z$_])*/,
 			keywords: t
-		}, u = [
+		}, l = [
 			e.BINARY_NUMBER_MODE,
 			{
 				className: "number",
@@ -10731,7 +15515,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						contains: [
 							e.BACKSLASH_ESCAPE,
 							s,
-							l
+							c
 						]
 					},
 					{
@@ -10740,7 +15524,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						contains: [
 							e.BACKSLASH_ESCAPE,
 							s,
-							l
+							c
 						]
 					},
 					{
@@ -10767,8 +15551,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				subLanguage: "javascript"
 			}
 		];
-		s.contains = u;
-		let d = {
+		s.contains = l;
+		let u = {
 			className: "params",
 			begin: "\\(",
 			returnBegin: !0,
@@ -10776,9 +15560,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: /\(/,
 				end: /\)/,
 				keywords: t,
-				contains: ["self"].concat(u)
+				contains: ["self"].concat(l)
 			}]
-		}, f = { begin: "(#=>|=>|\\|>>|-?->|!->)" }, p = {
+		}, d = { begin: "(#=>|=>|\\|>>|-?->|!->)" }, f = {
 			variants: [{ match: [
 				/class\s+/,
 				a,
@@ -10796,13 +15580,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			aliases: ["ls"],
 			keywords: t,
 			illegal: /\/\*/,
-			contains: u.concat([
+			contains: l.concat([
 				e.COMMENT("\\/\\*", "\\*\\/"),
 				e.HASH_COMMENT_MODE,
-				f,
+				d,
 				{
 					className: "function",
-					contains: [o, d],
+					contains: [o, u],
 					returnBegin: !0,
 					variants: [
 						{
@@ -10819,7 +15603,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						}
 					]
 				},
-				p,
+				f,
 				{
 					begin: a + ":",
 					end: ":",
@@ -10852,14 +15636,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "symbol",
 			variants: [{ begin: /^\s*[a-z]+:/ }],
 			relevance: 0
-		}, l = {
+		}, c = {
 			className: "variable",
 			variants: [
 				{ begin: t.concat(/%/, n) },
 				{ begin: /%\d+/ },
 				{ begin: /#\d+/ }
 			]
-		}, u = {
+		}, l = {
 			className: "title",
 			variants: [
 				{ begin: t.concat(/@/, n) },
@@ -10888,10 +15672,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						match: /\\\d\d/
 					}]
 				},
-				u,
+				l,
 				a,
 				i,
-				l,
+				c,
 				s,
 				o
 			]
@@ -11059,7 +15843,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "number",
 			relevance: 0,
 			begin: t.concat(r, t.optional(i), t.optional(/\*\^[+-]?\d+/))
-		}, o = /[a-zA-Z$][a-zA-Z0-9$]*/, s = new Set(n), l = { variants: [{
+		}, o = /[a-zA-Z$][a-zA-Z0-9$]*/, s = new Set(n), c = { variants: [{
 			className: "builtin-symbol",
 			begin: o,
 			"on:begin": (e, t) => {
@@ -11069,26 +15853,26 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "symbol",
 			relevance: 0,
 			begin: o
-		}] }, u = {
+		}] }, l = {
 			className: "named-character",
 			begin: /\\\[[$a-zA-Z][$a-zA-Z0-9]+\]/
-		}, d = {
+		}, u = {
 			className: "operator",
 			relevance: 0,
 			begin: /[+\-*/,;.:@~=><&|_`'^?!%]+/
-		}, f = {
+		}, d = {
 			className: "pattern",
 			relevance: 0,
 			begin: /([a-zA-Z$][a-zA-Z0-9$]*)?_+([a-zA-Z$][a-zA-Z0-9$]*)?/
-		}, p = {
+		}, f = {
 			className: "slot",
 			relevance: 0,
 			begin: /#[a-zA-Z$][a-zA-Z0-9$]*|#+[0-9]?/
-		}, m = {
+		}, p = {
 			className: "brace",
 			relevance: 0,
 			begin: /[[\](){}]/
-		}, g = {
+		}, m = {
 			className: "message-name",
 			relevance: 0,
 			begin: t.concat("::", o)
@@ -11107,15 +15891,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			},
 			contains: [
 				e.COMMENT(/\(\*/, /\*\)/, { contains: ["self"] }),
+				d,
 				f,
-				p,
-				g,
+				m,
+				c,
 				l,
-				u,
 				e.QUOTE_STRING_MODE,
 				a,
-				d,
-				m
+				u,
+				p
 			]
 		};
 	}
@@ -11380,7 +16164,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			scope: "attr",
 			match: /\s+:\s*\w+(\s*\(.*?\))?/
-		}, l = {
+		}, c = {
 			scope: "variable",
 			variants: [
 				{ begin: /\$\d/ },
@@ -11391,7 +16175,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			],
 			contains: [s]
-		}, u = {
+		}, l = {
 			className: "number",
 			variants: [
 				{ match: /0?\.[0-9][0-9_]+\b/ },
@@ -11401,11 +16185,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ match: /\b0b[0-1][0-1_]*\b/ }
 			],
 			relevance: 0
-		}, d = [
+		}, u = [
 			e.BACKSLASH_ESCAPE,
 			a,
-			l
-		], f = [
+			c
+		], d = [
 			/!/,
 			/\//,
 			/\|/,
@@ -11413,17 +16197,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			/'/,
 			/"/,
 			/#/
-		], p = (e, n, i = "\\1") => {
+		], f = (e, n, i = "\\1") => {
 			let a = i === "\\1" ? i : t.concat(i, n);
 			return t.concat(t.concat("(?:", e, ")"), n, /(?:\\.|[^\\\/])*?/, a, /(?:\\.|[^\\\/])*?/, i, r);
-		}, m = (e, n, i) => t.concat(t.concat("(?:", e, ")"), n, /(?:\\.|[^\\\/])*?/, i, r), g = [
-			l,
+		}, p = (e, n, i) => t.concat(t.concat("(?:", e, ")"), n, /(?:\\.|[^\\\/])*?/, i, r), m = [
+			c,
 			e.HASH_COMMENT_MODE,
 			e.COMMENT(/^=\w/, /=cut/, { endsWithParent: !0 }),
 			o,
 			{
 				className: "string",
-				contains: d,
+				contains: u,
 				variants: [
 					{
 						begin: "q[qwxr]?\\s*\\(",
@@ -11479,7 +16263,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					}
 				]
 			},
-			u,
+			l,
 			{
 				begin: "(\\/\\/|" + e.RE_STARTERS_RE + "|\\b(split|return|print|reverse|grep)\\b)\\s*",
 				keywords: "split return print reverse grep",
@@ -11489,10 +16273,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					{
 						className: "regexp",
 						variants: [
-							{ begin: p("s|tr|y", t.either(...f, { capture: !0 })) },
-							{ begin: p("s|tr|y", "\\(", "\\)") },
-							{ begin: p("s|tr|y", "\\[", "\\]") },
-							{ begin: p("s|tr|y", "\\{", "\\}") }
+							{ begin: f("s|tr|y", t.either(...d, { capture: !0 })) },
+							{ begin: f("s|tr|y", "\\(", "\\)") },
+							{ begin: f("s|tr|y", "\\[", "\\]") },
+							{ begin: f("s|tr|y", "\\{", "\\}") }
 						],
 						relevance: 2
 					},
@@ -11503,11 +16287,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 								begin: /(m|qr)\/\//,
 								relevance: 0
 							},
-							{ begin: m("(?:m|qr)?", /\//, /\//) },
-							{ begin: m("m|qr", t.either(...f, { capture: !0 }), /\1/) },
-							{ begin: m("m|qr", /\(/, /\)/) },
-							{ begin: m("m|qr", /\[/, /\]/) },
-							{ begin: m("m|qr", /\{/, /\}/) }
+							{ begin: p("(?:m|qr)?", /\//, /\//) },
+							{ begin: p("m|qr", t.either(...d, { capture: !0 }), /\1/) },
+							{ begin: p("m|qr", /\(/, /\)/) },
+							{ begin: p("m|qr", /\[/, /\]/) },
+							{ begin: p("m|qr", /\{/, /\}/) }
 						]
 					}
 				]
@@ -11529,7 +16313,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				contains: [
 					e.TITLE_MODE,
 					s,
-					u
+					l
 				]
 			},
 			{
@@ -11547,11 +16331,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}]
 			}
 		];
-		return a.contains = g, o.contains = g, {
+		return a.contains = m, o.contains = m, {
 			name: "Perl",
 			aliases: ["pl", "pm"],
 			keywords: i,
-			contains: g
+			contains: m
 		};
 	}
 	t.exports = n;
@@ -12084,15 +16868,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, o = "[A-Za-z0-9_\\+\\.-]+", s = {
 			scope: "symbol",
 			match: /* @__PURE__ */ RegExp(`(\\.\\.|\\.|~)?/(${o})?(/${o})*(?=[\\s;])`)
-		}, l = t.either("==", "=", "\\+\\+", "\\+", "<=", "<\\|", "<", ">=", ">", "->", "//", "/", "!=", "!", "\\|\\|", "\\|>", "\\?", "\\*", "&&"), u = {
+		}, c = t.either("==", "=", "\\+\\+", "\\+", "<=", "<\\|", "<", ">=", ">", "->", "//", "/", "!=", "!", "\\|\\|", "\\|>", "\\?", "\\*", "&&"), l = {
 			scope: "operator",
-			match: t.concat(l, /(?!-)/),
+			match: t.concat(c, /(?!-)/),
 			relevance: 0
-		}, d = {
+		}, u = {
 			scope: "number",
 			match: /* @__PURE__ */ RegExp(`${e.NUMBER_RE}(?!-)`),
 			relevance: 0
-		}, f = {
+		}, d = {
 			variants: [
 				{
 					scope: "operator",
@@ -12112,7 +16896,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					begin: [
-						l,
+						c,
 						/-/,
 						/(?!>)/
 					],
@@ -12123,7 +16907,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				}
 			],
 			relevance: 0
-		}, p = {
+		}, f = {
 			beforeMatch: /(^|\{|;)\s*/,
 			begin: /* @__PURE__ */ RegExp(`${i}(\\.${i})*\\s*=(?!=)`),
 			returnBegin: !0,
@@ -12133,48 +16917,48 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				match: /* @__PURE__ */ RegExp(`${i}(\\.${i})*(?=\\s*=)`),
 				relevance: .2
 			}]
-		}, m = {
+		}, p = {
 			scope: "char.escape",
 			match: /\\\$/
-		}, g = {
+		}, m = {
 			scope: "char.escape",
 			match: /''\$/
-		}, _ = {
+		}, g = {
 			scope: "subst",
 			begin: /\$\{/,
 			end: /\}/,
 			keywords: n
-		}, v = {
+		}, _ = {
 			scope: "char.escape",
 			match: /'''/
-		}, y = {
+		}, v = {
 			scope: "char.escape",
 			match: /\\(?!\$)./
-		}, b = {
+		}, y = {
 			scope: "string",
 			variants: [{
 				begin: "''",
 				end: "''",
 				contains: [
+					m,
 					g,
 					_,
-					v,
-					y
+					v
 				]
 			}, {
 				begin: "\"",
 				end: "\"",
 				contains: [
-					m,
-					_,
-					y
+					p,
+					g,
+					v
 				]
 			}]
-		}, x = {
+		}, b = {
 			scope: "params",
 			match: /* @__PURE__ */ RegExp(`${i}\\s*:(?=\\s)`)
-		}, S = [
-			d,
+		}, x = [
+			u,
 			e.HASH_COMMENT_MODE,
 			e.C_BLOCK_COMMENT_MODE,
 			e.COMMENT(/\/\*\*(?!\/)/, /\*\//, {
@@ -12182,19 +16966,19 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				relevance: 0
 			}),
 			r,
-			b,
+			y,
 			a,
 			s,
-			x,
-			p,
+			b,
 			f,
-			u
+			d,
+			l
 		];
-		return _.contains = S, {
+		return g.contains = x, {
 			name: "Nix",
 			aliases: ["nixos"],
 			keywords: n,
-			contains: S.concat([{
+			contains: x.concat([{
 				scope: "meta.prompt",
 				match: /^nix-repl>(?=\s)/,
 				relevance: 10
@@ -12236,22 +17020,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "variable",
 			begin: /\$+\w[\w\.]*/,
 			illegal: /\(\)\{\}/
-		}, l = {
+		}, c = {
 			className: "variable",
 			begin: /\$+\([\w^.:!-]+\)/
-		}, u = {
+		}, l = {
 			className: "params",
 			begin: t.either(...r)
-		}, d = {
+		}, u = {
 			className: "keyword",
 			begin: t.concat(/!/, t.either(...i))
-		}, f = {
+		}, d = {
 			className: "char.escape",
 			begin: /\$(\\[nrt]|\$)/
-		}, p = {
+		}, f = {
 			className: "title.function",
 			begin: /\w+::\w+/
-		}, m = {
+		}, p = {
 			className: "string",
 			variants: [
 				{
@@ -12269,13 +17053,13 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			],
 			illegal: /\n/,
 			contains: [
-				f,
+				d,
 				a,
 				o,
 				s,
-				l
+				c
 			]
-		}, g = /* @__PURE__ */ "Abort.AddBrandingImage.AddSize.AllowRootDirInstall.AllowSkipFiles.AutoCloseWindow.BGFont.BGGradient.BrandingText.BringToFront.Call.CallInstDLL.Caption.ChangeUI.CheckBitmap.ClearErrors.CompletedText.ComponentText.CopyFiles.CRCCheck.CreateDirectory.CreateFont.CreateShortCut.Delete.DeleteINISec.DeleteINIStr.DeleteRegKey.DeleteRegValue.DetailPrint.DetailsButtonText.DirText.DirVar.DirVerify.EnableWindow.EnumRegKey.EnumRegValue.Exch.Exec.ExecShell.ExecShellWait.ExecWait.ExpandEnvStrings.File.FileBufSize.FileClose.FileErrorText.FileOpen.FileRead.FileReadByte.FileReadUTF16LE.FileReadWord.FileWriteUTF16LE.FileSeek.FileWrite.FileWriteByte.FileWriteWord.FindClose.FindFirst.FindNext.FindWindow.FlushINI.GetCurInstType.GetCurrentAddress.GetDlgItem.GetDLLVersion.GetDLLVersionLocal.GetErrorLevel.GetFileTime.GetFileTimeLocal.GetFullPathName.GetFunctionAddress.GetInstDirError.GetKnownFolderPath.GetLabelAddress.GetTempFileName.GetWinVer.Goto.HideWindow.Icon.IfAbort.IfErrors.IfFileExists.IfRebootFlag.IfRtlLanguage.IfShellVarContextAll.IfSilent.InitPluginsDir.InstallButtonText.InstallColors.InstallDir.InstallDirRegKey.InstProgressFlags.InstType.InstTypeGetText.InstTypeSetText.Int64Cmp.Int64CmpU.Int64Fmt.IntCmp.IntCmpU.IntFmt.IntOp.IntPtrCmp.IntPtrCmpU.IntPtrOp.IsWindow.LangString.LicenseBkColor.LicenseData.LicenseForceSelection.LicenseLangString.LicenseText.LoadAndSetImage.LoadLanguageFile.LockWindow.LogSet.LogText.ManifestDPIAware.ManifestLongPathAware.ManifestMaxVersionTested.ManifestSupportedOS.MessageBox.MiscButtonText.Name|0.Nop.OutFile.Page.PageCallbacks.PEAddResource.PEDllCharacteristics.PERemoveResource.PESubsysVer.Pop.Push.Quit.ReadEnvStr.ReadINIStr.ReadRegDWORD.ReadRegStr.Reboot.RegDLL.Rename.RequestExecutionLevel.ReserveFile.Return.RMDir.SearchPath.SectionGetFlags.SectionGetInstTypes.SectionGetSize.SectionGetText.SectionIn.SectionSetFlags.SectionSetInstTypes.SectionSetSize.SectionSetText.SendMessage.SetAutoClose.SetBrandingImage.SetCompress.SetCompressor.SetCompressorDictSize.SetCtlColors.SetCurInstType.SetDatablockOptimize.SetDateSave.SetDetailsPrint.SetDetailsView.SetErrorLevel.SetErrors.SetFileAttributes.SetFont.SetOutPath.SetOverwrite.SetRebootFlag.SetRegView.SetShellVarContext.SetSilent.ShowInstDetails.ShowUninstDetails.ShowWindow.SilentInstall.SilentUnInstall.Sleep.SpaceTexts.StrCmp.StrCmpS.StrCpy.StrLen.SubCaption.Unicode.UninstallButtonText.UninstallCaption.UninstallIcon.UninstallSubCaption.UninstallText.UninstPage.UnRegDLL.Var.VIAddVersionKey.VIFileVersion.VIProductVersion.WindowIcon.WriteINIStr.WriteRegBin.WriteRegDWORD.WriteRegExpandStr.WriteRegMultiStr.WriteRegNone.WriteRegStr.WriteUninstaller.XPStyle".split("."), _ = /* @__PURE__ */ "admin,all,auto,both,bottom,bzip2,colored,components,current,custom,directory,false,force,hide,highest,ifdiff,ifnewer,instfiles,lastused,leave,left,license,listonly,lzma,nevershow,none,normal,notset,off,on,open,print,right,show,silent,silentlog,smooth,textonly,top,true,try,un.components,un.custom,un.directory,un.instfiles,un.license,uninstConfirm,user,Win10,Win7,Win8,WinVista,zlib".split(","), v = {
+		}, m = /* @__PURE__ */ "Abort.AddBrandingImage.AddSize.AllowRootDirInstall.AllowSkipFiles.AutoCloseWindow.BGFont.BGGradient.BrandingText.BringToFront.Call.CallInstDLL.Caption.ChangeUI.CheckBitmap.ClearErrors.CompletedText.ComponentText.CopyFiles.CRCCheck.CreateDirectory.CreateFont.CreateShortCut.Delete.DeleteINISec.DeleteINIStr.DeleteRegKey.DeleteRegValue.DetailPrint.DetailsButtonText.DirText.DirVar.DirVerify.EnableWindow.EnumRegKey.EnumRegValue.Exch.Exec.ExecShell.ExecShellWait.ExecWait.ExpandEnvStrings.File.FileBufSize.FileClose.FileErrorText.FileOpen.FileRead.FileReadByte.FileReadUTF16LE.FileReadWord.FileWriteUTF16LE.FileSeek.FileWrite.FileWriteByte.FileWriteWord.FindClose.FindFirst.FindNext.FindWindow.FlushINI.GetCurInstType.GetCurrentAddress.GetDlgItem.GetDLLVersion.GetDLLVersionLocal.GetErrorLevel.GetFileTime.GetFileTimeLocal.GetFullPathName.GetFunctionAddress.GetInstDirError.GetKnownFolderPath.GetLabelAddress.GetTempFileName.GetWinVer.Goto.HideWindow.Icon.IfAbort.IfErrors.IfFileExists.IfRebootFlag.IfRtlLanguage.IfShellVarContextAll.IfSilent.InitPluginsDir.InstallButtonText.InstallColors.InstallDir.InstallDirRegKey.InstProgressFlags.InstType.InstTypeGetText.InstTypeSetText.Int64Cmp.Int64CmpU.Int64Fmt.IntCmp.IntCmpU.IntFmt.IntOp.IntPtrCmp.IntPtrCmpU.IntPtrOp.IsWindow.LangString.LicenseBkColor.LicenseData.LicenseForceSelection.LicenseLangString.LicenseText.LoadAndSetImage.LoadLanguageFile.LockWindow.LogSet.LogText.ManifestDPIAware.ManifestLongPathAware.ManifestMaxVersionTested.ManifestSupportedOS.MessageBox.MiscButtonText.Name|0.Nop.OutFile.Page.PageCallbacks.PEAddResource.PEDllCharacteristics.PERemoveResource.PESubsysVer.Pop.Push.Quit.ReadEnvStr.ReadINIStr.ReadRegDWORD.ReadRegStr.Reboot.RegDLL.Rename.RequestExecutionLevel.ReserveFile.Return.RMDir.SearchPath.SectionGetFlags.SectionGetInstTypes.SectionGetSize.SectionGetText.SectionIn.SectionSetFlags.SectionSetInstTypes.SectionSetSize.SectionSetText.SendMessage.SetAutoClose.SetBrandingImage.SetCompress.SetCompressor.SetCompressorDictSize.SetCtlColors.SetCurInstType.SetDatablockOptimize.SetDateSave.SetDetailsPrint.SetDetailsView.SetErrorLevel.SetErrors.SetFileAttributes.SetFont.SetOutPath.SetOverwrite.SetRebootFlag.SetRegView.SetShellVarContext.SetSilent.ShowInstDetails.ShowUninstDetails.ShowWindow.SilentInstall.SilentUnInstall.Sleep.SpaceTexts.StrCmp.StrCmpS.StrCpy.StrLen.SubCaption.Unicode.UninstallButtonText.UninstallCaption.UninstallIcon.UninstallSubCaption.UninstallText.UninstPage.UnRegDLL.Var.VIAddVersionKey.VIFileVersion.VIProductVersion.WindowIcon.WriteINIStr.WriteRegBin.WriteRegDWORD.WriteRegExpandStr.WriteRegMultiStr.WriteRegNone.WriteRegStr.WriteUninstaller.XPStyle".split("."), g = /* @__PURE__ */ "admin,all,auto,both,bottom,bzip2,colored,components,current,custom,directory,false,force,hide,highest,ifdiff,ifnewer,instfiles,lastused,leave,left,license,listonly,lzma,nevershow,none,normal,notset,off,on,open,print,right,show,silent,silentlog,smooth,textonly,top,true,try,un.components,un.custom,un.directory,un.instfiles,un.license,uninstConfirm,user,Win10,Win7,Win8,WinVista,zlib".split(","), _ = {
 			match: [
 				/Function/,
 				/\s+/,
@@ -12290,8 +17074,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			name: "NSIS",
 			case_insensitive: !0,
 			keywords: {
-				keyword: g,
-				literal: _
+				keyword: m,
+				literal: g
 			},
 			contains: [
 				e.HASH_COMMENT_MODE,
@@ -12310,15 +17094,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						4: "variable"
 					}
 				},
-				v,
+				_,
 				{ beginKeywords: "Function PageEx Section SectionGroup FunctionEnd SectionEnd" },
-				m,
-				d,
+				p,
+				u,
 				o,
 				s,
+				c,
 				l,
-				u,
-				p,
+				f,
 				e.NUMBER_MODE
 			]
 		};
@@ -12367,7 +17151,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			literal: a,
 			built_in: o,
 			type: r
-		}, l = {
+		}, c = {
 			$pattern: n,
 			keyword: [
 				"@interface",
@@ -12426,10 +17210,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					className: "class",
-					begin: "(" + l.keyword.join("|") + ")\\b",
+					begin: "(" + c.keyword.join("|") + ")\\b",
 					end: /(\{|$)/,
 					excludeEnd: !0,
-					keywords: l,
+					keywords: c,
 					contains: [e.UNDERSCORE_TITLE_MODE]
 				},
 				{
@@ -12522,7 +17306,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			begin: "[*!#%]",
 			relevance: 0
-		}, l = {
+		}, c = {
 			className: "function",
 			beginKeywords: "module function",
 			end: /=|\{/,
@@ -12544,7 +17328,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				i,
 				t,
 				s,
-				l
+				c
 			]
 		};
 	}
@@ -12878,37 +17662,37 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{ begin: /\?>/ }
 			]
-		}, l = {
+		}, c = {
 			scope: "subst",
 			variants: [{ begin: /\$\w+/ }, {
 				begin: /\{\$/,
 				end: /\}/
 			}]
-		}, u = e.inherit(e.APOS_STRING_MODE, { illegal: null }), d = e.inherit(e.QUOTE_STRING_MODE, {
+		}, l = e.inherit(e.APOS_STRING_MODE, { illegal: null }), u = e.inherit(e.QUOTE_STRING_MODE, {
 			illegal: null,
-			contains: e.QUOTE_STRING_MODE.contains.concat(l)
-		}), f = {
+			contains: e.QUOTE_STRING_MODE.contains.concat(c)
+		}), d = {
 			begin: /<<<[ \t]*(?:(\w+)|"(\w+)")\n/,
 			end: /[ \t]*(\w+)\b/,
-			contains: e.QUOTE_STRING_MODE.contains.concat(l),
+			contains: e.QUOTE_STRING_MODE.contains.concat(c),
 			"on:begin": (e, t) => {
 				t.data._beginMatch = e[1] || e[2];
 			},
 			"on:end": (e, t) => {
 				t.data._beginMatch !== e[1] && t.ignoreMatch();
 			}
-		}, p = e.END_SAME_AS_BEGIN({
+		}, f = e.END_SAME_AS_BEGIN({
 			begin: /<<<[ \t]*'(\w+)'\n/,
 			end: /[ \t]*(\w+)\b/
-		}), m = "[ 	\n]", g = {
+		}), p = "[ 	\n]", m = {
 			scope: "string",
 			variants: [
-				d,
 				u,
-				f,
-				p
+				l,
+				d,
+				f
 			]
-		}, _ = {
+		}, g = {
 			scope: "number",
 			variants: [
 				{ begin: "\\b0[bB][01]+(?:_[01]+)*\\b" },
@@ -12917,33 +17701,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: "(?:\\b\\d+(?:_\\d+)*(\\.(?:\\d+(?:_\\d+)*))?|\\B\\.\\d+)(?:[eE][+-]?\\d+)?" }
 			],
 			relevance: 0
-		}, v = [
+		}, _ = [
 			"false",
 			"null",
 			"true"
-		], y = /* @__PURE__ */ "__CLASS__.__DIR__.__FILE__.__FUNCTION__.__COMPILER_HALT_OFFSET__.__LINE__.__METHOD__.__NAMESPACE__.__TRAIT__.die.echo.exit.include.include_once.print.require.require_once.array.abstract.and.as.binary.bool.boolean.break.callable.case.catch.class.clone.const.continue.declare.default.do.double.else.elseif.empty.enddeclare.endfor.endforeach.endif.endswitch.endwhile.enum.eval.extends.final.finally.float.for.foreach.from.global.goto.if.implements.instanceof.insteadof.int.integer.interface.isset.iterable.list.match|0.mixed.new.never.object.or.private.protected.public.readonly.real.return.string.switch.throw.trait.try.unset.use.var.void.while.xor.yield".split("."), b = /* @__PURE__ */ "Error|0.AppendIterator.ArgumentCountError.ArithmeticError.ArrayIterator.ArrayObject.AssertionError.BadFunctionCallException.BadMethodCallException.CachingIterator.CallbackFilterIterator.CompileError.Countable.DirectoryIterator.DivisionByZeroError.DomainException.EmptyIterator.ErrorException.Exception.FilesystemIterator.FilterIterator.GlobIterator.InfiniteIterator.InvalidArgumentException.IteratorIterator.LengthException.LimitIterator.LogicException.MultipleIterator.NoRewindIterator.OutOfBoundsException.OutOfRangeException.OuterIterator.OverflowException.ParentIterator.ParseError.RangeException.RecursiveArrayIterator.RecursiveCachingIterator.RecursiveCallbackFilterIterator.RecursiveDirectoryIterator.RecursiveFilterIterator.RecursiveIterator.RecursiveIteratorIterator.RecursiveRegexIterator.RecursiveTreeIterator.RegexIterator.RuntimeException.SeekableIterator.SplDoublyLinkedList.SplFileInfo.SplFileObject.SplFixedArray.SplHeap.SplMaxHeap.SplMinHeap.SplObjectStorage.SplObserver.SplPriorityQueue.SplQueue.SplStack.SplSubject.SplTempFileObject.TypeError.UnderflowException.UnexpectedValueException.UnhandledMatchError.ArrayAccess.BackedEnum.Closure.Fiber.Generator.Iterator.IteratorAggregate.Serializable.Stringable.Throwable.Traversable.UnitEnum.WeakReference.WeakMap.Directory.__PHP_Incomplete_Class.parent.php_user_filter.self.static.stdClass".split("."), x = {
-			keyword: y,
+		], v = /* @__PURE__ */ "__CLASS__.__DIR__.__FILE__.__FUNCTION__.__COMPILER_HALT_OFFSET__.__LINE__.__METHOD__.__NAMESPACE__.__TRAIT__.die.echo.exit.include.include_once.print.require.require_once.array.abstract.and.as.binary.bool.boolean.break.callable.case.catch.class.clone.const.continue.declare.default.do.double.else.elseif.empty.enddeclare.endfor.endforeach.endif.endswitch.endwhile.enum.eval.extends.final.finally.float.for.foreach.from.global.goto.if.implements.instanceof.insteadof.int.integer.interface.isset.iterable.list.match|0.mixed.new.never.object.or.private.protected.public.readonly.real.return.string.switch.throw.trait.try.unset.use.var.void.while.xor.yield".split("."), y = /* @__PURE__ */ "Error|0.AppendIterator.ArgumentCountError.ArithmeticError.ArrayIterator.ArrayObject.AssertionError.BadFunctionCallException.BadMethodCallException.CachingIterator.CallbackFilterIterator.CompileError.Countable.DirectoryIterator.DivisionByZeroError.DomainException.EmptyIterator.ErrorException.Exception.FilesystemIterator.FilterIterator.GlobIterator.InfiniteIterator.InvalidArgumentException.IteratorIterator.LengthException.LimitIterator.LogicException.MultipleIterator.NoRewindIterator.OutOfBoundsException.OutOfRangeException.OuterIterator.OverflowException.ParentIterator.ParseError.RangeException.RecursiveArrayIterator.RecursiveCachingIterator.RecursiveCallbackFilterIterator.RecursiveDirectoryIterator.RecursiveFilterIterator.RecursiveIterator.RecursiveIteratorIterator.RecursiveRegexIterator.RecursiveTreeIterator.RegexIterator.RuntimeException.SeekableIterator.SplDoublyLinkedList.SplFileInfo.SplFileObject.SplFixedArray.SplHeap.SplMaxHeap.SplMinHeap.SplObjectStorage.SplObserver.SplPriorityQueue.SplQueue.SplStack.SplSubject.SplTempFileObject.TypeError.UnderflowException.UnexpectedValueException.UnhandledMatchError.ArrayAccess.BackedEnum.Closure.Fiber.Generator.Iterator.IteratorAggregate.Serializable.Stringable.Throwable.Traversable.UnitEnum.WeakReference.WeakMap.Directory.__PHP_Incomplete_Class.parent.php_user_filter.self.static.stdClass".split("."), b = {
+			keyword: v,
 			literal: ((e) => {
 				let t = [];
 				return e.forEach((e) => {
 					t.push(e), e.toLowerCase() === e ? t.push(e.toUpperCase()) : t.push(e.toLowerCase());
 				}), t;
-			})(v),
-			built_in: b
-		}, S = (e) => e.map((e) => e.replace(/\|\d+$/, "")), C = { variants: [{
+			})(_),
+			built_in: y
+		}, x = (e) => e.map((e) => e.replace(/\|\d+$/, "")), S = { variants: [{
 			match: [
 				/new/,
-				t.concat(m, "+"),
-				t.concat("(?!", S(b).join("\\b|"), "\\b)"),
+				t.concat(p, "+"),
+				t.concat("(?!", x(y).join("\\b|"), "\\b)"),
 				i
 			],
 			scope: {
 				1: "keyword",
 				4: "title.class"
 			}
-		}] }, w = t.concat(r, "\\b(?!\\()"), T = { variants: [
+		}] }, C = t.concat(r, "\\b(?!\\()"), w = { variants: [
 			{
-				match: [t.concat(/::/, t.lookahead(/(?!class\b)/)), w],
+				match: [t.concat(/::/, t.lookahead(/(?!class\b)/)), C],
 				scope: { 2: "variable.constant" }
 			},
 			{
@@ -12954,7 +17738,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				match: [
 					i,
 					t.concat(/::/, t.lookahead(/(?!class\b)/)),
-					w
+					C
 				],
 				scope: {
 					1: "title.class",
@@ -12976,50 +17760,50 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					3: "variable.language"
 				}
 			}
-		] }, E = {
+		] }, T = {
 			scope: "attr",
 			match: t.concat(r, t.lookahead(":"), t.lookahead(/(?!::)/))
-		}, D = {
+		}, E = {
 			relevance: 0,
 			begin: /\(/,
 			end: /\)/,
-			keywords: x,
+			keywords: b,
 			contains: [
-				E,
-				o,
 				T,
+				o,
+				w,
 				e.C_BLOCK_COMMENT_MODE,
+				m,
 				g,
-				_,
-				C
+				S
 			]
-		}, O = {
+		}, D = {
 			relevance: 0,
 			match: [
 				/\b/,
-				t.concat("(?!fn\\b|function\\b|", S(y).join("\\b|"), "|", S(b).join("\\b|"), "\\b)"),
+				t.concat("(?!fn\\b|function\\b|", x(v).join("\\b|"), "|", x(y).join("\\b|"), "\\b)"),
 				r,
-				t.concat(m, "*"),
+				t.concat(p, "*"),
 				t.lookahead(/(?=\()/)
 			],
 			scope: { 3: "title.function.invoke" },
-			contains: [D]
+			contains: [E]
 		};
-		D.contains.push(O);
-		let k = [
-			E,
+		E.contains.push(D);
+		let O = [
 			T,
+			w,
 			e.C_BLOCK_COMMENT_MODE,
+			m,
 			g,
-			_,
-			C
-		], A = {
+			S
+		], k = {
 			begin: t.concat(/#\[\s*\\?/, t.either(i, a)),
 			beginScope: "meta",
 			end: /]/,
 			endScope: "meta",
 			keywords: {
-				literal: v,
+				literal: _,
 				keyword: ["new", "array"]
 			},
 			contains: [
@@ -13027,12 +17811,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: /\[/,
 					end: /]/,
 					keywords: {
-						literal: v,
+						literal: _,
 						keyword: ["new", "array"]
 					},
-					contains: ["self", ...k]
+					contains: ["self", ...O]
 				},
-				...k,
+				...O,
 				{
 					scope: "meta",
 					variants: [{ match: i }, { match: a }]
@@ -13041,9 +17825,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		};
 		return {
 			case_insensitive: !1,
-			keywords: x,
+			keywords: b,
 			contains: [
-				A,
+				k,
 				e.HASH_COMMENT_MODE,
 				e.COMMENT("//", "$"),
 				e.COMMENT("/\\*", "\\*/", { contains: [{
@@ -13069,8 +17853,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					match: /\$this\b/
 				},
 				o,
-				O,
-				T,
+				D,
+				w,
 				{
 					match: [
 						/const/,
@@ -13082,7 +17866,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						3: "variable.constant"
 					}
 				},
-				C,
+				S,
 				{
 					scope: "function",
 					relevance: 0,
@@ -13103,15 +17887,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							end: "\\)",
 							excludeBegin: !0,
 							excludeEnd: !0,
-							keywords: x,
+							keywords: b,
 							contains: [
 								"self",
-								A,
+								k,
 								o,
-								T,
+								w,
 								e.C_BLOCK_COMMENT_MODE,
-								g,
-								_
+								m,
+								g
 							]
 						}
 					]
@@ -13146,8 +17930,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						scope: "keyword"
 					}, e.UNDERSCORE_TITLE_MODE]
 				},
-				g,
-				_
+				m,
+				g
 			]
 		};
 	}
@@ -13307,7 +18091,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					end: /[^A-z]/
 				}
 			]
-		}, l = {
+		}, c = {
 			className: "string",
 			variants: [{
 				begin: /'/,
@@ -13316,7 +18100,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				begin: /@'/,
 				end: /^'@/
 			}]
-		}, u = e.inherit(e.COMMENT(null, null), {
+		}, l = e.inherit(e.COMMENT(null, null), {
 			variants: [{
 				begin: /#/,
 				end: /$/
@@ -13328,17 +18112,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				className: "doctag",
 				variants: [{ begin: /\.(synopsis|description|example|inputs|outputs|notes|link|component|role|functionality)/ }, { begin: /\.(parameter|forwardhelptargetname|forwardhelpcategory|remotehelprunspace|externalhelp)\s+\S+/ }]
 			}]
-		}), d = {
+		}), u = {
 			className: "built_in",
 			variants: [{ begin: "(Add|Clear|Close|Copy|Enter|Exit|Find|Format|Get|Hide|Join|Lock|Move|New|Open|Optimize|Pop|Push|Redo|Remove|Rename|Reset|Resize|Search|Select|Set|Show|Skip|Split|Step|Switch|Undo|Unlock|Watch|Backup|Checkpoint|Compare|Compress|Convert|ConvertFrom|ConvertTo|Dismount|Edit|Expand|Export|Group|Import|Initialize|Limit|Merge|Mount|Out|Publish|Restore|Save|Sync|Unpublish|Update|Approve|Assert|Build|Complete|Confirm|Deny|Deploy|Disable|Enable|Install|Invoke|Register|Request|Restart|Resume|Start|Stop|Submit|Suspend|Uninstall|Unregister|Wait|Debug|Measure|Ping|Repair|Resolve|Test|Trace|Connect|Disconnect|Read|Receive|Send|Write|Block|Grant|Protect|Revoke|Unblock|Unprotect|Use|ForEach|Sort|Tee|Where)+(-)[\\w\\d]+" }]
-		}, f = {
+		}, d = {
 			className: "class",
 			beginKeywords: "class enum",
 			end: /\s*[{]/,
 			excludeEnd: !0,
 			relevance: 0,
 			contains: [e.TITLE_MODE]
-		}, p = {
+		}, f = {
 			className: "function",
 			begin: /function\s+/,
 			end: /\s*\{|$/,
@@ -13364,30 +18148,30 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					contains: [a]
 				}
 			]
-		}, m = {
+		}, p = {
 			begin: /using\s/,
 			end: /$/,
 			returnBegin: !0,
 			contains: [
 				s,
-				l,
+				c,
 				{
 					className: "keyword",
 					begin: /(using|assembly|command|module|namespace|type)/
 				}
 			]
-		}, g = { variants: [{
+		}, m = { variants: [{
 			className: "operator",
 			begin: "(-and|-as|-band|-bnot|-bor|-bxor|-casesensitive|-ccontains|-ceq|-cge|-cgt|-cle|-clike|-clt|-cmatch|-cne|-cnotcontains|-cnotlike|-cnotmatch|-contains|-creplace|-csplit|-eq|-exact|-f|-file|-ge|-gt|-icontains|-ieq|-ige|-igt|-ile|-ilike|-ilt|-imatch|-in|-ine|-inotcontains|-inotlike|-inotmatch|-ireplace|-is|-isnot|-isplit|-join|-le|-like|-lt|-match|-ne|-not|-notcontains|-notin|-notlike|-notmatch|-or|-regex|-replace|-shl|-shr|-split|-wildcard|-xor)\\b"
 		}, {
 			className: "literal",
 			begin: /(-){1,2}[\w\d-]+/,
 			relevance: 0
-		}] }, _ = {
+		}] }, g = {
 			className: "selector-tag",
 			begin: /@\B/,
 			relevance: 0
-		}, v = {
+		}, _ = {
 			className: "function",
 			begin: /\[.*\]\s*[\w]+[ ]??\(/,
 			end: /$/,
@@ -13399,24 +18183,24 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				endsParent: !0,
 				relevance: 0
 			}, e.inherit(e.TITLE_MODE, { endsParent: !0 })]
-		}, y = [
-			v,
-			u,
+		}, v = [
+			_,
+			l,
 			i,
 			e.NUMBER_MODE,
 			s,
-			l,
-			d,
+			c,
+			u,
 			a,
 			o,
-			_
-		], b = {
+			g
+		], y = {
 			begin: /\[/,
 			end: /\]/,
 			excludeBegin: !0,
 			excludeEnd: !0,
 			relevance: 0,
-			contains: ["self"].concat(y, {
+			contains: ["self"].concat(v, {
 				begin: "(" + t.join("|") + ")",
 				className: "built_in",
 				relevance: 0
@@ -13426,7 +18210,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				relevance: 0
 			})
 		};
-		return v.contains.unshift(b), {
+		return _.contains.unshift(y), {
 			name: "PowerShell",
 			aliases: [
 				"pwsh",
@@ -13435,7 +18219,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			],
 			case_insensitive: !0,
 			keywords: n,
-			contains: y.concat(f, p, m, g, b)
+			contains: v.concat(d, f, p, m, y)
 		};
 	}
 	t.exports = n;
@@ -13478,7 +18262,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				5: "keyword",
 				7: "title.class.inherited"
 			}
-		}, l = [
+		}, c = [
 			"boolean",
 			"byte",
 			"char",
@@ -13488,7 +18272,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"int",
 			"long",
 			"short"
-		], u = [
+		], l = [
 			"BufferedReader",
 			"PVector",
 			"PFont",
@@ -13519,8 +18303,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				literal: "P2D P3D HALF_PI PI QUARTER_PI TAU TWO_PI null true false",
 				title: "setup draw",
 				variable: "super this",
-				built_in: [...n, ...u],
-				type: l
+				built_in: [...n, ...l],
+				type: c
 			},
 			contains: [
 				s,
@@ -13888,7 +18672,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}, s = {
 			begin: /\{\{/,
 			relevance: 0
-		}, l = {
+		}, c = {
 			className: "string",
 			contains: [e.BACKSLASH_ESCAPE],
 			variants: [
@@ -13963,19 +18747,19 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.APOS_STRING_MODE,
 				e.QUOTE_STRING_MODE
 			]
-		}, u = "[0-9](_?[0-9])*", d = `(\\b(${u}))?\\.(${u})|\\b(${u})\\.`, f = `\\b|${r.join("|")}`, p = {
+		}, l = "[0-9](_?[0-9])*", u = `(\\b(${l}))?\\.(${l})|\\b(${l})\\.`, d = `\\b|${r.join("|")}`, f = {
 			className: "number",
 			relevance: 0,
 			variants: [
-				{ begin: `(\\b(${u})|(${d}))[eE][+-]?(${u})[jJ]?(?=${f})` },
-				{ begin: `(${d})[jJ]?` },
-				{ begin: `\\b([1-9](_?[0-9])*|0+(_?0)*)[lLjJ]?(?=${f})` },
-				{ begin: `\\b0[bB](_?[01])+[lL]?(?=${f})` },
-				{ begin: `\\b0[oO](_?[0-7])+[lL]?(?=${f})` },
-				{ begin: `\\b0[xX](_?[0-9a-fA-F])+[lL]?(?=${f})` },
-				{ begin: `\\b(${u})[jJ](?=${f})` }
+				{ begin: `(\\b(${l})|(${u}))[eE][+-]?(${l})[jJ]?(?=${d})` },
+				{ begin: `(${u})[jJ]?` },
+				{ begin: `\\b([1-9](_?[0-9])*|0+(_?0)*)[lLjJ]?(?=${d})` },
+				{ begin: `\\b0[bB](_?[01])+[lL]?(?=${d})` },
+				{ begin: `\\b0[oO](_?[0-7])+[lL]?(?=${d})` },
+				{ begin: `\\b0[xX](_?[0-9a-fA-F])+[lL]?(?=${d})` },
+				{ begin: `\\b(${l})[jJ](?=${d})` }
 			]
-		}, m = {
+		}, p = {
 			className: "comment",
 			begin: t.lookahead(/# type:/),
 			end: /$/,
@@ -13985,7 +18769,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /\b\B/,
 				endsWithParent: !0
 			}]
-		}, g = {
+		}, m = {
 			className: "params",
 			variants: [{
 				className: "",
@@ -14000,15 +18784,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				contains: [
 					"self",
 					a,
-					p,
-					l,
+					f,
+					c,
 					e.HASH_COMMENT_MODE
 				]
 			}]
 		};
 		return o.contains = [
-			l,
-			p,
+			c,
+			f,
 			a
 		], {
 			name: "Python",
@@ -14022,7 +18806,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			illegal: /(<\/|\?)|=>/,
 			contains: [
 				a,
-				p,
+				f,
 				{
 					scope: "variable.language",
 					match: /\bself\b/
@@ -14035,8 +18819,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					match: /\bor\b/,
 					scope: "keyword"
 				},
-				l,
-				m,
+				c,
+				p,
 				e.HASH_COMMENT_MODE,
 				{
 					match: [
@@ -14048,7 +18832,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						1: "keyword",
 						3: "title.function"
 					},
-					contains: [g]
+					contains: [m]
 				},
 				{
 					variants: [{ match: [
@@ -14075,9 +18859,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: /^[\t ]*@/,
 					end: /(?=#)|$/,
 					contains: [
-						p,
-						g,
-						l
+						f,
+						m,
+						c
 					]
 				}
 			]
@@ -14163,7 +18947,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				relevance: 0
 			}],
 			relevance: 0
-		}, l = {
+		}, c = {
 			begin: t.concat(r, /\s*\{/),
 			end: /\{/,
 			returnBegin: !0,
@@ -14242,7 +19026,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				o,
 				s,
-				l
+				c
 			],
 			illegal: /#/
 		};
@@ -14721,14 +19505,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "title.function.invoke",
 			relevance: 0,
 			begin: t.concat(/\b/, /(?!let|for|while|if|else|match\b)/, i, t.lookahead(/\s*\(/))
-		}, o = "([ui](8|16|32|64|128|size)|f(32|64))?", s = /* @__PURE__ */ "abstract.as.async.await.become.box.break.const.continue.crate.do.dyn.else.enum.extern.false.final.fn.for.if.impl.in.let.loop.macro.match.mod.move.mut.override.priv.pub.ref.return.self.Self.static.struct.super.trait.true.try.type.typeof.union.unsafe.unsized.use.virtual.where.while.yield".split("."), l = [
+		}, o = "([ui](8|16|32|64|128|size)|f(32|64))?", s = /* @__PURE__ */ "abstract.as.async.await.become.box.break.const.continue.crate.do.dyn.else.enum.extern.false.final.fn.for.if.impl.in.let.loop.macro.match.mod.move.mut.override.priv.pub.ref.return.self.Self.static.struct.super.trait.true.try.type.typeof.union.unsafe.unsized.use.virtual.where.while.yield".split("."), c = [
 			"true",
 			"false",
 			"Some",
 			"None",
 			"Ok",
 			"Err"
-		], u = /* @__PURE__ */ "drop .Copy.Send.Sized.Sync.Drop.Fn.FnMut.FnOnce.ToOwned.Clone.Debug.PartialEq.PartialOrd.Eq.Ord.AsRef.AsMut.Into.From.Default.Iterator.Extend.IntoIterator.DoubleEndedIterator.ExactSizeIterator.SliceConcatExt.ToString.assert!.assert_eq!.bitflags!.bytes!.cfg!.col!.concat!.concat_idents!.debug_assert!.debug_assert_eq!.env!.eprintln!.panic!.file!.format!.format_args!.include_bytes!.include_str!.line!.local_data_key!.module_path!.option_env!.print!.println!.select!.stringify!.try!.unimplemented!.unreachable!.vec!.write!.writeln!.macro_rules!.assert_ne!.debug_assert_ne!".split("."), d = [
+		], l = /* @__PURE__ */ "drop .Copy.Send.Sized.Sync.Drop.Fn.FnMut.FnOnce.ToOwned.Clone.Debug.PartialEq.PartialOrd.Eq.Ord.AsRef.AsMut.Into.From.Default.Iterator.Extend.IntoIterator.DoubleEndedIterator.ExactSizeIterator.SliceConcatExt.ToString.assert!.assert_eq!.bitflags!.bytes!.cfg!.col!.concat!.concat_idents!.debug_assert!.debug_assert_eq!.env!.eprintln!.panic!.file!.format!.format_args!.include_bytes!.include_str!.line!.local_data_key!.module_path!.option_env!.print!.println!.select!.stringify!.try!.unimplemented!.unreachable!.vec!.write!.writeln!.macro_rules!.assert_ne!.debug_assert_ne!".split("."), u = [
 			"i8",
 			"i16",
 			"i32",
@@ -14757,10 +19541,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			aliases: ["rs"],
 			keywords: {
 				$pattern: e.IDENT_RE + "!?",
-				type: d,
+				type: u,
 				keyword: s,
-				literal: l,
-				built_in: u
+				literal: c,
+				built_in: l
 			},
 			illegal: "</",
 			contains: [
@@ -14870,8 +19654,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: e.IDENT_RE + "::",
 					keywords: {
 						keyword: "Self",
-						built_in: u,
-						type: d
+						built_in: l,
+						type: u
 					}
 				},
 				{
@@ -15045,19 +19829,19 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				o
 			]
-		}, l = {
+		}, c = {
 			className: "function",
 			beginKeywords: "def",
 			end: t.lookahead(/[:={\[(\n;]/),
 			contains: [o]
-		}, u = {
+		}, l = {
 			begin: [
 				/^\s*/,
 				"extension",
 				/\s+(?=[[(])/
 			],
 			beginScope: { 2: "keyword" }
-		}, d = {
+		}, u = {
 			begin: [
 				/^\s*/,
 				/end/,
@@ -15068,17 +19852,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				2: "keyword",
 				4: "keyword"
 			}
-		}, f = [{ match: /\.inline\b/ }, {
+		}, d = [{ match: /\.inline\b/ }, {
 			begin: /\binline(?=\s)/,
 			keywords: "inline"
-		}], p = {
+		}], f = {
 			begin: [
 				/\(\s*/,
 				/using/,
 				/\s+(?!\))/
 			],
 			beginScope: { 2: "keyword" }
-		}, m = {
+		}, p = {
 			className: "string",
 			begin: /\S+/
 		};
@@ -15103,19 +19887,19 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						5: "type"
 					},
 					end: /$/,
-					contains: [m]
+					contains: [p]
 				},
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
 				i,
 				a,
-				l,
+				c,
 				s,
 				e.C_NUMBER_MODE,
+				l,
 				u,
-				d,
-				...f,
-				p,
+				...d,
+				f,
 				n
 			]
 		};
@@ -15146,16 +19930,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: "#o[0-7]+(/[0-7]+)?" },
 				{ begin: "#x[0-9a-f]+(/[0-9a-f]+)?" }
 			]
-		}, o = e.QUOTE_STRING_MODE, s = [e.COMMENT(";", "$", { relevance: 0 }), e.COMMENT("#\\|", "\\|#")], l = {
+		}, o = e.QUOTE_STRING_MODE, s = [e.COMMENT(";", "$", { relevance: 0 }), e.COMMENT("#\\|", "\\|#")], c = {
 			begin: t,
 			relevance: 0
-		}, u = {
+		}, l = {
 			className: "symbol",
 			begin: "'" + t
-		}, d = {
+		}, u = {
 			endsWithParent: !0,
 			relevance: 0
-		}, f = {
+		}, d = {
 			variants: [{ begin: /'/ }, { begin: "`" }],
 			contains: [{
 				begin: "\\(",
@@ -15165,16 +19949,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					i,
 					o,
 					a,
-					l,
-					u
+					c,
+					l
 				]
 			}]
-		}, p = {
+		}, f = {
 			className: "name",
 			relevance: 0,
 			begin: t,
 			keywords: r
-		}, m = {
+		}, p = {
 			variants: [{
 				begin: "\\(",
 				end: "\\)"
@@ -15187,7 +19971,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					begin: /lambda/,
 					endsWithParent: !0,
 					returnBegin: !0,
-					contains: [p, {
+					contains: [f, {
 						endsParent: !0,
 						variants: [{
 							begin: /\(/,
@@ -15196,21 +19980,21 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							begin: /\[/,
 							end: /\]/
 						}],
-						contains: [l]
+						contains: [c]
 					}]
 				},
-				p,
-				d
+				f,
+				u
 			]
 		};
-		return d.contains = [
+		return u.contains = [
 			i,
 			a,
 			o,
+			c,
 			l,
-			u,
-			f,
-			m
+			d,
+			p
 		].concat(s), {
 			name: "Scheme",
 			aliases: ["scm"],
@@ -15219,9 +20003,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.SHEBANG(),
 				a,
 				o,
-				u,
-				f,
-				m
+				l,
+				d,
+				p
 			].concat(s)
 		};
 	}
@@ -15301,7 +20085,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "attr",
 			begin: /--[A-Za-z_][A-Za-z0-9_-]*/
 		}
-	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), l = [
+	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), c = [
 		"after",
 		"backdrop",
 		"before",
@@ -15316,9 +20100,9 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"selection",
 		"slotted",
 		"spelling-error"
-	].sort().reverse(), u = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
-	function d(e) {
-		let t = n(e), r = l, i = s, d = "@[a-z-]+", f = {
+	].sort().reverse(), l = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
+	function u(e) {
+		let t = n(e), r = c, i = s, u = "@[a-z-]+", d = {
 			className: "variable",
 			begin: "(\\$[a-zA-Z-][a-zA-Z0-9_-]*)\\b",
 			relevance: 0
@@ -15355,7 +20139,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					className: "selector-pseudo",
 					begin: ":(:)?(" + r.join("|") + ")"
 				},
-				f,
+				d,
 				{
 					begin: /\(/,
 					end: /\)/,
@@ -15364,7 +20148,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				t.CSS_VARIABLE,
 				{
 					className: "attribute",
-					begin: "\\b(" + u.join("|") + ")\\b"
+					begin: "\\b(" + l.join("|") + ")\\b"
 				},
 				{ begin: "\\b(whitespace|wait|w-resize|visible|vertical-text|vertical-ideographic|uppercase|upper-roman|upper-alpha|underline|transparent|top|thin|thick|text|text-top|text-bottom|tb-rl|table-header-group|table-footer-group|sw-resize|super|strict|static|square|solid|small-caps|separate|se-resize|scroll|s-resize|rtl|row-resize|ridge|right|repeat|repeat-y|repeat-x|relative|progress|pointer|overline|outside|outset|oblique|nowrap|not-allowed|normal|none|nw-resize|no-repeat|no-drop|newspaper|ne-resize|n-resize|move|middle|medium|ltr|lr-tb|lowercase|lower-roman|lower-alpha|loose|list-item|line|line-through|line-edge|lighter|left|keep-all|justify|italic|inter-word|inter-ideograph|inside|inset|inline|inline-block|inherit|inactive|ideograph-space|ideograph-parenthesis|ideograph-numeric|ideograph-alpha|horizontal|hidden|help|hand|groove|fixed|ellipsis|e-resize|double|dotted|distribute|distribute-space|distribute-letter|distribute-all-lines|disc|disabled|default|decimal|dashed|crosshair|collapse|col-resize|circle|char|center|capitalize|break-word|break-all|bottom|both|bolder|bold|block|bidi-override|below|baseline|auto|always|all-scroll|absolute|table|table-cell)\\b" },
 				{
@@ -15373,7 +20157,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 0,
 					contains: [
 						t.BLOCK_COMMENT,
-						f,
+						d,
 						t.HEXCOLOR,
 						t.CSS_NUMBER_MODE,
 						e.QUOTE_STRING_MODE,
@@ -15385,7 +20169,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{
 					begin: "@(page|font-face)",
 					keywords: {
-						$pattern: d,
+						$pattern: u,
 						keyword: "@page @font-face"
 					}
 				},
@@ -15400,14 +20184,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					},
 					contains: [
 						{
-							begin: d,
+							begin: u,
 							className: "keyword"
 						},
 						{
 							begin: /[a-z-]+(?=:)/,
 							className: "attribute"
 						},
-						f,
+						d,
 						e.QUOTE_STRING_MODE,
 						e.APOS_STRING_MODE,
 						t.HEXCOLOR,
@@ -15418,7 +20202,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		};
 	}
-	t.exports = d;
+	t.exports = u;
 })), require_shell = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return {
@@ -15718,7 +20502,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"large object",
 			"with timezone",
 			"without timezone"
-		], s = /* @__PURE__ */ "bigint.binary.blob.boolean.char.character.clob.date.dec.decfloat.decimal.float.int.integer.interval.nchar.nclob.national.numeric.real.row.smallint.time.timestamp.varchar.varying.varbinary".split("."), l = [
+		], s = /* @__PURE__ */ "bigint.binary.blob.boolean.char.character.clob.date.dec.decfloat.decimal.float.int.integer.interval.nchar.nclob.national.numeric.real.row.smallint.time.timestamp.varchar.varying.varbinary".split("."), c = [
 			"add",
 			"asc",
 			"collation",
@@ -15727,7 +20511,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"first",
 			"last",
 			"view"
-		], u = /* @__PURE__ */ "abs.acos.all.allocate.alter.and.any.are.array.array_agg.array_max_cardinality.as.asensitive.asin.asymmetric.at.atan.atomic.authorization.avg.begin.begin_frame.begin_partition.between.bigint.binary.blob.boolean.both.by.call.called.cardinality.cascaded.case.cast.ceil.ceiling.char.char_length.character.character_length.check.classifier.clob.close.coalesce.collate.collect.column.commit.condition.connect.constraint.contains.convert.copy.corr.corresponding.cos.cosh.count.covar_pop.covar_samp.create.cross.cube.cume_dist.current.current_catalog.current_date.current_default_transform_group.current_path.current_role.current_row.current_schema.current_time.current_timestamp.current_path.current_role.current_transform_group_for_type.current_user.cursor.cycle.date.day.deallocate.dec.decimal.decfloat.declare.default.define.delete.dense_rank.deref.describe.deterministic.disconnect.distinct.double.drop.dynamic.each.element.else.empty.end.end_frame.end_partition.end-exec.equals.escape.every.except.exec.execute.exists.exp.external.extract.false.fetch.filter.first_value.float.floor.for.foreign.frame_row.free.from.full.function.fusion.get.global.grant.group.grouping.groups.having.hold.hour.identity.in.indicator.initial.inner.inout.insensitive.insert.int.integer.intersect.intersection.interval.into.is.join.json_array.json_arrayagg.json_exists.json_object.json_objectagg.json_query.json_table.json_table_primitive.json_value.lag.language.large.last_value.lateral.lead.leading.left.like.like_regex.listagg.ln.local.localtime.localtimestamp.log.log10.lower.match.match_number.match_recognize.matches.max.member.merge.method.min.minute.mod.modifies.module.month.multiset.national.natural.nchar.nclob.new.no.none.normalize.not.nth_value.ntile.null.nullif.numeric.octet_length.occurrences_regex.of.offset.old.omit.on.one.only.open.or.order.out.outer.over.overlaps.overlay.parameter.partition.pattern.per.percent.percent_rank.percentile_cont.percentile_disc.period.portion.position.position_regex.power.precedes.precision.prepare.primary.procedure.ptf.range.rank.reads.real.recursive.ref.references.referencing.regr_avgx.regr_avgy.regr_count.regr_intercept.regr_r2.regr_slope.regr_sxx.regr_sxy.regr_syy.release.result.return.returns.revoke.right.rollback.rollup.row.row_number.rows.running.savepoint.scope.scroll.search.second.seek.select.sensitive.session_user.set.show.similar.sin.sinh.skip.smallint.some.specific.specifictype.sql.sqlexception.sqlstate.sqlwarning.sqrt.start.static.stddev_pop.stddev_samp.submultiset.subset.substring.substring_regex.succeeds.sum.symmetric.system.system_time.system_user.table.tablesample.tan.tanh.then.time.timestamp.timezone_hour.timezone_minute.to.trailing.translate.translate_regex.translation.treat.trigger.trim.trim_array.true.truncate.uescape.union.unique.unknown.unnest.update.upper.user.using.value.values.value_of.var_pop.var_samp.varbinary.varchar.varying.versioning.when.whenever.where.width_bucket.window.with.within.without.year".split("."), d = /* @__PURE__ */ "abs.acos.array_agg.asin.atan.avg.cast.ceil.ceiling.coalesce.corr.cos.cosh.count.covar_pop.covar_samp.cume_dist.dense_rank.deref.element.exp.extract.first_value.floor.json_array.json_arrayagg.json_exists.json_object.json_objectagg.json_query.json_table.json_table_primitive.json_value.lag.last_value.lead.listagg.ln.log.log10.lower.max.min.mod.nth_value.ntile.nullif.percent_rank.percentile_cont.percentile_disc.position.position_regex.power.rank.regr_avgx.regr_avgy.regr_count.regr_intercept.regr_r2.regr_slope.regr_sxx.regr_sxy.regr_syy.row_number.sin.sinh.sqrt.stddev_pop.stddev_samp.substring.substring_regex.sum.tan.tanh.translate.translate_regex.treat.trim.trim_array.unnest.upper.value_of.var_pop.var_samp.width_bucket".split("."), f = [
+		], l = /* @__PURE__ */ "abs.acos.all.allocate.alter.and.any.are.array.array_agg.array_max_cardinality.as.asensitive.asin.asymmetric.at.atan.atomic.authorization.avg.begin.begin_frame.begin_partition.between.bigint.binary.blob.boolean.both.by.call.called.cardinality.cascaded.case.cast.ceil.ceiling.char.char_length.character.character_length.check.classifier.clob.close.coalesce.collate.collect.column.commit.condition.connect.constraint.contains.convert.copy.corr.corresponding.cos.cosh.count.covar_pop.covar_samp.create.cross.cube.cume_dist.current.current_catalog.current_date.current_default_transform_group.current_path.current_role.current_row.current_schema.current_time.current_timestamp.current_path.current_role.current_transform_group_for_type.current_user.cursor.cycle.date.day.deallocate.dec.decimal.decfloat.declare.default.define.delete.dense_rank.deref.describe.deterministic.disconnect.distinct.double.drop.dynamic.each.element.else.empty.end.end_frame.end_partition.end-exec.equals.escape.every.except.exec.execute.exists.exp.external.extract.false.fetch.filter.first_value.float.floor.for.foreign.frame_row.free.from.full.function.fusion.get.global.grant.group.grouping.groups.having.hold.hour.identity.in.indicator.initial.inner.inout.insensitive.insert.int.integer.intersect.intersection.interval.into.is.join.json_array.json_arrayagg.json_exists.json_object.json_objectagg.json_query.json_table.json_table_primitive.json_value.lag.language.large.last_value.lateral.lead.leading.left.like.like_regex.listagg.ln.local.localtime.localtimestamp.log.log10.lower.match.match_number.match_recognize.matches.max.member.merge.method.min.minute.mod.modifies.module.month.multiset.national.natural.nchar.nclob.new.no.none.normalize.not.nth_value.ntile.null.nullif.numeric.octet_length.occurrences_regex.of.offset.old.omit.on.one.only.open.or.order.out.outer.over.overlaps.overlay.parameter.partition.pattern.per.percent.percent_rank.percentile_cont.percentile_disc.period.portion.position.position_regex.power.precedes.precision.prepare.primary.procedure.ptf.range.rank.reads.real.recursive.ref.references.referencing.regr_avgx.regr_avgy.regr_count.regr_intercept.regr_r2.regr_slope.regr_sxx.regr_sxy.regr_syy.release.result.return.returns.revoke.right.rollback.rollup.row.row_number.rows.running.savepoint.scope.scroll.search.second.seek.select.sensitive.session_user.set.show.similar.sin.sinh.skip.smallint.some.specific.specifictype.sql.sqlexception.sqlstate.sqlwarning.sqrt.start.static.stddev_pop.stddev_samp.submultiset.subset.substring.substring_regex.succeeds.sum.symmetric.system.system_time.system_user.table.tablesample.tan.tanh.then.time.timestamp.timezone_hour.timezone_minute.to.trailing.translate.translate_regex.translation.treat.trigger.trim.trim_array.true.truncate.uescape.union.unique.unknown.unnest.update.upper.user.using.value.values.value_of.var_pop.var_samp.varbinary.varchar.varying.versioning.when.whenever.where.width_bucket.window.with.within.without.year".split("."), u = /* @__PURE__ */ "abs.acos.array_agg.asin.atan.avg.cast.ceil.ceiling.coalesce.corr.cos.cosh.count.covar_pop.covar_samp.cume_dist.dense_rank.deref.element.exp.extract.first_value.floor.json_array.json_arrayagg.json_exists.json_object.json_objectagg.json_query.json_table.json_table_primitive.json_value.lag.last_value.lead.listagg.ln.log.log10.lower.max.min.mod.nth_value.ntile.nullif.percent_rank.percentile_cont.percentile_disc.position.position_regex.power.rank.regr_avgx.regr_avgy.regr_count.regr_intercept.regr_r2.regr_slope.regr_sxx.regr_sxy.regr_syy.row_number.sin.sinh.sqrt.stddev_pop.stddev_samp.substring.substring_regex.sum.tan.tanh.translate.translate_regex.treat.trim.trim_array.unnest.upper.value_of.var_pop.var_samp.width_bucket".split("."), d = [
 			"current_catalog",
 			"current_date",
 			"current_default_transform_group",
@@ -15743,7 +20527,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"localtime",
 			"current_timestamp",
 			"localtimestamp"
-		], p = [
+		], f = [
 			"create table",
 			"insert into",
 			"primary key",
@@ -15760,27 +20544,27 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"nulls last",
 			"depth first",
 			"breadth first"
-		], m = d, g = [...u, ...l].filter((e) => !d.includes(e)), _ = {
+		], p = u, m = [...l, ...c].filter((e) => !u.includes(e)), g = {
 			scope: "variable",
 			match: /@[a-z0-9][a-z0-9_]*/
-		}, v = {
+		}, _ = {
 			scope: "operator",
 			match: /[-+*/=%^~]|&&?|\|\|?|!=?|<(?:=>?|<|>)?|>[>=]?/,
 			relevance: 0
-		}, y = {
-			match: t.concat(/\b/, t.either(...m), /\s*\(/),
+		}, v = {
+			match: t.concat(/\b/, t.either(...p), /\s*\(/),
 			relevance: 0,
-			keywords: { built_in: m }
+			keywords: { built_in: p }
 		};
-		function b(e) {
+		function y(e) {
 			return t.concat(/\b/, t.either(...e.map((e) => e.replace(/\s+/, "\\s+"))), /\b/);
 		}
-		let x = {
+		let b = {
 			scope: "keyword",
-			match: b(p),
+			match: y(f),
 			relevance: 0
 		};
-		function S(e, { exceptions: t, when: n } = {}) {
+		function x(e, { exceptions: t, when: n } = {}) {
 			let r = n;
 			return t ||= [], e.map((e) => e.match(/\|\d+$/) || t.includes(e) ? e : r(e) ? `${e}|0` : e);
 		}
@@ -15790,25 +20574,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			illegal: /[{}]|<\//,
 			keywords: {
 				$pattern: /\b[\w\.]+/,
-				keyword: S(g, { when: (e) => e.length < 3 }),
+				keyword: x(m, { when: (e) => e.length < 3 }),
 				literal: a,
 				type: s,
-				built_in: f
+				built_in: d
 			},
 			contains: [
 				{
 					scope: "type",
-					match: b(o)
+					match: y(o)
 				},
-				x,
-				y,
-				_,
+				b,
+				v,
+				g,
 				r,
 				i,
 				e.C_NUMBER_MODE,
 				e.C_BLOCK_COMMENT_MODE,
 				n,
-				v
+				_
 			]
 		};
 	}
@@ -15859,7 +20643,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				scope: "doctag",
 				match: /@(return|param)/
 			}]
-		}), l = {
+		}), c = {
 			scope: "meta",
 			begin: /#include\b/,
 			end: /$/,
@@ -15867,7 +20651,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				match: /[a-z][a-z-._]+/,
 				scope: "string"
 			}, e.C_LINE_COMMENT_MODE]
-		}, u = [
+		}, l = [
 			"lower",
 			"upper",
 			"offset",
@@ -15885,7 +20669,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			},
 			contains: [
 				e.C_LINE_COMMENT_MODE,
-				l,
+				c,
 				e.HASH_COMMENT_MODE,
 				s,
 				{
@@ -15894,8 +20678,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 0
 				},
 				{
-					match: t.concat(/[<,]\s*/, t.either(...u), /\s*=/),
-					keywords: u
+					match: t.concat(/[<,]\s*/, t.either(...l), /\s*=/),
+					keywords: l
 				},
 				{
 					scope: "keyword",
@@ -16067,7 +20851,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "attr",
 			begin: /--[A-Za-z_][A-Za-z0-9_-]*/
 		}
-	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), l = [
+	}), r = /* @__PURE__ */ "a.abbr.address.article.aside.audio.b.blockquote.body.button.canvas.caption.cite.code.dd.del.details.dfn.div.dl.dt.em.fieldset.figcaption.figure.footer.form.h1.h2.h3.h4.h5.h6.header.hgroup.html.i.iframe.img.input.ins.kbd.label.legend.li.main.mark.menu.nav.object.ol.optgroup.option.p.picture.q.quote.samp.section.select.source.span.strong.summary.sup.table.tbody.td.textarea.tfoot.th.thead.time.tr.ul.var.video".split("."), i = /* @__PURE__ */ "defs.g.marker.mask.pattern.svg.switch.symbol.feBlend.feColorMatrix.feComponentTransfer.feComposite.feConvolveMatrix.feDiffuseLighting.feDisplacementMap.feFlood.feGaussianBlur.feImage.feMerge.feMorphology.feOffset.feSpecularLighting.feTile.feTurbulence.linearGradient.radialGradient.stop.circle.ellipse.image.line.path.polygon.polyline.rect.text.use.textPath.tspan.foreignObject.clipPath".split("."), a = [...r, ...i], o = (/* @__PURE__ */ "any-hover.any-pointer.aspect-ratio.color.color-gamut.color-index.device-aspect-ratio.device-height.device-width.display-mode.forced-colors.grid.height.hover.inverted-colors.monochrome.orientation.overflow-block.overflow-inline.pointer.prefers-color-scheme.prefers-contrast.prefers-reduced-motion.prefers-reduced-transparency.resolution.scan.scripting.update.width.min-width.max-width.min-height.max-height".split(".")).sort().reverse(), s = (/* @__PURE__ */ "active.any-link.blank.checked.current.default.defined.dir.disabled.drop.empty.enabled.first.first-child.first-of-type.fullscreen.future.focus.focus-visible.focus-within.has.host.host-context.hover.indeterminate.in-range.invalid.is.lang.last-child.last-of-type.left.link.local-link.not.nth-child.nth-col.nth-last-child.nth-last-col.nth-last-of-type.nth-of-type.only-child.only-of-type.optional.out-of-range.past.placeholder-shown.read-only.read-write.required.right.root.scope.target.target-within.user-invalid.valid.visited.where".split(".")).sort().reverse(), c = [
 		"after",
 		"backdrop",
 		"before",
@@ -16082,8 +20866,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"selection",
 		"slotted",
 		"spelling-error"
-	].sort().reverse(), u = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
-	function d(e) {
+	].sort().reverse(), l = (/* @__PURE__ */ "accent-color.align-content.align-items.align-self.alignment-baseline.all.anchor-name.animation.animation-composition.animation-delay.animation-direction.animation-duration.animation-fill-mode.animation-iteration-count.animation-name.animation-play-state.animation-range.animation-range-end.animation-range-start.animation-timeline.animation-timing-function.appearance.aspect-ratio.backdrop-filter.backface-visibility.background.background-attachment.background-blend-mode.background-clip.background-color.background-image.background-origin.background-position.background-position-x.background-position-y.background-repeat.background-size.baseline-shift.block-size.border.border-block.border-block-color.border-block-end.border-block-end-color.border-block-end-style.border-block-end-width.border-block-start.border-block-start-color.border-block-start-style.border-block-start-width.border-block-style.border-block-width.border-bottom.border-bottom-color.border-bottom-left-radius.border-bottom-right-radius.border-bottom-style.border-bottom-width.border-collapse.border-color.border-end-end-radius.border-end-start-radius.border-image.border-image-outset.border-image-repeat.border-image-slice.border-image-source.border-image-width.border-inline.border-inline-color.border-inline-end.border-inline-end-color.border-inline-end-style.border-inline-end-width.border-inline-start.border-inline-start-color.border-inline-start-style.border-inline-start-width.border-inline-style.border-inline-width.border-left.border-left-color.border-left-style.border-left-width.border-radius.border-right.border-right-color.border-right-style.border-right-width.border-spacing.border-start-end-radius.border-start-start-radius.border-style.border-top.border-top-color.border-top-left-radius.border-top-right-radius.border-top-style.border-top-width.border-width.bottom.box-align.box-decoration-break.box-direction.box-flex.box-flex-group.box-lines.box-ordinal-group.box-orient.box-pack.box-shadow.box-sizing.break-after.break-before.break-inside.caption-side.caret-color.clear.clip.clip-path.clip-rule.color.color-interpolation.color-interpolation-filters.color-profile.color-rendering.color-scheme.column-count.column-fill.column-gap.column-rule.column-rule-color.column-rule-style.column-rule-width.column-span.column-width.columns.contain.contain-intrinsic-block-size.contain-intrinsic-height.contain-intrinsic-inline-size.contain-intrinsic-size.contain-intrinsic-width.container.container-name.container-type.content.content-visibility.counter-increment.counter-reset.counter-set.cue.cue-after.cue-before.cursor.cx.cy.direction.display.dominant-baseline.empty-cells.enable-background.field-sizing.fill.fill-opacity.fill-rule.filter.flex.flex-basis.flex-direction.flex-flow.flex-grow.flex-shrink.flex-wrap.float.flood-color.flood-opacity.flow.font.font-display.font-family.font-feature-settings.font-kerning.font-language-override.font-optical-sizing.font-palette.font-size.font-size-adjust.font-smooth.font-smoothing.font-stretch.font-style.font-synthesis.font-synthesis-position.font-synthesis-small-caps.font-synthesis-style.font-synthesis-weight.font-variant.font-variant-alternates.font-variant-caps.font-variant-east-asian.font-variant-emoji.font-variant-ligatures.font-variant-numeric.font-variant-position.font-variation-settings.font-weight.forced-color-adjust.gap.glyph-orientation-horizontal.glyph-orientation-vertical.grid.grid-area.grid-auto-columns.grid-auto-flow.grid-auto-rows.grid-column.grid-column-end.grid-column-start.grid-gap.grid-row.grid-row-end.grid-row-start.grid-template.grid-template-areas.grid-template-columns.grid-template-rows.hanging-punctuation.height.hyphenate-character.hyphenate-limit-chars.hyphens.icon.image-orientation.image-rendering.image-resolution.ime-mode.initial-letter.initial-letter-align.inline-size.inset.inset-area.inset-block.inset-block-end.inset-block-start.inset-inline.inset-inline-end.inset-inline-start.isolation.justify-content.justify-items.justify-self.kerning.left.letter-spacing.lighting-color.line-break.line-height.line-height-step.list-style.list-style-image.list-style-position.list-style-type.margin.margin-block.margin-block-end.margin-block-start.margin-bottom.margin-inline.margin-inline-end.margin-inline-start.margin-left.margin-right.margin-top.margin-trim.marker.marker-end.marker-mid.marker-start.marks.mask.mask-border.mask-border-mode.mask-border-outset.mask-border-repeat.mask-border-slice.mask-border-source.mask-border-width.mask-clip.mask-composite.mask-image.mask-mode.mask-origin.mask-position.mask-repeat.mask-size.mask-type.masonry-auto-flow.math-depth.math-shift.math-style.max-block-size.max-height.max-inline-size.max-width.min-block-size.min-height.min-inline-size.min-width.mix-blend-mode.nav-down.nav-index.nav-left.nav-right.nav-up.none.normal.object-fit.object-position.offset.offset-anchor.offset-distance.offset-path.offset-position.offset-rotate.opacity.order.orphans.outline.outline-color.outline-offset.outline-style.outline-width.overflow.overflow-anchor.overflow-block.overflow-clip-margin.overflow-inline.overflow-wrap.overflow-x.overflow-y.overlay.overscroll-behavior.overscroll-behavior-block.overscroll-behavior-inline.overscroll-behavior-x.overscroll-behavior-y.padding.padding-block.padding-block-end.padding-block-start.padding-bottom.padding-inline.padding-inline-end.padding-inline-start.padding-left.padding-right.padding-top.page.page-break-after.page-break-before.page-break-inside.paint-order.pause.pause-after.pause-before.perspective.perspective-origin.place-content.place-items.place-self.pointer-events.position.position-anchor.position-visibility.print-color-adjust.quotes.r.resize.rest.rest-after.rest-before.right.rotate.row-gap.ruby-align.ruby-position.scale.scroll-behavior.scroll-margin.scroll-margin-block.scroll-margin-block-end.scroll-margin-block-start.scroll-margin-bottom.scroll-margin-inline.scroll-margin-inline-end.scroll-margin-inline-start.scroll-margin-left.scroll-margin-right.scroll-margin-top.scroll-padding.scroll-padding-block.scroll-padding-block-end.scroll-padding-block-start.scroll-padding-bottom.scroll-padding-inline.scroll-padding-inline-end.scroll-padding-inline-start.scroll-padding-left.scroll-padding-right.scroll-padding-top.scroll-snap-align.scroll-snap-stop.scroll-snap-type.scroll-timeline.scroll-timeline-axis.scroll-timeline-name.scrollbar-color.scrollbar-gutter.scrollbar-width.shape-image-threshold.shape-margin.shape-outside.shape-rendering.speak.speak-as.src.stop-color.stop-opacity.stroke.stroke-dasharray.stroke-dashoffset.stroke-linecap.stroke-linejoin.stroke-miterlimit.stroke-opacity.stroke-width.tab-size.table-layout.text-align.text-align-all.text-align-last.text-anchor.text-combine-upright.text-decoration.text-decoration-color.text-decoration-line.text-decoration-skip.text-decoration-skip-ink.text-decoration-style.text-decoration-thickness.text-emphasis.text-emphasis-color.text-emphasis-position.text-emphasis-style.text-indent.text-justify.text-orientation.text-overflow.text-rendering.text-shadow.text-size-adjust.text-transform.text-underline-offset.text-underline-position.text-wrap.text-wrap-mode.text-wrap-style.timeline-scope.top.touch-action.transform.transform-box.transform-origin.transform-style.transition.transition-behavior.transition-delay.transition-duration.transition-property.transition-timing-function.translate.unicode-bidi.user-modify.user-select.vector-effect.vertical-align.view-timeline.view-timeline-axis.view-timeline-inset.view-timeline-name.view-transition-name.visibility.voice-balance.voice-duration.voice-family.voice-pitch.voice-range.voice-rate.voice-stress.voice-volume.white-space.white-space-collapse.widows.width.will-change.word-break.word-spacing.word-wrap.writing-mode.x.y.z-index.zoom".split(".")).sort().reverse();
+	function u(e) {
 		let t = n(e), r = {
 			className: "variable",
 			begin: "\\$" + e.IDENT_RE
@@ -16102,7 +20886,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"page",
 			"warn",
 			"while"
-		], d = "(?=[.\\s\\n[:,(])";
+		], u = "(?=[.\\s\\n[:,(])";
 		return {
 			name: "Stylus",
 			aliases: ["styl"],
@@ -16128,11 +20912,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.C_BLOCK_COMMENT_MODE,
 				t.HEXCOLOR,
 				{
-					begin: "\\.[a-zA-Z][a-zA-Z0-9_-]*" + d,
+					begin: "\\.[a-zA-Z][a-zA-Z0-9_-]*" + u,
 					className: "selector-class"
 				},
 				{
-					begin: "#[a-zA-Z][a-zA-Z0-9_-]*" + d,
+					begin: "#[a-zA-Z][a-zA-Z0-9_-]*" + u,
 					className: "selector-id"
 				},
 				{
@@ -16145,7 +20929,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				},
 				{
 					className: "selector-pseudo",
-					begin: "&?:(:)?(" + l.join("|") + ")(?=[.\\s\\n[:,(])"
+					begin: "&?:(:)?(" + c.join("|") + ")(?=[.\\s\\n[:,(])"
 				},
 				t.ATTRIBUTE_SELECTOR_MODE,
 				{
@@ -16191,7 +20975,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				t.CSS_VARIABLE,
 				{
 					className: "attribute",
-					begin: "\\b(" + u.join("|") + ")\\b",
+					begin: "\\b(" + l.join("|") + ")\\b",
 					starts: {
 						end: /;|$/,
 						contains: [
@@ -16212,7 +20996,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		};
 	}
-	t.exports = d;
+	t.exports = u;
 })), require_subunit = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return {
@@ -16263,7 +21047,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 	function o(...e) {
 		return "(" + (a(e).capture ? "" : "?:") + e.map((e) => n(e)).join("|") + ")";
 	}
-	var s = (e) => i(/\b/, e, /\w$/.test(e) ? /\b/ : /\B/), l = ["Protocol", "Type"].map(s), u = ["init", "self"].map(s), d = ["Any", "Self"], f = [
+	var s = (e) => i(/\b/, e, /\w$/.test(e) ? /\b/ : /\B/), c = ["Protocol", "Type"].map(s), l = ["init", "self"].map(s), u = ["Any", "Self"], d = [
 		"actor",
 		"any",
 		"associatedtype",
@@ -16358,11 +21142,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"where",
 		"while",
 		"willSet"
-	], p = [
+	], f = [
 		"false",
 		"nil",
 		"true"
-	], m = [
+	], p = [
 		"assignment",
 		"associativity",
 		"higherThan",
@@ -16370,7 +21154,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"lowerThan",
 		"none",
 		"right"
-	], g = [
+	], m = [
 		"#colorLiteral",
 		"#column",
 		"#dsohandle",
@@ -16390,7 +21174,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"#selector",
 		"#sourceLocation",
 		"#warning"
-	], _ = /* @__PURE__ */ "abs.all.any.assert.assertionFailure.debugPrint.dump.fatalError.getVaList.isKnownUniquelyReferenced.max.min.numericCast.pointwiseMax.pointwiseMin.precondition.preconditionFailure.print.readLine.repeatElement.sequence.stride.swap.swift_unboxFromSwiftValueWithType.transcode.type.unsafeBitCast.unsafeDowncast.withExtendedLifetime.withUnsafeMutablePointer.withUnsafePointer.withVaList.withoutActuallyEscaping.zip".split("."), v = o(/[/=\-+!*%<>&|^~?]/, /[\u00A1-\u00A7]/, /[\u00A9\u00AB]/, /[\u00AC\u00AE]/, /[\u00B0\u00B1]/, /[\u00B6\u00BB\u00BF\u00D7\u00F7]/, /[\u2016-\u2017]/, /[\u2020-\u2027]/, /[\u2030-\u203E]/, /[\u2041-\u2053]/, /[\u2055-\u205E]/, /[\u2190-\u23FF]/, /[\u2500-\u2775]/, /[\u2794-\u2BFF]/, /[\u2E00-\u2E7F]/, /[\u3001-\u3003]/, /[\u3008-\u3020]/, /[\u3030]/), y = o(v, /[\u0300-\u036F]/, /[\u1DC0-\u1DFF]/, /[\u20D0-\u20FF]/, /[\uFE00-\uFE0F]/, /[\uFE20-\uFE2F]/), b = i(v, y, "*"), x = o(/[a-zA-Z_]/, /[\u00A8\u00AA\u00AD\u00AF\u00B2-\u00B5\u00B7-\u00BA]/, /[\u00BC-\u00BE\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF]/, /[\u0100-\u02FF\u0370-\u167F\u1681-\u180D\u180F-\u1DBF]/, /[\u1E00-\u1FFF]/, /[\u200B-\u200D\u202A-\u202E\u203F-\u2040\u2054\u2060-\u206F]/, /[\u2070-\u20CF\u2100-\u218F\u2460-\u24FF\u2776-\u2793]/, /[\u2C00-\u2DFF\u2E80-\u2FFF]/, /[\u3004-\u3007\u3021-\u302F\u3031-\u303F\u3040-\uD7FF]/, /[\uF900-\uFD3D\uFD40-\uFDCF\uFDF0-\uFE1F\uFE30-\uFE44]/, /[\uFE47-\uFEFE\uFF00-\uFFFD]/), S = o(x, /\d/, /[\u0300-\u036F\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/), C = i(x, S, "*"), w = i(/[A-Z]/, S, "*"), T = [
+	], g = /* @__PURE__ */ "abs.all.any.assert.assertionFailure.debugPrint.dump.fatalError.getVaList.isKnownUniquelyReferenced.max.min.numericCast.pointwiseMax.pointwiseMin.precondition.preconditionFailure.print.readLine.repeatElement.sequence.stride.swap.swift_unboxFromSwiftValueWithType.transcode.type.unsafeBitCast.unsafeDowncast.withExtendedLifetime.withUnsafeMutablePointer.withUnsafePointer.withVaList.withoutActuallyEscaping.zip".split("."), _ = o(/[/=\-+!*%<>&|^~?]/, /[\u00A1-\u00A7]/, /[\u00A9\u00AB]/, /[\u00AC\u00AE]/, /[\u00B0\u00B1]/, /[\u00B6\u00BB\u00BF\u00D7\u00F7]/, /[\u2016-\u2017]/, /[\u2020-\u2027]/, /[\u2030-\u203E]/, /[\u2041-\u2053]/, /[\u2055-\u205E]/, /[\u2190-\u23FF]/, /[\u2500-\u2775]/, /[\u2794-\u2BFF]/, /[\u2E00-\u2E7F]/, /[\u3001-\u3003]/, /[\u3008-\u3020]/, /[\u3030]/), v = o(_, /[\u0300-\u036F]/, /[\u1DC0-\u1DFF]/, /[\u20D0-\u20FF]/, /[\uFE00-\uFE0F]/, /[\uFE20-\uFE2F]/), y = i(_, v, "*"), b = o(/[a-zA-Z_]/, /[\u00A8\u00AA\u00AD\u00AF\u00B2-\u00B5\u00B7-\u00BA]/, /[\u00BC-\u00BE\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF]/, /[\u0100-\u02FF\u0370-\u167F\u1681-\u180D\u180F-\u1DBF]/, /[\u1E00-\u1FFF]/, /[\u200B-\u200D\u202A-\u202E\u203F-\u2040\u2054\u2060-\u206F]/, /[\u2070-\u20CF\u2100-\u218F\u2460-\u24FF\u2776-\u2793]/, /[\u2C00-\u2DFF\u2E80-\u2FFF]/, /[\u3004-\u3007\u3021-\u302F\u3031-\u303F\u3040-\uD7FF]/, /[\uF900-\uFD3D\uFD40-\uFDCF\uFDF0-\uFE1F\uFE30-\uFE44]/, /[\uFE47-\uFEFE\uFF00-\uFFFD]/), x = o(b, /\d/, /[\u0300-\u036F\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/), S = i(b, x, "*"), C = i(/[A-Z]/, x, "*"), w = [
 		"attached",
 		"autoclosure",
 		i(/convention\(/, o("swift", "block", "c"), /\)/),
@@ -16412,7 +21196,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"NSApplicationMain",
 		"NSCopying",
 		"NSManaged",
-		i(/objc\(/, C, /\)/),
+		i(/objc\(/, S, /\)/),
 		"objc",
 		"objcMembers",
 		"propertyWrapper",
@@ -16425,7 +21209,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"unknown",
 		"usableFromInline",
 		"warn_unqualified_access"
-	], E = [
+	], T = [
 		"iOS",
 		"iOSApplicationExtension",
 		"macOS",
@@ -16438,156 +21222,156 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"tvOSApplicationExtension",
 		"swift"
 	];
-	function D(e) {
+	function E(e) {
 		let t = {
 			match: /\s+/,
 			relevance: 0
-		}, n = e.COMMENT("/\\*", "\\*/", { contains: ["self"] }), a = [e.C_LINE_COMMENT_MODE, n], v = {
-			match: [/\./, o(...l, ...u)],
+		}, n = e.COMMENT("/\\*", "\\*/", { contains: ["self"] }), a = [e.C_LINE_COMMENT_MODE, n], _ = {
+			match: [/\./, o(...c, ...l)],
 			className: { 2: "keyword" }
-		}, x = {
-			match: i(/\./, o(...f)),
+		}, b = {
+			match: i(/\./, o(...d)),
 			relevance: 0
-		}, D = f.filter((e) => typeof e == "string").concat(["_|0"]), O = { variants: [{
+		}, E = d.filter((e) => typeof e == "string").concat(["_|0"]), D = { variants: [{
 			className: "keyword",
-			match: o(...f.filter((e) => typeof e != "string").concat(d).map(s), ...u)
-		}] }, k = {
+			match: o(...d.filter((e) => typeof e != "string").concat(u).map(s), ...l)
+		}] }, O = {
 			$pattern: o(/\b\w+/, /#\w+/),
-			keyword: D.concat(g),
-			literal: p
-		}, A = [
-			v,
-			x,
-			O
-		], j = [{
-			match: i(/\./, o(..._)),
+			keyword: E.concat(m),
+			literal: f
+		}, k = [
+			_,
+			b,
+			D
+		], A = [{
+			match: i(/\./, o(...g)),
 			relevance: 0
 		}, {
 			className: "built_in",
-			match: i(/\b/, o(..._), /(?=\()/)
-		}], M = {
+			match: i(/\b/, o(...g), /(?=\()/)
+		}], j = {
 			match: /->/,
 			relevance: 0
-		}, N = [M, {
+		}, M = [j, {
 			className: "operator",
 			relevance: 0,
-			variants: [{ match: b }, { match: `\\.(\\.|${y})+` }]
-		}], P = "([0-9]_*)+", F = "([0-9a-fA-F]_*)+", I = {
+			variants: [{ match: y }, { match: `\\.(\\.|${v})+` }]
+		}], N = "([0-9]_*)+", P = "([0-9a-fA-F]_*)+", F = {
 			className: "number",
 			relevance: 0,
 			variants: [
-				{ match: `\\b(${P})(\\.(${P}))?([eE][+-]?(${P}))?\\b` },
-				{ match: `\\b0x(${F})(\\.(${F}))?([pP][+-]?(${P}))?\\b` },
+				{ match: `\\b(${N})(\\.(${N}))?([eE][+-]?(${N}))?\\b` },
+				{ match: `\\b0x(${P})(\\.(${P}))?([pP][+-]?(${N}))?\\b` },
 				{ match: /\b0o([0-7]_*)+\b/ },
 				{ match: /\b0b([01]_*)+\b/ }
 			]
-		}, L = (e = "") => ({
+		}, I = (e = "") => ({
 			className: "subst",
 			variants: [{ match: i(/\\/, e, /[0\\tnr"']/) }, { match: i(/\\/, e, /u\{[0-9a-fA-F]{1,8}\}/) }]
-		}), R = (e = "") => ({
+		}), L = (e = "") => ({
 			className: "subst",
 			match: i(/\\/, e, /[\t ]*(?:[\r\n]|\r\n)/)
-		}), z = (e = "") => ({
+		}), R = (e = "") => ({
 			className: "subst",
 			label: "interpol",
 			begin: i(/\\/, e, /\(/),
 			end: /\)/
-		}), B = (e = "") => ({
+		}), z = (e = "") => ({
 			begin: i(e, /"""/),
 			end: i(/"""/, e),
 			contains: [
+				I(e),
 				L(e),
-				R(e),
-				z(e)
+				R(e)
 			]
-		}), V = (e = "") => ({
+		}), B = (e = "") => ({
 			begin: i(e, /"/),
 			end: i(/"/, e),
-			contains: [L(e), z(e)]
-		}), H = {
+			contains: [I(e), R(e)]
+		}), V = {
 			className: "string",
 			variants: [
+				z(),
+				z("#"),
+				z("##"),
+				z("###"),
 				B(),
 				B("#"),
 				B("##"),
-				B("###"),
-				V(),
-				V("#"),
-				V("##"),
-				V("###")
+				B("###")
 			]
-		}, U = [e.BACKSLASH_ESCAPE, {
+		}, si = [e.BACKSLASH_ESCAPE, {
 			begin: /\[/,
 			end: /\]/,
 			relevance: 0,
 			contains: [e.BACKSLASH_ESCAPE]
-		}], xi = {
+		}], ci = {
 			begin: /\/[^\s](?=[^/\n]*\/)/,
 			end: /\//,
-			contains: U
-		}, W = (e) => {
+			contains: si
+		}, li = (e) => {
 			let t = i(e, /\//), n = i(/\//, e);
 			return {
 				begin: t,
 				end: n,
-				contains: [...U, {
+				contains: [...si, {
 					scope: "comment",
 					begin: `#(?!.*${n})`,
 					end: /$/
 				}]
 			};
-		}, Si = {
+		}, ui = {
 			scope: "regexp",
 			variants: [
-				W("###"),
-				W("##"),
-				W("#"),
-				xi
+				li("###"),
+				li("##"),
+				li("#"),
+				ci
 			]
-		}, Ci = { match: i(/`/, C, /`/) }, wi = [
-			Ci,
+		}, di = { match: i(/`/, S, /`/) }, fi = [
+			di,
 			{
 				className: "variable",
 				match: /\$\d+/
 			},
 			{
 				className: "variable",
-				match: `\\$${S}+`
+				match: `\\$${x}+`
 			}
-		], G = [
+		], H = [
 			{
 				match: /(@|#(un)?)available/,
 				scope: "keyword",
 				starts: { contains: [{
 					begin: /\(/,
 					end: /\)/,
-					keywords: E,
+					keywords: T,
 					contains: [
-						...N,
-						I,
-						H
+						...M,
+						F,
+						V
 					]
 				}] }
 			},
 			{
 				scope: "keyword",
-				match: i(/@/, o(...T), r(o(/\(/, /\s+/)))
+				match: i(/@/, o(...w), r(o(/\(/, /\s+/)))
 			},
 			{
 				scope: "meta",
-				match: i(/@/, C)
+				match: i(/@/, S)
 			}
-		], K = {
+		], U = {
 			match: r(/\b[A-Z]/),
 			relevance: 0,
 			contains: [
 				{
 					className: "type",
-					match: i(/(AV|CA|CF|CG|CI|CL|CM|CN|CT|MK|MP|MTK|MTL|NS|SCN|SK|UI|WK|XC)/, S, "+")
+					match: i(/(AV|CA|CF|CG|CI|CL|CM|CN|CT|MK|MP|MTK|MTL|NS|SCN|SK|UI|WK|XC)/, x, "+")
 				},
 				{
 					className: "type",
-					match: w,
+					match: C,
 					relevance: 0
 				},
 				{
@@ -16599,58 +21383,58 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					relevance: 0
 				},
 				{
-					match: i(/\s+&\s+/, r(w)),
+					match: i(/\s+&\s+/, r(C)),
 					relevance: 0
 				}
 			]
-		}, Ti = {
+		}, pi = {
 			begin: /</,
 			end: />/,
-			keywords: k,
+			keywords: O,
 			contains: [
 				...a,
-				...A,
-				...G,
-				M,
-				K
+				...k,
+				...H,
+				j,
+				U
 			]
 		};
-		K.contains.push(Ti);
-		let q = {
+		U.contains.push(pi);
+		let mi = {
 			begin: /\(/,
 			end: /\)/,
 			relevance: 0,
-			keywords: k,
+			keywords: O,
 			contains: [
 				"self",
 				{
-					match: i(C, /\s*:/),
+					match: i(S, /\s*:/),
 					keywords: "_|0",
 					relevance: 0
 				},
 				...a,
-				Si,
+				ui,
+				...k,
 				...A,
-				...j,
-				...N,
-				I,
-				H,
-				...wi,
-				...G,
-				K
+				...M,
+				F,
+				V,
+				...fi,
+				...H,
+				U
 			]
-		}, J = {
+		}, W = {
 			begin: /</,
 			end: />/,
 			keywords: "repeat each",
-			contains: [...a, K]
-		}, Y = {
+			contains: [...a, U]
+		}, G = {
 			begin: /\(/,
 			end: /\)/,
-			keywords: k,
+			keywords: O,
 			contains: [
 				{
-					begin: o(r(i(C, /\s*:/)), r(i(C, /\s+/, C, /\s*:/))),
+					begin: o(r(i(S, /\s*:/)), r(i(S, /\s+/, S, /\s*:/))),
 					end: /:/,
 					relevance: 0,
 					contains: [{
@@ -16658,69 +21442,69 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						match: /\b_\b/
 					}, {
 						className: "params",
-						match: C
+						match: S
 					}]
 				},
 				...a,
-				...A,
-				...N,
-				I,
-				H,
-				...G,
-				K,
-				q
+				...k,
+				...M,
+				F,
+				V,
+				...H,
+				U,
+				mi
 			],
 			endsParent: !0,
 			illegal: /["']/
-		}, Ei = {
+		}, K = {
 			match: [
 				/(func|macro)/,
 				/\s+/,
-				o(Ci.match, C, b)
+				o(di.match, S, y)
 			],
 			className: {
 				1: "keyword",
 				3: "title.function"
 			},
 			contains: [
-				J,
-				Y,
+				W,
+				G,
 				t
 			],
 			illegal: [/\[/, /%/]
-		}, X = {
+		}, q = {
 			match: [/\b(?:subscript|init[?!]?)/, /\s*(?=[<(])/],
 			className: { 1: "keyword" },
 			contains: [
-				J,
-				Y,
+				W,
+				G,
 				t
 			],
 			illegal: /\[|%/
-		}, Di = {
+		}, J = {
 			match: [
 				/operator/,
 				/\s+/,
-				b
+				y
 			],
 			className: {
 				1: "keyword",
 				3: "title"
 			}
-		}, Oi = {
+		}, Y = {
 			begin: [
 				/precedencegroup/,
 				/\s+/,
-				w
+				C
 			],
 			className: {
 				1: "keyword",
 				3: "title"
 			},
-			contains: [K],
-			keywords: [...m, ...p],
+			contains: [U],
+			keywords: [...p, ...f],
 			end: /}/
-		}, ki = {
+		}, hi = {
 			match: [
 				/class\b/,
 				/\s+/,
@@ -16733,7 +21517,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				3: "keyword",
 				5: "title.function"
 			}
-		}, Ai = {
+		}, gi = {
 			match: [
 				/class\b/,
 				/\s+/,
@@ -16743,43 +21527,43 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				1: "keyword",
 				3: "keyword"
 			}
-		}, ji = {
+		}, _i = {
 			begin: [
 				/(struct|protocol|class|extension|enum|actor)/,
 				/\s+/,
-				C,
+				S,
 				/\s*/
 			],
 			beginScope: {
 				1: "keyword",
 				3: "title.class"
 			},
-			keywords: k,
+			keywords: O,
 			contains: [
-				J,
-				...A,
+				W,
+				...k,
 				{
 					begin: /:/,
 					end: /\{/,
-					keywords: k,
+					keywords: O,
 					contains: [{
 						scope: "title.class.inherited",
-						match: w
-					}, ...A],
+						match: C
+					}, ...k],
 					relevance: 0
 				}
 			]
 		};
-		for (let e of H.variants) {
+		for (let e of V.variants) {
 			let t = e.contains.find((e) => e.label === "interpol");
-			t.keywords = k;
+			t.keywords = O;
 			let n = [
+				...k,
 				...A,
-				...j,
-				...N,
-				I,
-				H,
-				...wi
+				...M,
+				F,
+				V,
+				...fi
 			];
 			t.contains = [...n, {
 				begin: /\(/,
@@ -16789,36 +21573,36 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		}
 		return {
 			name: "Swift",
-			keywords: k,
+			keywords: O,
 			contains: [
 				...a,
-				Ei,
-				X,
-				ki,
-				Ai,
-				ji,
-				Di,
-				Oi,
+				K,
+				q,
+				hi,
+				gi,
+				_i,
+				J,
+				Y,
 				{
 					beginKeywords: "import",
 					end: /$/,
 					contains: [...a],
 					relevance: 0
 				},
-				Si,
+				ui,
+				...k,
 				...A,
-				...j,
-				...N,
-				I,
-				H,
-				...wi,
-				...G,
-				K,
-				q
+				...M,
+				F,
+				V,
+				...fi,
+				...H,
+				U,
+				mi
 			]
 		};
 	}
-	t.exports = D;
+	t.exports = E;
 })), require_taggerscript = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return {
@@ -16905,28 +21689,28 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				end: /"/
 			},
 			{ begin: /[^\s,{}[\]]+/ }
-		] }), l = {
+		] }), c = {
 			className: "number",
 			begin: "\\b[0-9]{4}(-[0-9][0-9]){0,2}([Tt \\t][0-9][0-9]?(:[0-9][0-9]){2})?(\\.[0-9]*)?([ \\t])*(Z|[-+][0-9][0-9]?(:[0-9][0-9])?)?\\b"
-		}, u = {
+		}, l = {
 			end: ",",
 			endsWithParent: !0,
 			excludeEnd: !0,
 			keywords: t,
 			relevance: 0
-		}, d = {
+		}, u = {
 			begin: /\{/,
 			end: /\}/,
-			contains: [u],
+			contains: [l],
 			illegal: "\\n",
 			relevance: 0
-		}, f = {
+		}, d = {
 			begin: "\\[",
 			end: "\\]",
-			contains: [u],
+			contains: [l],
 			illegal: "\\n",
 			relevance: 0
-		}, p = [
+		}, f = [
 			r,
 			{
 				className: "meta",
@@ -16979,22 +21763,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				beginKeywords: t,
 				keywords: { literal: t }
 			},
-			l,
+			c,
 			{
 				className: "number",
 				begin: e.C_NUMBER_RE + "\\b",
 				relevance: 0
 			},
+			u,
 			d,
-			f,
 			a,
 			o
-		], m = [...p];
-		return m.pop(), m.push(s), u.contains = m, {
+		], p = [...f];
+		return p.pop(), p.push(s), l.contains = p, {
 			name: "YAML",
 			case_insensitive: !0,
 			aliases: ["yml"],
-			contains: p
+			contains: f
 		};
 	}
 	t.exports = n;
@@ -17240,12 +22024,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			excludeBegin: !0,
 			excludeEnd: !0,
 			contains: [a, o]
-		}, l = {
+		}, c = {
 			beginKeywords: n.join(" "),
 			keywords: { name: n },
 			relevance: 0,
 			contains: [s]
-		}, u = {
+		}, l = {
 			match: /\|(?=[A-Za-z_]+:?)/,
 			beginScope: "punctuation",
 			relevance: 0,
@@ -17253,7 +22037,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				match: /[A-Za-z_]+:?/,
 				keywords: r
 			}]
-		}, d = (e, { relevance: n }) => ({
+		}, u = (e, { relevance: n }) => ({
 			beginScope: {
 				1: "template-tag",
 				3: "name"
@@ -17268,12 +22052,12 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			end: /%\}/,
 			keywords: "in",
 			contains: [
-				u,
 				l,
+				c,
 				a,
 				o
 			]
-		}), f = /[a-z_]+/, p = d(i, { relevance: 2 }), m = d([f], { relevance: 1 });
+		}), d = /[a-z_]+/, f = u(i, { relevance: 2 }), p = u([d], { relevance: 1 });
 		return {
 			name: "Twig",
 			aliases: ["craftcms"],
@@ -17281,16 +22065,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			subLanguage: "xml",
 			contains: [
 				e.COMMENT(/\{#/, /#\}/),
+				f,
 				p,
-				m,
 				{
 					className: "template-variable",
 					begin: /\{\{/,
 					end: /\}\}/,
 					contains: [
 						"self",
-						u,
 						l,
+						c,
 						a,
 						o
 					]
@@ -17334,7 +22118,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"encodeURIComponent",
 		"escape",
 		"unescape"
-	], l = [
+	], c = [
 		"arguments",
 		"this",
 		"super",
@@ -17345,15 +22129,15 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 		"sessionStorage",
 		"module",
 		"global"
-	], u = [].concat(s, a, o);
-	function d(e) {
-		let t = e.regex, d = (e, { after: t }) => {
+	], l = [].concat(s, a, o);
+	function u(e) {
+		let t = e.regex, u = (e, { after: t }) => {
 			let n = "</" + e[0].slice(1);
 			return e.input.indexOf(n, t) !== -1;
-		}, f = n, p = {
+		}, d = n, f = {
 			begin: "<>",
 			end: "</>"
-		}, m = /<[A-Za-z0-9\\._:-]+\s*\/>/, g = {
+		}, p = /<[A-Za-z0-9\\._:-]+\s*\/>/, m = {
 			begin: /<[A-Za-z0-9\\._:-]+/,
 			end: /\/[A-Za-z0-9\\._:-]+>|\/>/,
 			isTrulyOpeningTag: (e, t) => {
@@ -17362,7 +22146,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					t.ignoreMatch();
 					return;
 				}
-				r === ">" && (d(e, { after: n }) || t.ignoreMatch());
+				r === ">" && (u(e, { after: n }) || t.ignoreMatch());
 				let i, a = e.input.substring(n);
 				if (i = a.match(/^\s*=/)) {
 					t.ignoreMatch();
@@ -17373,17 +22157,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					return;
 				}
 			}
-		}, _ = {
+		}, g = {
 			$pattern: n,
 			keyword: r,
 			literal: i,
-			built_in: u,
-			"variable.language": l
-		}, v = "[0-9](_?[0-9])*", y = `\\.(${v})`, b = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", x = {
+			built_in: l,
+			"variable.language": c
+		}, _ = "[0-9](_?[0-9])*", v = `\\.(${_})`, y = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", b = {
 			className: "number",
 			variants: [
-				{ begin: `(\\b(${b})((${y})|\\.)?|(${y}))[eE][+-]?(${v})\\b` },
-				{ begin: `\\b(${b})\\b((${y})\\b|\\.)?|(${y})\\b` },
+				{ begin: `(\\b(${y})((${v})|\\.)?|(${v}))[eE][+-]?(${_})\\b` },
+				{ begin: `\\b(${y})\\b((${v})\\b|\\.)?|(${v})\\b` },
 				{ begin: "\\b(0|[1-9](_?[0-9])*)n\\b" },
 				{ begin: "\\b0[xX][0-9a-fA-F](_?[0-9a-fA-F])*n?\\b" },
 				{ begin: "\\b0[bB][0-1](_?[0-1])*n?\\b" },
@@ -17391,45 +22175,45 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: "\\b0[0-7]+n?\\b" }
 			],
 			relevance: 0
-		}, S = {
+		}, x = {
 			className: "subst",
 			begin: "\\$\\{",
 			end: "\\}",
-			keywords: _,
+			keywords: g,
 			contains: []
-		}, C = {
+		}, S = {
 			begin: ".?html`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "xml"
 			}
-		}, w = {
+		}, C = {
 			begin: ".?css`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "css"
 			}
-		}, T = {
+		}, w = {
 			begin: ".?gql`",
 			end: "",
 			starts: {
 				end: "`",
 				returnEnd: !1,
-				contains: [e.BACKSLASH_ESCAPE, S],
+				contains: [e.BACKSLASH_ESCAPE, x],
 				subLanguage: "graphql"
 			}
-		}, E = {
+		}, T = {
 			className: "string",
 			begin: "`",
 			end: "`",
-			contains: [e.BACKSLASH_ESCAPE, S]
-		}, D = {
+			contains: [e.BACKSLASH_ESCAPE, x]
+		}, E = {
 			className: "comment",
 			variants: [
 				e.COMMENT(/\/\*\*(?!\/)/, "\\*/", {
@@ -17452,7 +22236,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 							},
 							{
 								className: "variable",
-								begin: f + "(?=\\s*(-)|$)",
+								begin: d + "(?=\\s*(-)|$)",
 								endsParent: !0,
 								relevance: 0
 							},
@@ -17466,44 +22250,44 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				e.C_BLOCK_COMMENT_MODE,
 				e.C_LINE_COMMENT_MODE
 			]
-		}, O = [
+		}, D = [
 			e.APOS_STRING_MODE,
 			e.QUOTE_STRING_MODE,
+			S,
 			C,
 			w,
 			T,
-			E,
 			{ match: /\$\d+/ },
-			x
+			b
 		];
-		S.contains = O.concat({
+		x.contains = D.concat({
 			begin: /\{/,
 			end: /\}/,
-			keywords: _,
-			contains: ["self"].concat(O)
+			keywords: g,
+			contains: ["self"].concat(D)
 		});
-		let k = [].concat(D, S.contains), A = k.concat([{
+		let O = [].concat(E, x.contains), k = O.concat([{
 			begin: /(\s*)\(/,
 			end: /\)/,
-			keywords: _,
-			contains: ["self"].concat(k)
-		}]), j = {
+			keywords: g,
+			contains: ["self"].concat(O)
+		}]), A = {
 			className: "params",
 			begin: /(\s*)\(/,
 			end: /\)/,
 			excludeBegin: !0,
 			excludeEnd: !0,
-			keywords: _,
-			contains: A
-		}, M = { variants: [{
+			keywords: g,
+			contains: k
+		}, j = { variants: [{
 			match: [
 				/class/,
 				/\s+/,
-				f,
+				d,
 				/\s+/,
 				/extends/,
 				/\s+/,
-				t.concat(f, "(", t.concat(/\./, f), ")*")
+				t.concat(d, "(", t.concat(/\./, d), ")*")
 			],
 			scope: {
 				1: "keyword",
@@ -17515,27 +22299,27 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			match: [
 				/class/,
 				/\s+/,
-				f
+				d
 			],
 			scope: {
 				1: "keyword",
 				3: "title.class"
 			}
-		}] }, N = {
+		}] }, M = {
 			relevance: 0,
 			match: t.either(/\bJSON/, /\b[A-Z][a-z]+([A-Z][a-z]*|\d)*/, /\b[A-Z]{2,}([A-Z][a-z]+|\d)+([A-Z][a-z]*)*/, /\b[A-Z]{2,}[a-z]+([A-Z][a-z]+|\d)*([A-Z][a-z]*)*/),
 			className: "title.class",
 			keywords: { _: [...a, ...o] }
-		}, P = {
+		}, N = {
 			label: "use_strict",
 			className: "meta",
 			relevance: 10,
 			begin: /^\s*['"]use (strict|asm)['"]/
-		}, F = {
+		}, P = {
 			variants: [{ match: [
 				/function/,
 				/\s+/,
-				f,
+				d,
 				/(?=\s*\()/
 			] }, { match: [/function/, /\s*(?=\()/] }],
 			className: {
@@ -17543,59 +22327,59 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				3: "title.function"
 			},
 			label: "func.def",
-			contains: [j],
+			contains: [A],
 			illegal: /%/
-		}, I = {
+		}, F = {
 			relevance: 0,
 			match: /\b[A-Z][A-Z_0-9]+\b/,
 			className: "variable.constant"
 		};
-		function L(e) {
+		function I(e) {
 			return t.concat("(?!", e.join("|"), ")");
 		}
-		let R = {
-			match: t.concat(/\b/, L([
+		let L = {
+			match: t.concat(/\b/, I([
 				...s,
 				"super",
 				"import"
-			].map((e) => `${e}\\s*\\(`)), f, t.lookahead(/\s*\(/)),
+			].map((e) => `${e}\\s*\\(`)), d, t.lookahead(/\s*\(/)),
 			className: "title.function",
 			relevance: 0
-		}, z = {
-			begin: t.concat(/\./, t.lookahead(t.concat(f, /(?![0-9A-Za-z$_(])/))),
-			end: f,
+		}, R = {
+			begin: t.concat(/\./, t.lookahead(t.concat(d, /(?![0-9A-Za-z$_(])/))),
+			end: d,
 			excludeBegin: !0,
 			keywords: "prototype",
 			className: "property",
 			relevance: 0
-		}, B = {
+		}, z = {
 			match: [
 				/get|set/,
 				/\s+/,
-				f,
+				d,
 				/(?=\()/
 			],
 			className: {
 				1: "keyword",
 				3: "title.function"
 			},
-			contains: [{ begin: /\(\)/ }, j]
-		}, V = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + e.UNDERSCORE_IDENT_RE + ")\\s*=>", H = {
+			contains: [{ begin: /\(\)/ }, A]
+		}, B = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + e.UNDERSCORE_IDENT_RE + ")\\s*=>", V = {
 			match: [
 				/const|var|let/,
 				/\s+/,
-				f,
+				d,
 				/\s*/,
 				/=\s*/,
 				/(async\s*)?/,
-				t.lookahead(V)
+				t.lookahead(B)
 			],
 			keywords: "async",
 			className: {
 				1: "keyword",
 				3: "title.function"
 			},
-			contains: [j]
+			contains: [A]
 		};
 		return {
 			name: "JavaScript",
@@ -17605,10 +22389,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"mjs",
 				"cjs"
 			],
-			keywords: _,
+			keywords: g,
 			exports: {
-				PARAMS_CONTAINS: A,
-				CLASS_REFERENCE: N
+				PARAMS_CONTAINS: k,
+				CLASS_REFERENCE: M
 			},
 			illegal: /#(?![$_A-z])/,
 			contains: [
@@ -17617,33 +22401,33 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					binary: "node",
 					relevance: 5
 				}),
-				P,
+				N,
 				e.APOS_STRING_MODE,
 				e.QUOTE_STRING_MODE,
+				S,
 				C,
 				w,
 				T,
 				E,
-				D,
 				{ match: /\$\d+/ },
-				x,
-				N,
+				b,
+				M,
 				{
 					scope: "attr",
-					match: f + t.lookahead(":"),
+					match: d + t.lookahead(":"),
 					relevance: 0
 				},
-				H,
+				V,
 				{
 					begin: "(" + e.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
 					keywords: "return throw case",
 					relevance: 0,
 					contains: [
-						D,
+						E,
 						e.REGEXP_MODE,
 						{
 							className: "function",
-							begin: V,
+							begin: B,
 							returnBegin: !0,
 							end: "\\s*=>",
 							contains: [{
@@ -17663,8 +22447,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 										end: /\)/,
 										excludeBegin: !0,
 										excludeEnd: !0,
-										keywords: _,
-										contains: A
+										keywords: g,
+										contains: k
 									}
 								]
 							}]
@@ -17680,34 +22464,34 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 						{
 							variants: [
 								{
-									begin: p.begin,
-									end: p.end
+									begin: f.begin,
+									end: f.end
 								},
-								{ match: m },
+								{ match: p },
 								{
-									begin: g.begin,
-									"on:begin": g.isTrulyOpeningTag,
-									end: g.end
+									begin: m.begin,
+									"on:begin": m.isTrulyOpeningTag,
+									end: m.end
 								}
 							],
 							subLanguage: "xml",
 							contains: [{
-								begin: g.begin,
-								end: g.end,
+								begin: m.begin,
+								end: m.end,
 								skip: !0,
 								contains: ["self"]
 							}]
 						}
 					]
 				},
-				F,
+				P,
 				{ beginKeywords: "while if switch catch for" },
 				{
 					begin: "\\b(?!function)" + e.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
 					returnBegin: !0,
 					label: "func.def",
-					contains: [j, e.inherit(e.TITLE_MODE, {
-						begin: f,
+					contains: [A, e.inherit(e.TITLE_MODE, {
+						begin: d,
 						className: "title.function"
 					})]
 				},
@@ -17715,26 +22499,26 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					match: /\.\.\./,
 					relevance: 0
 				},
-				z,
+				R,
 				{
-					match: "\\$" + f,
+					match: "\\$" + d,
 					relevance: 0
 				},
 				{
 					match: [/\bconstructor(?=\s*\()/],
 					className: { 1: "title.function" },
-					contains: [j]
+					contains: [A]
 				},
-				R,
-				I,
-				M,
-				B,
+				L,
+				F,
+				j,
+				z,
 				{ match: /\$[(.]/ }
 			]
 		};
 	}
-	function f(e) {
-		let t = e.regex, a = d(e), o = n, s = [
+	function d(e) {
+		let t = e.regex, a = u(e), o = n, s = [
 			"any",
 			"void",
 			"number",
@@ -17745,7 +22529,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			"symbol",
 			"bigint",
 			"unknown"
-		], f = {
+		], d = {
 			begin: [
 				/namespace/,
 				/\s+/,
@@ -17755,7 +22539,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				1: "keyword",
 				3: "title.class"
 			}
-		}, p = {
+		}, f = {
 			beginKeywords: "interface",
 			end: /\{/,
 			excludeEnd: !0,
@@ -17764,11 +22548,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				built_in: s
 			},
 			contains: [a.exports.CLASS_REFERENCE]
-		}, m = {
+		}, p = {
 			className: "meta",
 			relevance: 10,
 			begin: /^\s*['"]use strict['"]/
-		}, g = {
+		}, m = {
 			$pattern: n,
 			keyword: r.concat([
 				"type",
@@ -17785,30 +22569,30 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				"satisfies"
 			]),
 			literal: i,
-			built_in: u.concat(s),
-			"variable.language": l
-		}, _ = {
+			built_in: l.concat(s),
+			"variable.language": c
+		}, g = {
 			className: "meta",
 			begin: "@" + o
-		}, v = (e, t, n) => {
+		}, _ = (e, t, n) => {
 			let r = e.contains.findIndex((e) => e.label === t);
 			if (r === -1) throw Error("can not find mode to replace");
 			e.contains.splice(r, 1, n);
 		};
-		Object.assign(a.keywords, g), a.exports.PARAMS_CONTAINS.push(_);
-		let y = a.contains.find((e) => e.scope === "attr"), b = Object.assign({}, y, { match: t.concat(o, t.lookahead(/\s*\?:/)) });
+		Object.assign(a.keywords, m), a.exports.PARAMS_CONTAINS.push(g);
+		let v = a.contains.find((e) => e.scope === "attr"), y = Object.assign({}, v, { match: t.concat(o, t.lookahead(/\s*\?:/)) });
 		a.exports.PARAMS_CONTAINS.push([
 			a.exports.CLASS_REFERENCE,
-			y,
-			b
+			v,
+			y
 		]), a.contains = a.contains.concat([
-			_,
+			g,
+			d,
 			f,
-			p,
-			b
-		]), v(a, "shebang", e.SHEBANG()), v(a, "use_strict", m);
-		let x = a.contains.find((e) => e.label === "func.def");
-		return x.relevance = 0, Object.assign(a, {
+			y
+		]), _(a, "shebang", e.SHEBANG()), _(a, "use_strict", p);
+		let b = a.contains.find((e) => e.label === "func.def");
+		return b.relevance = 0, Object.assign(a, {
 			name: "TypeScript",
 			aliases: [
 				"ts",
@@ -17818,7 +22602,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			]
 		}), a;
 	}
-	t.exports = f;
+	t.exports = d;
 })), require_vala = /* @__PURE__ */ __commonJSMin(((e, t) => {
 	function n(e) {
 		return {
@@ -17868,7 +22652,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			end: /"/,
 			illegal: /\n/,
 			contains: [{ begin: /""/ }]
-		}, i = /\d{1,2}\/\d{1,2}\/\d{4}/, a = /\d{4}-\d{1,2}-\d{1,2}/, o = /(\d|1[012])(:\d+){0,2} *(AM|PM)/, s = /\d{1,2}(:\d{1,2}){1,2}/, l = {
+		}, i = /\d{1,2}\/\d{1,2}\/\d{4}/, a = /\d{4}-\d{1,2}-\d{1,2}/, o = /(\d|1[012])(:\d+){0,2} *(AM|PM)/, s = /\d{1,2}(:\d{1,2}){1,2}/, c = {
 			className: "literal",
 			variants: [
 				{ begin: t.concat(/# */, t.either(a, i), / *#/) },
@@ -17876,7 +22660,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: t.concat(/# */, o, / *#/) },
 				{ begin: t.concat(/# */, t.either(a, i), / +/, t.either(o, s), / *#/) }
 			]
-		}, u = {
+		}, l = {
 			className: "number",
 			relevance: 0,
 			variants: [
@@ -17886,14 +22670,14 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				{ begin: /&O[0-7_]+((U?[SIL])|[%&])?/ },
 				{ begin: /&B[01_]+((U?[SIL])|[%&])?/ }
 			]
-		}, d = {
+		}, u = {
 			className: "label",
 			begin: /^\w+:/
-		}, f = e.COMMENT(/'''/, /$/, { contains: [{
+		}, d = e.COMMENT(/'''/, /$/, { contains: [{
 			className: "doctag",
 			begin: /<\/?/,
 			end: />/
-		}] }), p = e.COMMENT(null, /$/, { variants: [{ begin: /'/ }, { begin: /([\t ]|^)REM(?=\s)/ }] });
+		}] }), f = e.COMMENT(null, /$/, { variants: [{ begin: /'/ }, { begin: /([\t ]|^)REM(?=\s)/ }] });
 		return {
 			name: "Visual Basic .NET",
 			aliases: ["vb"],
@@ -17909,17 +22693,17 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			contains: [
 				n,
 				r,
+				c,
 				l,
 				u,
 				d,
 				f,
-				p,
 				{
 					className: "meta",
 					begin: /[\t ]*#(const|disable|else|elseif|enable|end|externalsource|if|region)\b/,
 					end: /$/,
 					keywords: { keyword: "const disable else elseif enable end externalsource if region then" },
-					contains: [p]
+					contains: [f]
 				}
 			]
 		};
@@ -18158,10 +22942,10 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			className: "number",
 			relevance: 0,
 			match: /[+-]?\b(?:\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?|0x[\da-fA-F](?:_?[\da-fA-F])*(?:\.[\da-fA-F](?:_?[\da-fA-D])*)?(?:[pP][+-]?\d(?:_?\d)*)?)\b|\binf\b|\bnan(?::0x[\da-fA-F](?:_?[\da-fA-D])*)?\b/
-		}, l = {
+		}, c = {
 			match: /(i32|i64|f32|f64)(?!\.)/,
 			className: "type"
-		}, u = {
+		}, l = {
 			className: "keyword",
 			match: /\b(f32|f64|i32|i64)(?:\.(?:abs|add|and|ceil|clz|const|convert_[su]\/i(?:32|64)|copysign|ctz|demote\/f64|div(?:_[su])?|eqz?|extend_[su]\/i32|floor|ge(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|load(?:(?:8|16|32)_[su])?|lt(?:_[su])?|max|min|mul|nearest|neg?|or|popcnt|promote\/f32|reinterpret\/[fi](?:32|64)|rem_[su]|rot[lr]|shl|shr_[su]|store(?:8|16|32)?|sqrt|sub|trunc(?:_[su]\/f(?:32|64))?|wrap\/i64|xor))\b/
 		};
@@ -18189,8 +22973,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				o,
 				i,
 				e.QUOTE_STRING_MODE,
+				c,
 				l,
-				u,
 				s
 			]
 		};
@@ -18258,11 +23042,11 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 			/\|/,
 			/\?:/,
 			"="
-		], l = {
+		], c = {
 			relevance: 0,
 			match: t.concat(/\b(?!(if|while|for|else|super)\b)/, n, /(?=\s*[({])/),
 			className: "title.function"
-		}, u = {
+		}, l = {
 			match: t.concat(t.either(t.concat(/\b(?!(if|while|for|else|super)\b)/, n), t.either(...s)), /(?=\s*\([^)]+\)\s*\{)/),
 			className: "title.function",
 			starts: { contains: [{
@@ -18274,7 +23058,7 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 					match: n
 				}]
 			}] }
-		}, d = {
+		}, u = {
 			variants: [{ match: [
 				/class\s+/,
 				n,
@@ -18286,30 +23070,30 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				4: "title.class.inherited"
 			},
 			keywords: r
-		}, f = {
+		}, d = {
 			relevance: 0,
 			match: t.either(...s),
 			className: "operator"
-		}, p = {
+		}, f = {
 			className: "string",
 			begin: /"""/,
 			end: /"""/
-		}, m = {
+		}, p = {
 			className: "property",
 			begin: t.concat(/\./, t.lookahead(n)),
 			end: n,
 			excludeBegin: !0,
 			relevance: 0
-		}, g = {
+		}, m = {
 			relevance: 0,
 			match: t.concat(/\b_/, n),
 			scope: "variable"
-		}, _ = {
+		}, g = {
 			relevance: 0,
 			match: /\b[A-Z]+[a-z]+([A-Z]+[a-z]+)*/,
 			scope: "title.class",
 			keywords: { _: o }
-		}, v = e.C_NUMBER_MODE, y = {
+		}, _ = e.C_NUMBER_MODE, v = {
 			match: [
 				n,
 				/\s*/,
@@ -18324,25 +23108,25 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				3: "operator",
 				6: "params"
 			}
-		}, b = e.COMMENT(/\/\*\*/, /\*\//, { contains: [{
+		}, y = e.COMMENT(/\/\*\*/, /\*\//, { contains: [{
 			match: /@[a-z]+/,
 			scope: "doctag"
-		}, "self"] }), x = {
+		}, "self"] }), b = {
 			scope: "subst",
 			begin: /%\(/,
 			end: /\)/,
 			contains: [
-				v,
 				_,
-				l,
 				g,
-				f
+				c,
+				m,
+				d
 			]
-		}, S = {
+		}, x = {
 			scope: "string",
 			begin: /"/,
 			end: /"/,
-			contains: [x, {
+			contains: [b, {
 				scope: "char.escape",
 				variants: [
 					{ match: /\\\\|\\["0%abefnrtv]/ },
@@ -18352,16 +23136,16 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				]
 			}]
 		};
-		x.contains.push(S);
-		let C = [
+		b.contains.push(x);
+		let S = [
 			...r,
 			...a,
 			...i
-		], w = {
+		], C = {
 			relevance: 0,
-			match: t.concat("\\b(?!", C.join("|"), "\\b)", /[a-zA-Z_]\w*(?:[?!]|\b)/),
+			match: t.concat("\\b(?!", S.join("|"), "\\b)", /[a-zA-Z_]\w*(?:[?!]|\b)/),
 			className: "variable"
-		}, T = {
+		}, w = {
 			scope: "comment",
 			variants: [{
 				begin: [/#!?/, /[A-Za-z_]+(?=\()/],
@@ -18383,22 +23167,22 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 				literal: i
 			},
 			contains: [
-				T,
-				v,
-				S,
-				p,
-				b,
+				w,
+				_,
+				x,
+				f,
+				y,
 				e.C_LINE_COMMENT_MODE,
 				e.C_BLOCK_COMMENT_MODE,
-				_,
-				d,
-				y,
-				u,
-				l,
-				f,
 				g,
+				u,
+				v,
+				l,
+				c,
+				d,
 				m,
-				w
+				p,
+				C
 			]
 		};
 	}
@@ -18766,856 +23550,8 @@ var __create = Object.create, __defProp = Object.defineProperty, __getOwnPropDes
 })), es_default = (/* @__PURE__ */ __toESM((/* @__PURE__ */ __commonJSMin(((e, t) => {
 	var n = require_core();
 	n.registerLanguage("1c", require__1c()), n.registerLanguage("abnf", require_abnf()), n.registerLanguage("accesslog", require_accesslog()), n.registerLanguage("actionscript", require_actionscript()), n.registerLanguage("ada", require_ada()), n.registerLanguage("angelscript", require_angelscript()), n.registerLanguage("apache", require_apache()), n.registerLanguage("applescript", require_applescript()), n.registerLanguage("arcade", require_arcade()), n.registerLanguage("arduino", require_arduino()), n.registerLanguage("armasm", require_armasm()), n.registerLanguage("xml", require_xml()), n.registerLanguage("asciidoc", require_asciidoc()), n.registerLanguage("aspectj", require_aspectj()), n.registerLanguage("autohotkey", require_autohotkey()), n.registerLanguage("autoit", require_autoit()), n.registerLanguage("avrasm", require_avrasm()), n.registerLanguage("awk", require_awk()), n.registerLanguage("axapta", require_axapta()), n.registerLanguage("bash", require_bash()), n.registerLanguage("basic", require_basic()), n.registerLanguage("bnf", require_bnf()), n.registerLanguage("brainfuck", require_brainfuck()), n.registerLanguage("c", require_c()), n.registerLanguage("cal", require_cal()), n.registerLanguage("capnproto", require_capnproto()), n.registerLanguage("ceylon", require_ceylon()), n.registerLanguage("clean", require_clean()), n.registerLanguage("clojure", require_clojure()), n.registerLanguage("clojure-repl", require_clojure_repl()), n.registerLanguage("cmake", require_cmake()), n.registerLanguage("coffeescript", require_coffeescript()), n.registerLanguage("coq", require_coq()), n.registerLanguage("cos", require_cos()), n.registerLanguage("cpp", require_cpp()), n.registerLanguage("crmsh", require_crmsh()), n.registerLanguage("crystal", require_crystal()), n.registerLanguage("csharp", require_csharp()), n.registerLanguage("csp", require_csp()), n.registerLanguage("css", require_css()), n.registerLanguage("d", require_d()), n.registerLanguage("markdown", require_markdown()), n.registerLanguage("dart", require_dart()), n.registerLanguage("delphi", require_delphi()), n.registerLanguage("diff", require_diff()), n.registerLanguage("django", require_django()), n.registerLanguage("dns", require_dns()), n.registerLanguage("dockerfile", require_dockerfile()), n.registerLanguage("dos", require_dos()), n.registerLanguage("dsconfig", require_dsconfig()), n.registerLanguage("dts", require_dts()), n.registerLanguage("dust", require_dust()), n.registerLanguage("ebnf", require_ebnf()), n.registerLanguage("elixir", require_elixir()), n.registerLanguage("elm", require_elm()), n.registerLanguage("ruby", require_ruby()), n.registerLanguage("erb", require_erb()), n.registerLanguage("erlang-repl", require_erlang_repl()), n.registerLanguage("erlang", require_erlang()), n.registerLanguage("excel", require_excel()), n.registerLanguage("fix", require_fix()), n.registerLanguage("flix", require_flix()), n.registerLanguage("fortran", require_fortran()), n.registerLanguage("fsharp", require_fsharp()), n.registerLanguage("gams", require_gams()), n.registerLanguage("gauss", require_gauss()), n.registerLanguage("gcode", require_gcode()), n.registerLanguage("gherkin", require_gherkin()), n.registerLanguage("glsl", require_glsl()), n.registerLanguage("gml", require_gml()), n.registerLanguage("go", require_go()), n.registerLanguage("golo", require_golo()), n.registerLanguage("gradle", require_gradle()), n.registerLanguage("graphql", require_graphql()), n.registerLanguage("groovy", require_groovy()), n.registerLanguage("haml", require_haml()), n.registerLanguage("handlebars", require_handlebars()), n.registerLanguage("haskell", require_haskell()), n.registerLanguage("haxe", require_haxe()), n.registerLanguage("hsp", require_hsp()), n.registerLanguage("http", require_http()), n.registerLanguage("hy", require_hy()), n.registerLanguage("inform7", require_inform7()), n.registerLanguage("ini", require_ini()), n.registerLanguage("irpf90", require_irpf90()), n.registerLanguage("isbl", require_isbl()), n.registerLanguage("java", require_java()), n.registerLanguage("javascript", require_javascript()), n.registerLanguage("jboss-cli", require_jboss_cli()), n.registerLanguage("json", require_json()), n.registerLanguage("julia", require_julia()), n.registerLanguage("julia-repl", require_julia_repl()), n.registerLanguage("kotlin", require_kotlin()), n.registerLanguage("lasso", require_lasso()), n.registerLanguage("latex", require_latex()), n.registerLanguage("ldif", require_ldif()), n.registerLanguage("leaf", require_leaf()), n.registerLanguage("less", require_less()), n.registerLanguage("lisp", require_lisp()), n.registerLanguage("livecodeserver", require_livecodeserver()), n.registerLanguage("livescript", require_livescript()), n.registerLanguage("llvm", require_llvm()), n.registerLanguage("lsl", require_lsl()), n.registerLanguage("lua", require_lua()), n.registerLanguage("makefile", require_makefile()), n.registerLanguage("mathematica", require_mathematica()), n.registerLanguage("matlab", require_matlab()), n.registerLanguage("maxima", require_maxima()), n.registerLanguage("mel", require_mel()), n.registerLanguage("mercury", require_mercury()), n.registerLanguage("mipsasm", require_mipsasm()), n.registerLanguage("mizar", require_mizar()), n.registerLanguage("perl", require_perl()), n.registerLanguage("mojolicious", require_mojolicious()), n.registerLanguage("monkey", require_monkey()), n.registerLanguage("moonscript", require_moonscript()), n.registerLanguage("n1ql", require_n1ql()), n.registerLanguage("nestedtext", require_nestedtext()), n.registerLanguage("nginx", require_nginx()), n.registerLanguage("nim", require_nim()), n.registerLanguage("nix", require_nix()), n.registerLanguage("node-repl", require_node_repl()), n.registerLanguage("nsis", require_nsis()), n.registerLanguage("objectivec", require_objectivec()), n.registerLanguage("ocaml", require_ocaml()), n.registerLanguage("openscad", require_openscad()), n.registerLanguage("oxygene", require_oxygene()), n.registerLanguage("parser3", require_parser3()), n.registerLanguage("pf", require_pf()), n.registerLanguage("pgsql", require_pgsql()), n.registerLanguage("php", require_php()), n.registerLanguage("php-template", require_php_template()), n.registerLanguage("plaintext", require_plaintext()), n.registerLanguage("pony", require_pony()), n.registerLanguage("powershell", require_powershell()), n.registerLanguage("processing", require_processing()), n.registerLanguage("profile", require_profile()), n.registerLanguage("prolog", require_prolog()), n.registerLanguage("properties", require_properties()), n.registerLanguage("protobuf", require_protobuf()), n.registerLanguage("puppet", require_puppet()), n.registerLanguage("purebasic", require_purebasic()), n.registerLanguage("python", require_python()), n.registerLanguage("python-repl", require_python_repl()), n.registerLanguage("q", require_q()), n.registerLanguage("qml", require_qml()), n.registerLanguage("r", require_r()), n.registerLanguage("reasonml", require_reasonml()), n.registerLanguage("rib", require_rib()), n.registerLanguage("roboconf", require_roboconf()), n.registerLanguage("routeros", require_routeros()), n.registerLanguage("rsl", require_rsl()), n.registerLanguage("ruleslanguage", require_ruleslanguage()), n.registerLanguage("rust", require_rust()), n.registerLanguage("sas", require_sas()), n.registerLanguage("scala", require_scala()), n.registerLanguage("scheme", require_scheme()), n.registerLanguage("scilab", require_scilab()), n.registerLanguage("scss", require_scss()), n.registerLanguage("shell", require_shell()), n.registerLanguage("smali", require_smali()), n.registerLanguage("smalltalk", require_smalltalk()), n.registerLanguage("sml", require_sml()), n.registerLanguage("sqf", require_sqf()), n.registerLanguage("sql", require_sql()), n.registerLanguage("stan", require_stan()), n.registerLanguage("stata", require_stata()), n.registerLanguage("step21", require_step21()), n.registerLanguage("stylus", require_stylus()), n.registerLanguage("subunit", require_subunit()), n.registerLanguage("swift", require_swift()), n.registerLanguage("taggerscript", require_taggerscript()), n.registerLanguage("yaml", require_yaml()), n.registerLanguage("tap", require_tap()), n.registerLanguage("tcl", require_tcl()), n.registerLanguage("thrift", require_thrift()), n.registerLanguage("tp", require_tp()), n.registerLanguage("twig", require_twig()), n.registerLanguage("typescript", require_typescript()), n.registerLanguage("vala", require_vala()), n.registerLanguage("vbnet", require_vbnet()), n.registerLanguage("vbscript", require_vbscript()), n.registerLanguage("vbscript-html", require_vbscript_html()), n.registerLanguage("verilog", require_verilog()), n.registerLanguage("vhdl", require_vhdl()), n.registerLanguage("vim", require_vim()), n.registerLanguage("wasm", require_wasm()), n.registerLanguage("wren", require_wren()), n.registerLanguage("x86asm", require_x86asm()), n.registerLanguage("xl", require_xl()), n.registerLanguage("xquery", require_xquery()), n.registerLanguage("zephir", require_zephir()), n.HighlightJS = n, n.default = n, t.exports = n;
-})))())).default, normalizeText = (e) => typeof e == "string" ? e : e == null ? "" : String(e);
-const highlightCode = (e, t) => {
-	let n = normalizeText(e), r = (t || "").trim(), i = r && es_default.getLanguage(r) ? r : "";
-	return {
-		html: i ? es_default.highlight(n, { language: i }).value : es_default.highlightAuto(n).value,
-		lines: n ? n.replace(/\n$/, "").split("\n") : [""],
-		langLabel: r || i || "text",
-		langClass: i ? `language-${i}` : ""
-	};
-};
-marked.setOptions({
-	breaks: !0,
-	langPrefix: "hljs language-"
-});
-const tokenizeMarkdown = (e) => marked.lexer(e || ""), createEditorCommands = ({ internalValue: e, textareaRef: t, props: n, emit: r, syncToParent: i }) => {
-	let a = (r) => {
-		if (n.readOnly) return;
-		let a = t.value;
-		if (!a) return;
-		let o = e.value, s = a.selectionStart, l = a.selectionEnd, u = o.lastIndexOf("\n", s - 1) + 1, d = o.indexOf("\n", l), f = d === -1 ? o.length : d, p = o.slice(0, u), m = o.slice(u, f), g = o.slice(f);
-		e.value = p + m.split("\n").map((e, t) => r(e, t)).join("\n") + g, requestAnimationFrame(() => {
-			a.focus();
-		}), i();
-	}, o = (r, a) => {
-		if (n.readOnly) return;
-		let o = t.value;
-		if (!o) return;
-		let s = e.value, l = o.selectionStart, u = o.selectionEnd, d = s.slice(l, u), f = d.startsWith(r) && d.endsWith(a) && d.length > r.length + a.length, p = d || "", m = f ? p.slice(r.length, p.length - a.length) : `${r}${p || "文本"}${a}`, g = s.slice(0, l), _ = s.slice(u);
-		e.value = g + m + _;
-		let v = g.length + (f ? 0 : r.length), y = v + (p || "文本").length;
-		requestAnimationFrame(() => {
-			o.focus(), o.selectionStart = v, o.selectionEnd = y;
-		}), i();
-	}, s = (e) => {
-		a((t) => {
-			let n = t.trimStart(), r = n.replace(/^#{1,6}\s+/, ""), i = t.length - n.length, a = r || "标题", o = "#".repeat(e) + " ";
-			return `${" ".repeat(i)}${o}${a}`;
-		});
-	}, l = () => {
-		a((e) => {
-			let t = e.trimStart(), n = e.length - t.length;
-			return t ? /^[-*+]\s+/.test(t) ? e : `${" ".repeat(n)}- ${t}` : `${" ".repeat(n)}- `;
-		});
-	}, u = () => {
-		a((e, t) => {
-			let n = e.trimStart(), r = e.length - n.length, i = t + 1;
-			return n ? /^\d+\.\s+/.test(n) ? e : `${" ".repeat(r)}${i}. ${n}` : `${" ".repeat(r)}${i}. `;
-		});
-	}, d = () => {
-		a((e) => {
-			let t = e.trimStart(), n = e.length - t.length;
-			return t ? /^>\s+/.test(t) ? e : `${" ".repeat(n)}> ${t}` : `${" ".repeat(n)}> `;
-		});
-	}, f = () => {
-		if (n.readOnly) return;
-		let r = t.value;
-		if (!r) return;
-		let a = e.value, o = r.selectionStart, s = r.selectionEnd, l = a.slice(o, s);
-		if (!l) {
-			let t = a.slice(0, o), n = a.slice(s), l = t.endsWith("\n") || !t ? "" : "\n";
-			e.value = t + `${l}\`\`\`lang
-代码
-\`\`\`${n.startsWith("\n") || !n ? "" : "\n"}` + n;
-			let u = t.length + l.length + 3, d = u + 4;
-			requestAnimationFrame(() => {
-				r.focus(), r.selectionStart = u, r.selectionEnd = d;
-			}), i();
-			return;
-		}
-		let u = a.slice(0, o), d = a.slice(s), f = u.endsWith("\n") || !u ? "" : "\n", p = d.startsWith("\n") || !d ? "" : "\n";
-		e.value = u + `${f}${`\`\`\`lang\n${l}\n\`\`\``}${p}` + d;
-		let m = u.length + f.length + 3, g = m + 4;
-		requestAnimationFrame(() => {
-			r.focus(), r.selectionStart = m, r.selectionEnd = g;
-		}), i();
-	}, p = () => {
-		if (n.readOnly) return;
-		let r = t.value;
-		if (!r) return;
-		let a = e.value, o = r.selectionStart, s = r.selectionEnd, l = a.slice(0, o), u = a.slice(s), d = `${l.endsWith("\n") || !l ? "" : "\n"}---${u.startsWith("\n") || !u ? "" : "\n"}`;
-		e.value = l + d + u;
-		let f = (l + d).length;
-		requestAnimationFrame(() => {
-			r.focus(), r.selectionStart = f, r.selectionEnd = f;
-		}), i();
-	}, m = () => {
-		if (n.readOnly) return;
-		let r = t.value;
-		if (!r) return;
-		let a = e.value, o = r.selectionStart, s = r.selectionEnd, l = a.slice(o, s) || "链接文本", u = a.slice(0, o), d = a.slice(s);
-		e.value = u + `[${l}](https://)` + d;
-		let f = (u + `[${l}](`).length, p = f + 8;
-		requestAnimationFrame(() => {
-			r.focus(), r.selectionStart = f, r.selectionEnd = p;
-		}), i();
-	}, g = () => {
-		if (n.readOnly) return;
-		let r = t.value;
-		if (!r) return;
-		let a = e.value, o = r.selectionStart, s = r.selectionEnd, l = a.slice(o, s) || "图片描述", u = a.slice(0, o), d = a.slice(s);
-		e.value = u + `![${l}](https://)` + d;
-		let f = (u + `![${l}](`).length, p = f + 8;
-		requestAnimationFrame(() => {
-			r.focus(), r.selectionStart = f, r.selectionEnd = p;
-		}), i();
-	};
-	return {
-		applyLineTransform: a,
-		wrapSelection: o,
-		toggleHeading: s,
-		insertUnorderedList: l,
-		insertOrderedList: u,
-		insertBlockquote: d,
-		insertCodeBlock: f,
-		insertHorizontalRule: p,
-		insertLink: m,
-		insertImage: g,
-		insertAtCursor: (r) => {
-			if (n.readOnly) return;
-			let a = t.value;
-			if (!a) return;
-			let o = e.value, s = a.selectionStart, l = a.selectionEnd, u = o.slice(0, s), d = o.slice(l);
-			e.value = u + r + d;
-			let f = u.length + r.length;
-			requestAnimationFrame(() => {
-				a.focus(), a.selectionStart = f, a.selectionEnd = f;
-			}), i();
-		},
-		handleKeydown: (a) => {
-			let s = t.value;
-			if (!s) return;
-			let _ = a.ctrlKey || a.metaKey, v = a.key.toLowerCase();
-			if (_ && v === "s") {
-				a.preventDefault(), r("save", e.value);
-				return;
-			}
-			if (!n.readOnly) {
-				if (_) {
-					if (!a.shiftKey && v === "b") {
-						a.preventDefault(), o("**", "**");
-						return;
-					}
-					if (!a.shiftKey && v === "i") {
-						a.preventDefault(), o("*", "*");
-						return;
-					}
-					if (a.shiftKey && v === "u") {
-						a.preventDefault(), l();
-						return;
-					}
-					if (a.shiftKey && v === "o") {
-						a.preventDefault(), u();
-						return;
-					}
-					if (a.shiftKey && v === "q") {
-						a.preventDefault(), d();
-						return;
-					}
-					if (!a.shiftKey && v === "e") {
-						a.preventDefault(), f();
-						return;
-					}
-					if (a.shiftKey && v === "h") {
-						a.preventDefault(), p();
-						return;
-					}
-					if (!a.shiftKey && v === "k") {
-						a.preventDefault(), m();
-						return;
-					}
-					if (a.shiftKey && v === "k") {
-						a.preventDefault(), g();
-						return;
-					}
-				}
-				if (a.key === "Tab") {
-					a.preventDefault();
-					let t = e.value, n = s.selectionStart, r = s.selectionEnd, o = t.lastIndexOf("\n", n - 1) + 1, l = t.indexOf("\n", r), u = l === -1 ? t.length : l, d = t.slice(0, o), f = t.slice(o, u), p = t.slice(u);
-					if (a.shiftKey) {
-						let t = f.split("\n").map((e) => e.startsWith("  ") ? e.slice(2) : e).join("\n");
-						e.value = d + t + p;
-						let i = f.length - t.length;
-						requestAnimationFrame(() => {
-							s.selectionStart = n - i, s.selectionEnd = r - i;
-						});
-					} else {
-						let t = f.split("\n").map((e) => "  " + e).join("\n");
-						e.value = d + t + p;
-						let i = t.length - f.length;
-						requestAnimationFrame(() => {
-							s.selectionStart = n + 2, s.selectionEnd = r + i;
-						});
-					}
-					i();
-				}
-			}
-		}
-	};
-};
-function ampCount(e) {
-	let t = 0;
-	for (let n = 0; n < e.length; ++n) e[n] === "&" && ++t;
-	return t;
-}
-var seperatorRegex = /\s*,(?![^(]*\))\s*/g, extraSpaceRegex = /\s+/g;
-function resolveSelectorWithAmp(e, t) {
-	let n = [];
-	return t.split(seperatorRegex).forEach((t) => {
-		let r = ampCount(t);
-		if (r) {
-			if (r === 1) {
-				e.forEach((e) => {
-					n.push(t.replace("&", e));
-				});
-				return;
-			}
-		} else {
-			e.forEach((e) => {
-				n.push((e && e + " ") + t);
-			});
-			return;
-		}
-		let i = [t];
-		for (; r--;) {
-			let t = [];
-			i.forEach((n) => {
-				e.forEach((e) => {
-					t.push(n.replace("&", e));
-				});
-			}), i = t;
-		}
-		i.forEach((e) => n.push(e));
-	}), n;
-}
-function resolveSelector(e, t) {
-	let n = [];
-	return t.split(seperatorRegex).forEach((t) => {
-		e.forEach((e) => {
-			n.push((e && e + " ") + t);
-		});
-	}), n;
-}
-function parseSelectorPath(e) {
-	let t = [""];
-	return e.forEach((e) => {
-		e &&= e.trim(), e && (t = e.includes("&") ? resolveSelectorWithAmp(t, e) : resolveSelector(t, e));
-	}), t.join(", ").replace(extraSpaceRegex, " ");
-}
-var kebabRegex = /[A-Z]/g;
-function kebabCase(e) {
-	return e.replace(kebabRegex, (e) => "-" + e.toLowerCase());
-}
-function upwrapProperty(e, t = "  ") {
-	return typeof e == "object" && e ? " {\n" + Object.entries(e).map((e) => t + `  ${kebabCase(e[0])}: ${e[1]};`).join("\n") + "\n" + t + "}" : `: ${e};`;
-}
-function upwrapProperties(e, t, n) {
-	return typeof e == "function" ? e({
-		context: t.context,
-		props: n
-	}) : e;
-}
-function createStyle(e, t, n, r) {
-	if (!t) return "";
-	let i = upwrapProperties(t, n, r);
-	if (!i) return "";
-	if (typeof i == "string") return `${e} {\n${i}\n}`;
-	let a = Object.keys(i);
-	if (a.length === 0) return n.config.keepEmptyBlock ? e + " {\n}" : "";
-	let o = e ? [e + " {"] : [];
-	return a.forEach((e) => {
-		let t = i[e];
-		if (e === "raw") {
-			o.push("\n" + t + "\n");
-			return;
-		}
-		e = kebabCase(e), t != null && o.push(`  ${e}${upwrapProperty(t)}`);
-	}), e && o.push("}"), o.join("\n");
-}
-function loopCNodeListWithCallback(e, t, n) {
-	e && e.forEach((e) => {
-		if (Array.isArray(e)) loopCNodeListWithCallback(e, t, n);
-		else if (typeof e == "function") {
-			let r = e(t);
-			Array.isArray(r) ? loopCNodeListWithCallback(r, t, n) : r && n(r);
-		} else e && n(e);
-	});
-}
-function traverseCNode(e, t, n, r, i, a) {
-	let o = e.$;
-	!o || typeof o == "string" ? t.push(o) : typeof o == "function" ? t.push(o({
-		context: r.context,
-		props: i
-	})) : (o.before && o.before(r.context), !o.$ || typeof o.$ == "string" ? t.push(o.$) : o.$ && t.push(o.$({
-		context: r.context,
-		props: i
-	})));
-	let s = parseSelectorPath(t), l = createStyle(s, e.props, r, i);
-	a && l && a.insertRule(l), !a && l.length && n.push(l), e.children && loopCNodeListWithCallback(e.children, {
-		context: r.context,
-		props: i
-	}, (e) => {
-		if (typeof e == "string") {
-			let t = createStyle(s, { raw: e }, r, i);
-			a ? a.insertRule(t) : n.push(t);
-		} else traverseCNode(e, t, n, r, i, a);
-	}), t.pop(), o && o.after && o.after(r.context);
-}
-function render(e, t, n, r = !1) {
-	let i = [];
-	return traverseCNode(e, [], i, t, n, r ? e.instance.__styleSheet : void 0), r ? "" : i.join("\n\n");
-}
-function murmur2(e) {
-	for (var t = 0, n, r = 0, i = e.length; i >= 4; ++r, i -= 4) n = e.charCodeAt(r) & 255 | (e.charCodeAt(++r) & 255) << 8 | (e.charCodeAt(++r) & 255) << 16 | (e.charCodeAt(++r) & 255) << 24, n = (n & 65535) * 1540483477 + ((n >>> 16) * 59797 << 16), n ^= n >>> 24, t = (n & 65535) * 1540483477 + ((n >>> 16) * 59797 << 16) ^ (t & 65535) * 1540483477 + ((t >>> 16) * 59797 << 16);
-	switch (i) {
-		case 3: t ^= (e.charCodeAt(r + 2) & 255) << 16;
-		case 2: t ^= (e.charCodeAt(r + 1) & 255) << 8;
-		case 1: t ^= e.charCodeAt(r) & 255, t = (t & 65535) * 1540483477 + ((t >>> 16) * 59797 << 16);
-	}
-	return t ^= t >>> 13, t = (t & 65535) * 1540483477 + ((t >>> 16) * 59797 << 16), ((t ^ t >>> 15) >>> 0).toString(36);
-}
-var hash_browser_esm_default = murmur2;
-function removeElement(e) {
-	/* istanbul ignore if */
-	if (!e) return;
-	let t = e.parentElement;
-	/* istanbul ignore else */
-	t && t.removeChild(e);
-}
-function queryElement(e) {
-	return document.querySelector(`style[cssr-id="${e}"]`);
-}
-function createElement(e) {
-	let t = document.createElement("style");
-	return t.setAttribute("cssr-id", e), t;
-}
-window && (window.__cssrContext = {});
-function getCount(e) {
-	let t = e.getAttribute("mount-count");
-	return t === null ? null : Number(t);
-}
-function setCount(e, t) {
-	e.setAttribute("mount-count", String(t));
-}
-function unmount(e, t, n, r) {
-	let { els: i } = t;
-	if (n === void 0) i.forEach(removeElement), t.els = [];
-	else {
-		let e = queryElement(n);
-		if (e && i.includes(e)) {
-			let a = getCount(e);
-			r ? a === null ? console.error(`[css-render/unmount]: The style with target='${n}' is mounted in count mode.`) : a <= 1 ? (removeElement(e), t.els = i.filter((t) => t !== e)) : setCount(e, a - 1) : a === null ? (removeElement(e), t.els = i.filter((t) => t !== e)) : console.error(`[css-render/unmount]: The style with target='${n}' is mounted in no-count mode.`);
-		}
-	}
-}
-function addElementToList(e, t) {
-	e.push(t);
-}
-function mount(e, t, n, r, i, a, o, s, l) {
-	if (o && !l) {
-		if (n === void 0) {
-			console.error("[css-render/mount]: `id` is required in `boost` mode.");
-			return;
-		}
-		let i = window.__cssrContext;
-		i[n] || (i[n] = !0, render(t, e, r, o));
-		return;
-	}
-	let u, { els: d } = t, f;
-	if (n === void 0 && (f = t.render(r), n = hash_browser_esm_default(f)), l) {
-		l(n, f ?? t.render(r));
-		return;
-	}
-	let p = queryElement(n);
-	if (s || p === null) {
-		if (u = p === null ? createElement(n) : p, f === void 0 && (f = t.render(r)), u.textContent = f, p !== null) return;
-		if (i) {
-			let e = document.head.getElementsByTagName("style")[0] || null;
-			document.head.insertBefore(u, e);
-		} else document.head.appendChild(u);
-		a && setCount(u, 1), addElementToList(d, u);
-	} else {
-		let e = getCount(p);
-		a ? e === null ? console.error(`[css-render/mount]: The style with id='${n}' has been mounted in no-count mode.`) : setCount(p, e + 1) : e !== null && console.error(`[css-render/mount]: The style with id='${n}' has been mounted in count mode.`);
-	}
-	return p ?? u;
-}
-function wrappedRender(e) {
-	return render(this, this.instance, e);
-}
-function wrappedMount(e = {}) {
-	let { target: t, id: n, ssr: r, props: i, count: a = !1, head: o = !1, boost: s = !1, force: l = !1 } = e;
-	return mount(this.instance, this, n ?? t, i, o, a, s, l, r);
-}
-function wrappedUnmount(e = {}) {
-	/* istanbul ignore next */
-	let { id: t, target: n, delay: r = 0, count: i = !1 } = e;
-	r === 0 ? unmount(this.instance, this, t ?? n, i) : setTimeout(() => unmount(this.instance, this, t ?? n, i), r);
-}
-var createCNode = function(e, t, n, r) {
-	return {
-		instance: e,
-		$: t,
-		props: n,
-		children: r,
-		els: [],
-		render: wrappedRender,
-		mount: wrappedMount,
-		unmount: wrappedUnmount
-	};
-};
-const c$1 = function(e, t, n, r) {
-	return Array.isArray(t) ? createCNode(e, { $: null }, null, t) : Array.isArray(n) ? createCNode(e, t, null, n) : Array.isArray(r) ? createCNode(e, t, n, r) : createCNode(e, t, n, null);
-};
-function CssRender(e = {}) {
-	let t = null, n = {
-		c: ((...e) => c$1(n, ...e)),
-		use: (e, ...t) => e.install(n, ...t),
-		find: queryElement,
-		context: {},
-		config: e,
-		get __styleSheet() {
-			if (!t) {
-				let e = document.createElement("style");
-				return document.head.appendChild(e), t = document.styleSheets[document.styleSheets.length - 1], t;
-			}
-			return t;
-		}
-	};
-	return n;
-}
-var { c } = CssRender(), style = c(".xicon", {
-	width: "1em",
-	height: "1em",
-	display: "inline-flex"
-}, [c("svg", {
-	width: "1em",
-	height: "1em"
-}), c("svg:not([fill])", { fill: "currentColor" })]);
-const mountStyle = () => {
-	style.mount({ id: "xicons-icon" });
-}, iconConfigProviderProps = {
-	size: [String, Number],
-	color: String,
-	tag: String
-}, iconConfigInjectionKey = Symbol("IconConfigInjection");
-defineComponent({
-	name: "IconConfigProvider",
-	props: iconConfigProviderProps,
-	setup(e, { slots: t }) {
-		return provide(iconConfigInjectionKey, e), () => renderSlot(t, "default");
-	}
-});
-const Icon = defineComponent({
-	name: "Icon",
-	props: iconConfigProviderProps,
-	setup(e, { slots: n }) {
-		let r = inject(iconConfigInjectionKey, null), i = computed(() => {
-			let t = e.size ?? r?.size;
-			if (t !== void 0) return typeof t == "number" || /^\d+$/.test(t) ? `${t}px` : t;
-		}), a = computed(() => {
-			let { color: t } = e;
-			return t === void 0 ? r ? r.color : void 0 : t;
-		}), o = computed(() => {
-			let { tag: t } = e;
-			return t === void 0 ? r?.tag ?? "span" : t;
-		});
-		return onBeforeMount(() => {
-			mountStyle();
-		}), () => h(o.value, {
-			class: "xicon",
-			style: {
-				color: a.value,
-				fontSize: i.value
-			}
-		}, [renderSlot(n, "default")]);
-	}
-});
-var _hoisted_1$12 = {
-	key: 0,
-	class: "markdown-editor__toolbar-separator"
-}, _hoisted_2$4 = ["onClick", "title"], _hoisted_3$3 = { key: 1 }, MarkdownToolbar_default = {
-	__name: "MarkdownToolbar",
-	props: {
-		toolbarItems: {
-			type: Array,
-			default: () => []
-		},
-		toolbarStyle: {
-			type: String,
-			default: "text"
-		},
-		iconPreset: {
-			type: String,
-			default: "builtin"
-		},
-		xiconComponents: {
-			type: Object,
-			default: () => ({})
-		},
-		messages: {
-			type: Object,
-			required: !0
-		},
-		getToolbarLabel: {
-			type: Function,
-			required: !0
-		},
-		handleToolbarClick: {
-			type: Function,
-			required: !0
-		}
-	},
-	setup(t) {
-		return (a, o) => (openBlock(!0), createElementBlock(Fragment, null, renderList(t.toolbarItems, (a, o) => (openBlock(), createElementBlock(Fragment, { key: o }, [a === "divider" ? (openBlock(), createElementBlock("div", _hoisted_1$12)) : (openBlock(), createElementBlock("button", {
-			key: 1,
-			type: "button",
-			class: "markdown-editor__toolbar-button",
-			onClick: (e) => t.handleToolbarClick(a),
-			title: t.getToolbarLabel(a).tooltip
-		}, [t.iconPreset === "xicons" && t.xiconComponents[a] ? (openBlock(), createElementBlock(Fragment, { key: 0 }, [t.toolbarStyle === "text" ? createCommentVNode("", !0) : (openBlock(), createBlock(unref(Icon), {
-			key: 0,
-			size: "16"
-		}, {
-			default: withCtx(() => [(openBlock(), createBlock(resolveDynamicComponent(t.xiconComponents[a])))]),
-			_: 2
-		}, 1024)), t.toolbarStyle === "icon" ? createCommentVNode("", !0) : (openBlock(), createElementBlock("span", _hoisted_3$3, toDisplayString(t.messages[a] && t.messages[a].label || a), 1))], 64)) : (openBlock(), createElementBlock(Fragment, { key: 1 }, [createTextVNode(toDisplayString(t.getToolbarLabel(a).text), 1)], 64))], 8, _hoisted_2$4))], 64))), 128));
-	}
-}, _hoisted_1$11 = { class: "markdown-editor__editor-pane" }, _hoisted_2$3 = { class: "markdown-editor__editor-shell" }, _hoisted_3$2 = {
-	key: 0,
-	class: "markdown-editor__gutter"
-}, _hoisted_4$2 = [
-	"value",
-	"readonly",
-	"placeholder"
-], MarkdownEditorPane_default = {
-	__name: "MarkdownEditorPane",
-	props: {
-		modelValue: {
-			type: String,
-			default: ""
-		},
-		lines: {
-			type: Array,
-			default: () => []
-		},
-		showLineNumbers: {
-			type: Boolean,
-			default: !0
-		},
-		readOnly: {
-			type: Boolean,
-			default: !1
-		},
-		placeholder: {
-			type: String,
-			default: ""
-		}
-	},
-	emits: [
-		"update:modelValue",
-		"keydown",
-		"focus",
-		"blur"
-	],
-	setup(t, { expose: n, emit: o }) {
-		let s = o, l = ref(null), u = (e) => {
-			s("update:modelValue", e.target.value);
-		}, d = (e) => {
-			s("keydown", e);
-		}, f = (e) => {
-			s("focus", e);
-		}, p = (e) => {
-			s("blur", e);
-		};
-		return n({ textareaRef: l }), (n, o) => (openBlock(), createElementBlock("div", _hoisted_1$11, [createElementVNode("div", _hoisted_2$3, [t.showLineNumbers ? (openBlock(), createElementBlock("div", _hoisted_3$2, [(openBlock(!0), createElementBlock(Fragment, null, renderList(t.lines, (e, t) => (openBlock(), createElementBlock("div", {
-			key: t,
-			class: "markdown-editor__line-number"
-		}, toDisplayString(t + 1), 1))), 128))])) : createCommentVNode("", !0), createElementVNode("textarea", {
-			ref_key: "textareaRef",
-			ref: l,
-			class: "markdown-editor__textarea",
-			spellcheck: "false",
-			value: t.modelValue,
-			readonly: t.readOnly,
-			placeholder: t.placeholder,
-			onInput: u,
-			onKeydown: d,
-			onFocus: f,
-			onBlur: p
-		}, null, 40, _hoisted_4$2)])]));
-	}
-}, __plugin_vue_export_helper_default = (e, t) => {
-	let n = e.__vccOpts || e;
-	for (let [e, r] of t) n[e] = r;
-	return n;
-}, _sfc_main$4 = {}, _hoisted_1$10 = { class: "markdown-editor__preview-pane" };
-function _sfc_render(e, t) {
-	return openBlock(), createElementBlock("div", _hoisted_1$10, [renderSlot(e.$slots, "default")]);
-}
-var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_default(_sfc_main$4, [["render", _sfc_render]]), _hoisted_1$9 = { class: "markdown-editor__code-block" }, _hoisted_2$2 = { class: "markdown-editor__code-header" }, _hoisted_3$1 = { class: "markdown-editor__code-lang" }, _hoisted_4$1 = { class: "markdown-editor__code-body" }, _hoisted_5 = { class: "markdown-editor__code-gutter" }, _hoisted_6 = { class: "markdown-editor__code-pre" }, _hoisted_7 = ["innerHTML"], MarkdownCodeBlock_default = {
-	__name: "MarkdownCodeBlock",
-	props: {
-		code: {
-			type: String,
-			default: ""
-		},
-		lang: {
-			type: String,
-			default: ""
-		}
-	},
-	setup(n) {
-		let r = n, o = computed(() => highlightCode(r.code, r.lang)), l = computed(() => o.value.lines), u = computed(() => o.value.langLabel), d = computed(() => o.value.langClass), f = computed(() => o.value.html), m = async () => {
-			let e = r.code || "";
-			if (!e) return;
-			try {
-				if (navigator.clipboard && navigator.clipboard.writeText) {
-					await navigator.clipboard.writeText(e);
-					return;
-				}
-			} catch {}
-			let t = document.createElement("textarea");
-			t.value = e, t.style.position = "fixed", t.style.opacity = "0", document.body.appendChild(t), t.select();
-			try {
-				document.execCommand("copy");
-			} catch {}
-			document.body.removeChild(t);
-		};
-		return (t, n) => (openBlock(), createElementBlock("div", _hoisted_1$9, [createElementVNode("div", _hoisted_2$2, [createElementVNode("span", _hoisted_3$1, toDisplayString(u.value), 1), createElementVNode("button", {
-			type: "button",
-			class: "markdown-editor__code-copy",
-			onClick: m
-		}, " 复制 ")]), createElementVNode("div", _hoisted_4$1, [createElementVNode("div", _hoisted_5, [(openBlock(!0), createElementBlock(Fragment, null, renderList(l.value, (e, t) => (openBlock(), createElementBlock("div", {
-			key: t,
-			class: "markdown-editor__code-line-number"
-		}, toDisplayString(t + 1), 1))), 128))]), createElementVNode("pre", _hoisted_6, [
-			n[0] ||= createTextVNode("        ", -1),
-			createElementVNode("code", {
-				class: normalizeClass(["hljs", d.value]),
-				innerHTML: f.value
-			}, null, 10, _hoisted_7),
-			n[1] ||= createTextVNode("\n      ", -1)
-		])])]));
-	}
-}, _hoisted_1$8 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, ChatboxOutline_default = defineComponent({
-	name: "ChatboxOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$8, t[0] ||= [createElementVNode("path", {
-			d: "M408 64H104a56.16 56.16 0 0 0-56 56v192a56.16 56.16 0 0 0 56 56h40v80l93.72-78.14a8 8 0 0 1 5.13-1.86H408a56.16 56.16 0 0 0 56-56V120a56.16 56.16 0 0 0-56-56z",
-			fill: "none",
-			stroke: "currentColor",
-			"stroke-linejoin": "round",
-			"stroke-width": "32"
-		}, null, -1)]);
-	}
-}), _hoisted_1$7 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, CodeSlashOutline_default = defineComponent({
-	name: "CodeSlashOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$7, t[0] ||= [
-			createElementVNode("path", {
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "32",
-				d: "M160 368L32 256l128-112"
-			}, null, -1),
-			createElementVNode("path", {
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "32",
-				d: "M352 368l128-112l-128-112"
-			}, null, -1),
-			createElementVNode("path", {
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "32",
-				d: "M304 96l-96 320"
-			}, null, -1)
-		]);
-	}
-}), _hoisted_1$6 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, ImageOutline_default = defineComponent({
-	name: "ImageOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$6, t[0] ||= [
-			createElementVNode("rect", {
-				x: "48",
-				y: "80",
-				width: "416",
-				height: "352",
-				rx: "48",
-				ry: "48",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linejoin": "round",
-				"stroke-width": "32"
-			}, null, -1),
-			createElementVNode("circle", {
-				cx: "336",
-				cy: "176",
-				r: "32",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-miterlimit": "10",
-				"stroke-width": "32"
-			}, null, -1),
-			createElementVNode("path", {
-				d: "M304 335.79l-90.66-90.49a32 32 0 0 0-43.87-1.3L48 352",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "32"
-			}, null, -1),
-			createElementVNode("path", {
-				d: "M224 432l123.34-123.34a32 32 0 0 1 43.11-2L464 368",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "32"
-			}, null, -1)
-		]);
-	}
-}), _hoisted_1$5 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, LinkOutline_default = defineComponent({
-	name: "LinkOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$5, t[0] ||= [
-			createElementVNode("path", {
-				d: "M208 352h-64a96 96 0 0 1 0-192h64",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "36"
-			}, null, -1),
-			createElementVNode("path", {
-				d: "M304 160h64a96 96 0 0 1 0 192h-64",
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "36"
-			}, null, -1),
-			createElementVNode("path", {
-				fill: "none",
-				stroke: "currentColor",
-				"stroke-linecap": "round",
-				"stroke-linejoin": "round",
-				"stroke-width": "36",
-				d: "M163.29 256h187.42"
-			}, null, -1)
-		]);
-	}
-}), _hoisted_1$4 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, ListOutline_default = defineComponent({
-	name: "ListOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$4, t[0] ||= [createStaticVNode("<path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 144h288\"></path><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 256h288\"></path><path fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\" d=\"M160 368h288\"></path><circle cx=\"80\" cy=\"144\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><circle cx=\"80\" cy=\"256\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle><circle cx=\"80\" cy=\"368\" r=\"16\" fill=\"none\" stroke=\"currentColor\" stroke-linecap=\"round\" stroke-linejoin=\"round\" stroke-width=\"32\"></circle>", 6)]);
-	}
-}), _hoisted_1$3 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, MoonOutline_default = defineComponent({
-	name: "MoonOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$3, t[0] ||= [createElementVNode("path", {
-			d: "M160 136c0-30.62 4.51-61.61 16-88C99.57 81.27 48 159.32 48 248c0 119.29 96.71 216 216 216c88.68 0 166.73-51.57 200-128c-26.39 11.49-57.38 16-88 16c-119.29 0-216-96.71-216-216z",
-			fill: "none",
-			stroke: "currentColor",
-			"stroke-linecap": "round",
-			"stroke-linejoin": "round",
-			"stroke-width": "32"
-		}, null, -1)]);
-	}
-}), _hoisted_1$2 = {
-	xmlns: "http://www.w3.org/2000/svg",
-	"xmlns:xlink": "http://www.w3.org/1999/xlink",
-	viewBox: "0 0 512 512"
-}, RemoveOutline_default = defineComponent({
-	name: "RemoveOutline",
-	render: function(e, t) {
-		return openBlock(), createElementBlock("svg", _hoisted_1$2, t[0] ||= [createElementVNode("path", {
-			fill: "none",
-			stroke: "currentColor",
-			"stroke-linecap": "round",
-			"stroke-linejoin": "round",
-			"stroke-width": "32",
-			d: "M400 256H112"
-		}, null, -1)]);
-	}
-}), _hoisted_1$1 = { class: "markdown-editor__quote-header" }, _hoisted_2$1 = { class: "markdown-editor__quote-body" }, MarkdownQuote_default = {
-	__name: "MarkdownQuote",
-	setup(e) {
-		return (e, t) => (openBlock(), createElementBlock("blockquote", null, [createElementVNode("div", _hoisted_1$1, [createVNode(unref(Icon), {
-			size: "16",
-			class: "markdown-editor__quote-icon"
-		}, {
-			default: withCtx(() => [createVNode(unref(ChatboxOutline_default))]),
-			_: 1
-		}), t[0] ||= createElementVNode("span", { class: "markdown-editor__quote-title" }, " 提示 ", -1)]), createElementVNode("div", _hoisted_2$1, [renderSlot(e.$slots, "default")])]));
-	}
-}, renderTokens = (e) => (e || []).map((e, t) => e ? e.type === "code" ? h(MarkdownCodeBlock_default, {
-	key: t,
-	code: e.text || "",
-	lang: e.lang || ""
-}) : e.type === "blockquote" ? h(MarkdownQuote_default, { key: t }, { default: () => renderTokens(e.tokens || []) }) : h("div", {
-	key: t,
-	innerHTML: marked.parser([e])
-}) : null), MarkdownPreview_default = {
-	name: "MarkdownPreview",
-	props: { tokens: {
-		type: Array,
-		default: () => []
-	} },
-	render() {
-		return h("div", { class: "markdown-editor__preview" }, renderTokens(this.tokens));
-	}
-}, _hoisted_1 = {
-	key: 0,
-	class: "markdown-editor__toolbar"
-}, _hoisted_2 = {
-	key: 1,
-	class: "markdown-editor__footer"
-}, _hoisted_3 = { class: "markdown-editor__footer-left" }, _hoisted_4 = { class: "markdown-editor__footer-right" }, MarkdownEditor_default = {
-	__name: "MarkdownEditor",
+})))())).default, _hoisted_1$1 = ["data-theme"], _hoisted_2$1 = ["innerHTML"], MarkdownPreviewPanel_default = /* @__PURE__ */ __plugin_vue_export_helper_default({
+	__name: "MarkdownPreviewPanel",
 	props: {
 		modelValue: {
 			type: String,
@@ -19623,403 +23559,204 @@ var MarkdownPreviewPane_default = /* @__PURE__ */ __plugin_vue_export_helper_def
 		},
 		theme: {
 			type: String,
-			default: "dark",
-			validator: (e) => ["dark", "light"].includes(e)
+			default: "light",
+			validator: (e) => ["light", "dark"].includes(e)
 		},
-		locale: {
-			type: String,
-			default: "zh-CN"
+		scrollPercentage: {
+			type: Number,
+			default: 0
 		},
-		toolbarStyle: {
-			type: String,
-			default: "text",
-			validator: (e) => [
-				"text",
-				"icon",
-				"both"
-			].includes(e)
-		},
-		iconPreset: {
-			type: String,
-			default: "xicons",
-			validator: (e) => ["builtin", "xicons"].includes(e)
-		},
-		readOnly: {
+		isSyncing: {
 			type: Boolean,
 			default: !1
-		},
-		showLineNumbers: {
-			type: Boolean,
-			default: !0
-		},
-		showToolbar: {
-			type: Boolean,
-			default: !0
-		},
-		showPreview: {
-			type: Boolean,
-			default: !0
-		},
-		showFooter: {
-			type: Boolean,
-			default: !0
-		},
-		autofocus: {
-			type: Boolean,
-			default: !1
-		},
-		placeholder: {
-			type: String,
-			default: ""
-		},
-		footerText: {
-			type: String,
-			default: ""
-		},
-		toolbarItems: {
-			type: Array,
-			default: () => [
-				"theme-toggle",
-				"divider",
-				"h1",
-				"h2",
-				"divider",
-				"bold",
-				"italic",
-				"divider",
-				"unordered-list",
-				"ordered-list",
-				"blockquote",
-				"code-block",
-				"horizontal-rule",
-				"divider",
-				"link",
-				"image"
-			]
 		}
 	},
-	emits: [
-		"update:modelValue",
-		"update:theme",
-		"change",
-		"save",
-		"focus",
-		"blur"
-	],
-	setup(e, { emit: o }) {
-		let s = {
-			"zh-CN": {
-				"theme-toggle": {
-					label: "主题",
-					icon: "🌓",
-					tooltip: "切换主题"
-				},
-				h1: {
-					label: "一级",
-					icon: "H1",
-					tooltip: "一级标题"
-				},
-				h2: {
-					label: "二级",
-					icon: "H2",
-					tooltip: "二级标题"
-				},
-				bold: {
-					label: "加粗",
-					icon: "𝗕",
-					tooltip: "加粗 (Ctrl+B)"
-				},
-				italic: {
-					label: "斜体",
-					icon: "𝘐",
-					tooltip: "斜体 (Ctrl+I)"
-				},
-				"unordered-list": {
-					label: "无序",
-					icon: "•",
-					tooltip: "无序列表 (Ctrl+Shift+U)"
-				},
-				"ordered-list": {
-					label: "有序",
-					icon: "1.",
-					tooltip: "有序列表 (Ctrl+Shift+O)"
-				},
-				blockquote: {
-					label: "引用",
-					icon: "❝",
-					tooltip: "引用 (Ctrl+Shift+Q)"
-				},
-				"code-block": {
-					label: "代码",
-					icon: "</>",
-					tooltip: "代码块 (Ctrl+E)"
-				},
-				"horizontal-rule": {
-					label: "分割",
-					icon: "─",
-					tooltip: "分割线 (Ctrl+Shift+H)"
-				},
-				link: {
-					label: "链接",
-					icon: "🔗",
-					tooltip: "链接 [文本](url) (Ctrl+K)"
-				},
-				image: {
-					label: "图片",
-					icon: "🖼",
-					tooltip: "图片 ![alt](url) (Ctrl+Shift+K)"
+	emits: ["update:scrollPercentage", "scroll"],
+	setup(e, { emit: n }) {
+		let r = e, o = n, s = ref(null);
+		marked.setOptions({
+			highlight: function(e, t) {
+				if (t && es_default.getLanguage(t)) try {
+					return es_default.highlight(e, { language: t }).value;
+				} catch (e) {
+					console.error("Highlight error:", e);
 				}
+				return e;
 			},
-			"en-US": {
-				"theme-toggle": {
-					label: "Theme",
-					icon: "🌓",
-					tooltip: "Toggle theme"
-				},
-				h1: {
-					label: "H1",
-					icon: "H1",
-					tooltip: "Heading 1"
-				},
-				h2: {
-					label: "H2",
-					icon: "H2",
-					tooltip: "Heading 2"
-				},
-				bold: {
-					label: "Bold",
-					icon: "𝗕",
-					tooltip: "Bold (Ctrl+B)"
-				},
-				italic: {
-					label: "Italic",
-					icon: "𝘐",
-					tooltip: "Italic (Ctrl+I)"
-				},
-				"unordered-list": {
-					label: "Bullets",
-					icon: "•",
-					tooltip: "Unordered list (Ctrl+Shift+U)"
-				},
-				"ordered-list": {
-					label: "Numbered",
-					icon: "1.",
-					tooltip: "Ordered list (Ctrl+Shift+O)"
-				},
-				blockquote: {
-					label: "Quote",
-					icon: "❝",
-					tooltip: "Blockquote (Ctrl+Shift+Q)"
-				},
-				"code-block": {
-					label: "Code",
-					icon: "</>",
-					tooltip: "Code block (Ctrl+E)"
-				},
-				"horizontal-rule": {
-					label: "Rule",
-					icon: "─",
-					tooltip: "Horizontal rule (Ctrl+Shift+H)"
-				},
-				link: {
-					label: "Link",
-					icon: "🔗",
-					tooltip: "Link [text](url) (Ctrl+K)"
-				},
-				image: {
-					label: "Image",
-					icon: "🖼",
-					tooltip: "Image ![alt](url) (Ctrl+Shift+K)"
-				}
-			}
-		}, u = e, d = o, f = ref(u.modelValue || "# 欢迎使用 Markdown 编辑器\n\n## 快速上手\n\n- 左侧是自研编辑器（带行号、代码风格）\n- 右侧实时预览渲染效果\n- Tab 支持缩进，Ctrl+B 支持加粗\n"), g = ref(null), y = computed(() => g.value?.textareaRef || null), x = ref(null), C = computed(() => tokenizeMarkdown(f.value)), O = computed(() => f.value ? f.value.split("\n") : [""]), k = computed(() => (f.value || "").replace(/\s/g, "").length), A = computed(() => `© ${(/* @__PURE__ */ new Date()).getFullYear()} Markdown Editor`), j = computed(() => u.footerText || A.value), M = {
-			"theme-toggle": MoonOutline_default,
-			"unordered-list": ListOutline_default,
-			"ordered-list": ListOutline_default,
-			blockquote: ChatboxOutline_default,
-			"code-block": CodeSlashOutline_default,
-			"horizontal-rule": RemoveOutline_default,
-			link: LinkOutline_default,
-			image: ImageOutline_default
-		}, N = computed(() => {
-			let e = s["en-US"], t = s[u.locale] || s["zh-CN"];
-			return {
-				...e,
-				...t
-			};
-		}), P = (e) => {
-			let t = N.value[e] || {
-				label: e,
-				icon: e,
-				tooltip: e
-			};
-			return {
-				text: u.toolbarStyle === "icon" ? t.icon : u.toolbarStyle === "both" ? `${t.icon} ${t.label}` : t.label,
-				tooltip: t.tooltip
-			};
-		};
-		watch(() => u.modelValue, (e) => {
-			e !== f.value && (f.value = e || "");
+			breaks: !0,
+			gfm: !0
 		});
-		let F = (e) => {
-			u.readOnly || (f.value = e, d("update:modelValue", e), d("change", e));
-		}, { applyLineTransform: I, wrapSelection: L, toggleHeading: R, insertUnorderedList: z, insertOrderedList: B, insertBlockquote: V, insertCodeBlock: H, insertHorizontalRule: U, insertLink: xi, insertImage: W, insertAtCursor: Si, handleKeydown: Ci } = createEditorCommands({
-			internalValue: f,
-			textareaRef: y,
-			props: u,
-			emit: d,
-			syncToParent: () => {
-				F(f.value);
+		let c = computed(() => {
+			try {
+				return marked.parse(r.modelValue);
+			} catch (e) {
+				return console.error("Markdown parse error:", e), "<p>解析错误</p>";
 			}
-		}), wi = (e) => {
-			d("focus", e);
-		}, G = (e) => {
-			d("blur", e);
-		}, K = (e) => {
-			if (e === "theme-toggle") {
-				Di();
+		});
+		watch(() => r.scrollPercentage, (e) => {
+			if (r.isSyncing || !s.value) return;
+			let t = s.value;
+			t.scrollTop = (t.scrollHeight - t.clientHeight) * e;
+		});
+		let l = () => {
+			if (r.isSyncing || !s.value) return;
+			let e = s.value, t = e.scrollHeight - e.clientHeight;
+			if (t <= 0) {
+				o("update:scrollPercentage", 0), o("scroll", 0);
 				return;
 			}
-			if (!u.readOnly) {
-				if (e === "h1") {
-					R(1);
-					return;
-				}
-				if (e === "h2") {
-					R(2);
-					return;
-				}
-				if (e === "bold") {
-					L("**", "**");
-					return;
-				}
-				if (e === "italic") {
-					L("*", "*");
-					return;
-				}
-				if (e === "unordered-list") {
-					z();
-					return;
-				}
-				if (e === "ordered-list") {
-					B();
-					return;
-				}
-				if (e === "blockquote") {
-					V();
-					return;
-				}
-				if (e === "code-block") {
-					H();
-					return;
-				}
-				if (e === "horizontal-rule") {
-					U();
-					return;
-				}
-				if (e === "link") {
-					xi();
-					return;
-				}
-				e === "image" && W();
-			}
-		}, Ti = ref(50), q = ref(!1), J = (e) => {
-			if (!q.value) return;
-			let t = x.value;
-			if (!t) return;
-			let n = t.getBoundingClientRect();
-			if (!n.width) return;
-			let r = e.clientX - n.left;
-			Ti.value = Math.max(10, Math.min(90, r / n.width * 100));
-		}, Y = () => {
-			q.value && (q.value = !1, document.removeEventListener("mousemove", J), document.removeEventListener("mouseup", Y));
-		}, Ei = () => {
-			u.showPreview && (q.value || (q.value = !0, document.addEventListener("mousemove", J), document.addEventListener("mouseup", Y)));
-		}, X = ref(u.theme || "dark");
-		watch(() => u.theme, (e) => {
-			e && e !== X.value && (X.value = e);
-		}), onBeforeUnmount(() => {
-			document.removeEventListener("mousemove", J), document.removeEventListener("mouseup", Y);
-		});
-		let Di = () => {
-			let e = X.value === "dark" ? "light" : "dark";
-			X.value = e, d("update:theme", e);
-		}, Oi = computed(() => [
-			"markdown-editor",
-			`markdown-editor--${X.value}`,
-			`markdown-editor--toolbar-${u.toolbarStyle}`
-		]);
-		return (t, o) => (openBlock(), createElementBlock("div", { class: normalizeClass(Oi.value) }, [
-			e.showToolbar ? (openBlock(), createElementBlock("div", _hoisted_1, [renderSlot(t.$slots, "toolbar", {
-				wrapSelection: unref(L),
-				insertAtCursor: unref(Si),
-				toggleHeading: unref(R),
-				insertUnorderedList: unref(z),
-				insertOrderedList: unref(B),
-				insertBlockquote: unref(V),
-				insertCodeBlock: unref(H),
-				insertHorizontalRule: unref(U),
-				insertLink: unref(xi),
-				insertImage: unref(W),
-				toggleTheme: Di,
-				handleToolbarClick: K,
-				xiconComponents: M
-			}, () => [createVNode(MarkdownToolbar_default, {
-				"toolbar-items": e.toolbarItems,
-				"toolbar-style": e.toolbarStyle,
-				"icon-preset": e.iconPreset,
-				"xicon-components": M,
-				messages: N.value,
-				"get-toolbar-label": P,
-				"handle-toolbar-click": K
-			}, null, 8, [
-				"toolbar-items",
-				"toolbar-style",
-				"icon-preset",
-				"messages"
-			])])])) : createCommentVNode("", !0),
-			createElementVNode("div", {
-				ref_key: "panesRef",
-				ref: x,
-				class: "markdown-editor__panes"
-			}, [
-				createVNode(MarkdownEditorPane_default, {
-					ref_key: "editorPaneRef",
-					ref: g,
-					style: normalizeStyle(e.showPreview ? { flexBasis: Ti.value + "%" } : {}),
-					"model-value": f.value,
-					lines: O.value,
-					"show-line-numbers": e.showLineNumbers,
-					"read-only": e.readOnly,
-					placeholder: e.placeholder,
-					"onUpdate:modelValue": F,
-					onKeydown: unref(Ci),
-					onFocus: wi,
-					onBlur: G
-				}, null, 8, [
-					"style",
-					"model-value",
-					"lines",
-					"show-line-numbers",
-					"read-only",
-					"placeholder",
-					"onKeydown"
-				]),
-				e.showPreview ? (openBlock(), createElementBlock("div", {
-					key: 0,
-					class: normalizeClass(["markdown-editor__divider", { "markdown-editor__divider--dragging": q.value }]),
-					onMousedown: Ei
-				}, null, 34)) : createCommentVNode("", !0),
-				e.showPreview ? (openBlock(), createBlock(MarkdownPreviewPane_default, {
-					key: 1,
-					style: normalizeStyle({ flexBasis: 100 - Ti.value + "%" })
-				}, {
-					default: withCtx(() => [renderSlot(t.$slots, "preview", { tokens: C.value }, () => [createVNode(MarkdownPreview_default, { tokens: C.value }, null, 8, ["tokens"])])]),
-					_: 3
-				}, 8, ["style"])) : createCommentVNode("", !0)
-			], 512),
-			e.showFooter ? (openBlock(), createElementBlock("div", _hoisted_2, [createElementVNode("div", _hoisted_3, toDisplayString(j.value), 1), createElementVNode("div", _hoisted_4, " 字数：" + toDisplayString(k.value), 1)])) : createCommentVNode("", !0)
-		], 2));
+			let n = e.scrollTop / t;
+			o("update:scrollPercentage", n), o("scroll", n);
+		};
+		return watch(() => r.theme, (e) => {
+			e === "dark" ? Promise.resolve({                }) : import("./github-ClbBTCKO.js");
+		}), (t, n) => (openBlock(), createElementBlock("div", {
+			class: "preview-panel",
+			ref_key: "previewRef",
+			ref: s,
+			onScroll: l,
+			"data-theme": e.theme
+		}, [createElementVNode("div", {
+			class: "preview-content",
+			innerHTML: c.value
+		}, null, 8, _hoisted_2$1)], 40, _hoisted_1$1));
 	}
-}, lib_default = MarkdownEditor_default;
-export { MarkdownEditor_default as MarkdownEditor, lib_default as default };
+}, [["__scopeId", "data-v-3ae28dec"]]), _hoisted_1 = { class: "editor-config" }, _hoisted_2 = { class: "config-header" }, _hoisted_3 = { class: "config-body" }, _hoisted_4 = { class: "config-section" }, _hoisted_5 = { class: "config-item" }, _hoisted_6 = ["value"], _hoisted_7 = { class: "config-item" }, _hoisted_8 = ["checked"], _hoisted_9 = { class: "config-item" }, _hoisted_10 = ["value"], _hoisted_11 = { class: "config-item" }, _hoisted_12 = ["value"], _hoisted_13 = { class: "config-section" }, _hoisted_14 = { class: "color-grid" }, _hoisted_15 = ["value", "onInput"], _hoisted_16 = { class: "color-value" }, EditorConfig_default = /* @__PURE__ */ __plugin_vue_export_helper_default({
+	__name: "EditorConfig",
+	props: {
+		theme: String,
+		enableSyntaxHighlight: Boolean,
+		fontSize: Number,
+		lineHeight: Number,
+		customColors: Object
+	},
+	emits: [
+		"close",
+		"update:theme",
+		"update:enableSyntaxHighlight",
+		"update:fontSize",
+		"update:lineHeight",
+		"update:customColors",
+		"reset",
+		"save"
+	],
+	setup(n, { emit: r }) {
+		let o = n, c = r, l = computed(() => {
+			let e = o.customColors || {};
+			return [
+				{
+					key: "heading1",
+					label: "标题1",
+					value: e.heading1 || "#0066cc"
+				},
+				{
+					key: "heading2",
+					label: "标题2",
+					value: e.heading2 || "#0077dd"
+				},
+				{
+					key: "bold_text",
+					label: "粗体",
+					value: e.bold_text || "#000000"
+				},
+				{
+					key: "italic_text",
+					label: "斜体",
+					value: e.italic_text || "#555555"
+				},
+				{
+					key: "code_text",
+					label: "代码",
+					value: e.code_text || "#d14"
+				},
+				{
+					key: "link_text",
+					label: "链接",
+					value: e.link_text || "#0066cc"
+				},
+				{
+					key: "list_marker",
+					label: "列表标记",
+					value: e.list_marker || "#cc6600"
+				},
+				{
+					key: "quote_marker",
+					label: "引用标记",
+					value: e.quote_marker || "#999999"
+				}
+			];
+		}), u = (e, t) => {
+			c("update:customColors", {
+				...o.customColors || {},
+				[e]: t
+			});
+		}, d = () => {
+			c("reset");
+		}, f = () => {
+			c("save"), c("close");
+		};
+		return (t, r) => (openBlock(), createElementBlock("div", _hoisted_1, [createElementVNode("div", _hoisted_2, [r[5] ||= createElementVNode("h3", null, "编辑器配置", -1), createElementVNode("button", {
+			onClick: r[0] ||= (e) => t.$emit("close"),
+			class: "close-btn"
+		}, "×")]), createElementVNode("div", _hoisted_3, [
+			createElementVNode("div", _hoisted_4, [
+				r[13] ||= createElementVNode("h4", null, "基础设置", -1),
+				createElementVNode("div", _hoisted_5, [r[7] ||= createElementVNode("label", null, "主题", -1), createElementVNode("select", {
+					value: n.theme,
+					onInput: r[1] ||= (e) => t.$emit("update:theme", e.target.value)
+				}, [...r[6] ||= [createElementVNode("option", { value: "light" }, "浅色", -1), createElementVNode("option", { value: "dark" }, "深色", -1)]], 40, _hoisted_6)]),
+				createElementVNode("div", _hoisted_7, [createElementVNode("label", null, [createElementVNode("input", {
+					type: "checkbox",
+					checked: n.enableSyntaxHighlight,
+					onChange: r[2] ||= (e) => t.$emit("update:enableSyntaxHighlight", e.target.checked)
+				}, null, 40, _hoisted_8), r[8] ||= createTextVNode(" 语法高亮 ", -1)])]),
+				createElementVNode("div", _hoisted_9, [
+					r[9] ||= createElementVNode("label", null, "字体大小", -1),
+					createElementVNode("input", {
+						type: "number",
+						value: n.fontSize,
+						onInput: r[3] ||= (e) => t.$emit("update:fontSize", Number(e.target.value)),
+						min: "10",
+						max: "24"
+					}, null, 40, _hoisted_10),
+					r[10] ||= createElementVNode("span", { class: "unit" }, "px", -1)
+				]),
+				createElementVNode("div", _hoisted_11, [
+					r[11] ||= createElementVNode("label", null, "行高", -1),
+					createElementVNode("input", {
+						type: "number",
+						value: n.lineHeight,
+						onInput: r[4] ||= (e) => t.$emit("update:lineHeight", Number(e.target.value)),
+						min: "16",
+						max: "40"
+					}, null, 40, _hoisted_12),
+					r[12] ||= createElementVNode("span", { class: "unit" }, "px", -1)
+				])
+			]),
+			createElementVNode("div", _hoisted_13, [
+				r[14] ||= createElementVNode("h4", null, "颜色方案", -1),
+				r[15] ||= createElementVNode("p", { class: "hint" }, "点击颜色块可自定义颜色", -1),
+				createElementVNode("div", _hoisted_14, [(openBlock(!0), createElementBlock(Fragment, null, renderList(l.value, (e) => (openBlock(), createElementBlock("div", {
+					class: "color-item",
+					key: e.key
+				}, [
+					createElementVNode("label", null, toDisplayString(e.label), 1),
+					createElementVNode("input", {
+						type: "color",
+						value: e.value,
+						onInput: (t) => u(e.key, t.target.value)
+					}, null, 40, _hoisted_15),
+					createElementVNode("span", _hoisted_16, toDisplayString(e.value), 1)
+				]))), 128))])
+			]),
+			createElementVNode("div", { class: "config-footer" }, [createElementVNode("button", {
+				onClick: d,
+				class: "btn btn-secondary"
+			}, "重置"), createElementVNode("button", {
+				onClick: f,
+				class: "btn btn-primary"
+			}, "保存")])
+		])]));
+	}
+}, [["__scopeId", "data-v-2ff40722"]]), lib_default = CanvasEditor_default;
+export { CanvasEditor_default as CanvasEditor, EditorConfig_default as EditorConfig, MarkdownPreviewPanel_default as MarkdownPreviewPanel, lib_default as default };
