@@ -8,7 +8,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
-import 'highlight.js/styles/github.css'
+// 移除静态导入，统一使用动态导入
 
 const props = defineProps({
   modelValue: {
@@ -92,15 +92,15 @@ const handleScroll = () => {
   emit('scroll', percentage)
 }
 
-// 监听主题变化
-watch(() => props.theme, (newTheme) => {
+// 监听主题变化，动态加载样式
+watch(() => props.theme, async (newTheme) => {
   // 动态加载主题样式
   if (newTheme === 'dark') {
-    import('highlight.js/styles/github-dark.css')
+    await import('highlight.js/styles/github-dark.css')
   } else {
-    import('highlight.js/styles/github.css')
+    await import('highlight.js/styles/github.css')
   }
-})
+}, { immediate: true }) // 立即执行，加载初始主题
 </script>
 
 <style scoped>

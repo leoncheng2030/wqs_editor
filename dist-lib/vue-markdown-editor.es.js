@@ -51262,7 +51262,7 @@ const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = 
       ], 512)
     ]));
   }
-}), Uee = /* @__PURE__ */ At(yQ, [["__scopeId", "data-v-1f42f28b"]]);
+}), zee = /* @__PURE__ */ At(yQ, [["__scopeId", "data-v-1f42f28b"]]);
 function IQ(r) {
   return r && r.__esModule && Object.prototype.hasOwnProperty.call(r, "default") ? r.default : r;
 }
@@ -100431,9 +100431,7 @@ function uee() {
   return r.registerLanguage("1c", /* @__PURE__ */ DQ()), r.registerLanguage("abnf", /* @__PURE__ */ PQ()), r.registerLanguage("accesslog", /* @__PURE__ */ BQ()), r.registerLanguage("actionscript", /* @__PURE__ */ zQ()), r.registerLanguage("ada", /* @__PURE__ */ UQ()), r.registerLanguage("angelscript", /* @__PURE__ */ FQ()), r.registerLanguage("apache", /* @__PURE__ */ HQ()), r.registerLanguage("applescript", /* @__PURE__ */ GQ()), r.registerLanguage("arcade", /* @__PURE__ */ VQ()), r.registerLanguage("arduino", /* @__PURE__ */ $Q()), r.registerLanguage("armasm", /* @__PURE__ */ YQ()), r.registerLanguage("xml", /* @__PURE__ */ qQ()), r.registerLanguage("asciidoc", /* @__PURE__ */ WQ()), r.registerLanguage("aspectj", /* @__PURE__ */ KQ()), r.registerLanguage("autohotkey", /* @__PURE__ */ jQ()), r.registerLanguage("autoit", /* @__PURE__ */ QQ()), r.registerLanguage("avrasm", /* @__PURE__ */ XQ()), r.registerLanguage("awk", /* @__PURE__ */ ZQ()), r.registerLanguage("axapta", /* @__PURE__ */ JQ()), r.registerLanguage("bash", /* @__PURE__ */ eX()), r.registerLanguage("basic", /* @__PURE__ */ tX()), r.registerLanguage("bnf", /* @__PURE__ */ nX()), r.registerLanguage("brainfuck", /* @__PURE__ */ rX()), r.registerLanguage("c", /* @__PURE__ */ oX()), r.registerLanguage("cal", /* @__PURE__ */ iX()), r.registerLanguage("capnproto", /* @__PURE__ */ lX()), r.registerLanguage("ceylon", /* @__PURE__ */ aX()), r.registerLanguage("clean", /* @__PURE__ */ sX()), r.registerLanguage("clojure", /* @__PURE__ */ cX()), r.registerLanguage("clojure-repl", /* @__PURE__ */ dX()), r.registerLanguage("cmake", /* @__PURE__ */ uX()), r.registerLanguage("coffeescript", /* @__PURE__ */ pX()), r.registerLanguage("coq", /* @__PURE__ */ _X()), r.registerLanguage("cos", /* @__PURE__ */ mX()), r.registerLanguage("cpp", /* @__PURE__ */ hX()), r.registerLanguage("crmsh", /* @__PURE__ */ gX()), r.registerLanguage("crystal", /* @__PURE__ */ wX()), r.registerLanguage("csharp", /* @__PURE__ */ fX()), r.registerLanguage("csp", /* @__PURE__ */ EX()), r.registerLanguage("css", /* @__PURE__ */ SX()), r.registerLanguage("d", /* @__PURE__ */ CX()), r.registerLanguage("markdown", /* @__PURE__ */ xX()), r.registerLanguage("dart", /* @__PURE__ */ vX()), r.registerLanguage("delphi", /* @__PURE__ */ kX()), r.registerLanguage("diff", /* @__PURE__ */ TX()), r.registerLanguage("django", /* @__PURE__ */ bX()), r.registerLanguage("dns", /* @__PURE__ */ RX()), r.registerLanguage("dockerfile", /* @__PURE__ */ OX()), r.registerLanguage("dos", /* @__PURE__ */ MX()), r.registerLanguage("dsconfig", /* @__PURE__ */ AX()), r.registerLanguage("dts", /* @__PURE__ */ NX()), r.registerLanguage("dust", /* @__PURE__ */ yX()), r.registerLanguage("ebnf", /* @__PURE__ */ IX()), r.registerLanguage("elixir", /* @__PURE__ */ LX()), r.registerLanguage("elm", /* @__PURE__ */ DX()), r.registerLanguage("ruby", /* @__PURE__ */ PX()), r.registerLanguage("erb", /* @__PURE__ */ BX()), r.registerLanguage("erlang-repl", /* @__PURE__ */ zX()), r.registerLanguage("erlang", /* @__PURE__ */ UX()), r.registerLanguage("excel", /* @__PURE__ */ FX()), r.registerLanguage("fix", /* @__PURE__ */ HX()), r.registerLanguage("flix", /* @__PURE__ */ GX()), r.registerLanguage("fortran", /* @__PURE__ */ VX()), r.registerLanguage("fsharp", /* @__PURE__ */ $X()), r.registerLanguage("gams", /* @__PURE__ */ YX()), r.registerLanguage("gauss", /* @__PURE__ */ qX()), r.registerLanguage("gcode", /* @__PURE__ */ WX()), r.registerLanguage("gherkin", /* @__PURE__ */ KX()), r.registerLanguage("glsl", /* @__PURE__ */ jX()), r.registerLanguage("gml", /* @__PURE__ */ QX()), r.registerLanguage("go", /* @__PURE__ */ XX()), r.registerLanguage("golo", /* @__PURE__ */ ZX()), r.registerLanguage("gradle", /* @__PURE__ */ JX()), r.registerLanguage("graphql", /* @__PURE__ */ eZ()), r.registerLanguage("groovy", /* @__PURE__ */ tZ()), r.registerLanguage("haml", /* @__PURE__ */ nZ()), r.registerLanguage("handlebars", /* @__PURE__ */ rZ()), r.registerLanguage("haskell", /* @__PURE__ */ oZ()), r.registerLanguage("haxe", /* @__PURE__ */ iZ()), r.registerLanguage("hsp", /* @__PURE__ */ lZ()), r.registerLanguage("http", /* @__PURE__ */ aZ()), r.registerLanguage("hy", /* @__PURE__ */ sZ()), r.registerLanguage("inform7", /* @__PURE__ */ cZ()), r.registerLanguage("ini", /* @__PURE__ */ dZ()), r.registerLanguage("irpf90", /* @__PURE__ */ uZ()), r.registerLanguage("isbl", /* @__PURE__ */ pZ()), r.registerLanguage("java", /* @__PURE__ */ _Z()), r.registerLanguage("javascript", /* @__PURE__ */ mZ()), r.registerLanguage("jboss-cli", /* @__PURE__ */ hZ()), r.registerLanguage("json", /* @__PURE__ */ gZ()), r.registerLanguage("julia", /* @__PURE__ */ wZ()), r.registerLanguage("julia-repl", /* @__PURE__ */ fZ()), r.registerLanguage("kotlin", /* @__PURE__ */ EZ()), r.registerLanguage("lasso", /* @__PURE__ */ SZ()), r.registerLanguage("latex", /* @__PURE__ */ CZ()), r.registerLanguage("ldif", /* @__PURE__ */ xZ()), r.registerLanguage("leaf", /* @__PURE__ */ vZ()), r.registerLanguage("less", /* @__PURE__ */ kZ()), r.registerLanguage("lisp", /* @__PURE__ */ TZ()), r.registerLanguage("livecodeserver", /* @__PURE__ */ bZ()), r.registerLanguage("livescript", /* @__PURE__ */ RZ()), r.registerLanguage("llvm", /* @__PURE__ */ OZ()), r.registerLanguage("lsl", /* @__PURE__ */ MZ()), r.registerLanguage("lua", /* @__PURE__ */ AZ()), r.registerLanguage("makefile", /* @__PURE__ */ NZ()), r.registerLanguage("mathematica", /* @__PURE__ */ yZ()), r.registerLanguage("matlab", /* @__PURE__ */ IZ()), r.registerLanguage("maxima", /* @__PURE__ */ LZ()), r.registerLanguage("mel", /* @__PURE__ */ DZ()), r.registerLanguage("mercury", /* @__PURE__ */ PZ()), r.registerLanguage("mipsasm", /* @__PURE__ */ BZ()), r.registerLanguage("mizar", /* @__PURE__ */ zZ()), r.registerLanguage("perl", /* @__PURE__ */ UZ()), r.registerLanguage("mojolicious", /* @__PURE__ */ FZ()), r.registerLanguage("monkey", /* @__PURE__ */ HZ()), r.registerLanguage("moonscript", /* @__PURE__ */ GZ()), r.registerLanguage("n1ql", /* @__PURE__ */ VZ()), r.registerLanguage("nestedtext", /* @__PURE__ */ $Z()), r.registerLanguage("nginx", /* @__PURE__ */ YZ()), r.registerLanguage("nim", /* @__PURE__ */ qZ()), r.registerLanguage("nix", /* @__PURE__ */ WZ()), r.registerLanguage("node-repl", /* @__PURE__ */ KZ()), r.registerLanguage("nsis", /* @__PURE__ */ jZ()), r.registerLanguage("objectivec", /* @__PURE__ */ QZ()), r.registerLanguage("ocaml", /* @__PURE__ */ XZ()), r.registerLanguage("openscad", /* @__PURE__ */ ZZ()), r.registerLanguage("oxygene", /* @__PURE__ */ JZ()), r.registerLanguage("parser3", /* @__PURE__ */ eJ()), r.registerLanguage("pf", /* @__PURE__ */ tJ()), r.registerLanguage("pgsql", /* @__PURE__ */ nJ()), r.registerLanguage("php", /* @__PURE__ */ rJ()), r.registerLanguage("php-template", /* @__PURE__ */ oJ()), r.registerLanguage("plaintext", /* @__PURE__ */ iJ()), r.registerLanguage("pony", /* @__PURE__ */ lJ()), r.registerLanguage("powershell", /* @__PURE__ */ aJ()), r.registerLanguage("processing", /* @__PURE__ */ sJ()), r.registerLanguage("profile", /* @__PURE__ */ cJ()), r.registerLanguage("prolog", /* @__PURE__ */ dJ()), r.registerLanguage("properties", /* @__PURE__ */ uJ()), r.registerLanguage("protobuf", /* @__PURE__ */ pJ()), r.registerLanguage("puppet", /* @__PURE__ */ _J()), r.registerLanguage("purebasic", /* @__PURE__ */ mJ()), r.registerLanguage("python", /* @__PURE__ */ hJ()), r.registerLanguage("python-repl", /* @__PURE__ */ gJ()), r.registerLanguage("q", /* @__PURE__ */ wJ()), r.registerLanguage("qml", /* @__PURE__ */ fJ()), r.registerLanguage("r", /* @__PURE__ */ EJ()), r.registerLanguage("reasonml", /* @__PURE__ */ SJ()), r.registerLanguage("rib", /* @__PURE__ */ CJ()), r.registerLanguage("roboconf", /* @__PURE__ */ xJ()), r.registerLanguage("routeros", /* @__PURE__ */ vJ()), r.registerLanguage("rsl", /* @__PURE__ */ kJ()), r.registerLanguage("ruleslanguage", /* @__PURE__ */ TJ()), r.registerLanguage("rust", /* @__PURE__ */ bJ()), r.registerLanguage("sas", /* @__PURE__ */ RJ()), r.registerLanguage("scala", /* @__PURE__ */ OJ()), r.registerLanguage("scheme", /* @__PURE__ */ MJ()), r.registerLanguage("scilab", /* @__PURE__ */ AJ()), r.registerLanguage("scss", /* @__PURE__ */ NJ()), r.registerLanguage("shell", /* @__PURE__ */ yJ()), r.registerLanguage("smali", /* @__PURE__ */ IJ()), r.registerLanguage("smalltalk", /* @__PURE__ */ LJ()), r.registerLanguage("sml", /* @__PURE__ */ DJ()), r.registerLanguage("sqf", /* @__PURE__ */ PJ()), r.registerLanguage("sql", /* @__PURE__ */ BJ()), r.registerLanguage("stan", /* @__PURE__ */ zJ()), r.registerLanguage("stata", /* @__PURE__ */ UJ()), r.registerLanguage("step21", /* @__PURE__ */ FJ()), r.registerLanguage("stylus", /* @__PURE__ */ HJ()), r.registerLanguage("subunit", /* @__PURE__ */ GJ()), r.registerLanguage("swift", /* @__PURE__ */ VJ()), r.registerLanguage("taggerscript", /* @__PURE__ */ $J()), r.registerLanguage("yaml", /* @__PURE__ */ YJ()), r.registerLanguage("tap", /* @__PURE__ */ qJ()), r.registerLanguage("tcl", /* @__PURE__ */ WJ()), r.registerLanguage("thrift", /* @__PURE__ */ KJ()), r.registerLanguage("tp", /* @__PURE__ */ jJ()), r.registerLanguage("twig", /* @__PURE__ */ QJ()), r.registerLanguage("typescript", /* @__PURE__ */ XJ()), r.registerLanguage("vala", /* @__PURE__ */ ZJ()), r.registerLanguage("vbnet", /* @__PURE__ */ JJ()), r.registerLanguage("vbscript", /* @__PURE__ */ eee()), r.registerLanguage("vbscript-html", /* @__PURE__ */ tee()), r.registerLanguage("verilog", /* @__PURE__ */ nee()), r.registerLanguage("vhdl", /* @__PURE__ */ ree()), r.registerLanguage("vim", /* @__PURE__ */ oee()), r.registerLanguage("wasm", /* @__PURE__ */ iee()), r.registerLanguage("wren", /* @__PURE__ */ lee()), r.registerLanguage("x86asm", /* @__PURE__ */ aee()), r.registerLanguage("xl", /* @__PURE__ */ see()), r.registerLanguage("xquery", /* @__PURE__ */ cee()), r.registerLanguage("zephir", /* @__PURE__ */ dee()), r.HighlightJS = r, r.default = r, yi = r, yi;
 }
 var pee = /* @__PURE__ */ uee();
-const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
-  __proto__: null
-}, Symbol.toStringTag, { value: "Module" })), mee = ["data-theme"], hee = ["innerHTML"], gee = /* @__PURE__ */ l({
+const Fs = /* @__PURE__ */ IQ(pee), _ee = ["data-theme"], mee = ["innerHTML"], hee = /* @__PURE__ */ l({
   __name: "MarkdownPreviewPanel",
   props: {
     modelValue: {
@@ -100495,9 +100493,9 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
       const h = u.scrollTop / m;
       a("update:scrollPercentage", h), a("scroll", h);
     };
-    return Ke(() => e.theme, (u) => {
-      u === "dark" ? Promise.resolve({                }) : Promise.resolve().then(() => _ee);
-    }), (u, m) => (o(), i("div", {
+    return Ke(() => e.theme, async (u) => {
+      u === "dark" ? await Promise.resolve({                }) : await Promise.resolve({           });
+    }, { immediate: !0 }), (u, m) => (o(), i("div", {
       class: "preview-panel",
       ref_key: "previewRef",
       ref: s,
@@ -100507,10 +100505,10 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
       n("div", {
         class: "preview-content",
         innerHTML: c.value
-      }, null, 8, hee)
-    ], 40, mee));
+      }, null, 8, mee)
+    ], 40, _ee));
   }
-}), Fee = /* @__PURE__ */ At(gee, [["__scopeId", "data-v-118934b7"]]), wee = { class: "editor-config" }, fee = { class: "config-header" }, Eee = { class: "config-body" }, See = { class: "config-section" }, Cee = { class: "config-item" }, xee = ["value"], vee = { class: "config-item" }, kee = ["checked"], Tee = { class: "config-item" }, bee = ["value"], Ree = { class: "config-item" }, Oee = ["value"], Mee = { class: "config-section" }, Aee = { class: "color-grid" }, Nee = ["value", "onInput"], yee = { class: "color-value" }, Iee = /* @__PURE__ */ l({
+}), Uee = /* @__PURE__ */ At(hee, [["__scopeId", "data-v-b66d6e11"]]), gee = { class: "editor-config" }, wee = { class: "config-header" }, fee = { class: "config-body" }, Eee = { class: "config-section" }, See = { class: "config-item" }, Cee = ["value"], xee = { class: "config-item" }, vee = ["checked"], kee = { class: "config-item" }, Tee = ["value"], bee = { class: "config-item" }, Ree = ["value"], Oee = { class: "config-section" }, Mee = { class: "color-grid" }, Aee = ["value", "onInput"], Nee = { class: "color-value" }, yee = /* @__PURE__ */ l({
   __name: "EditorConfig",
   props: {
     theme: String,
@@ -100550,18 +100548,18 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
     }, u = () => {
       a("save"), a("close");
     };
-    return (m, h) => (o(), i("div", wee, [
-      n("div", fee, [
+    return (m, h) => (o(), i("div", gee, [
+      n("div", wee, [
         h[5] || (h[5] = n("h3", null, "编辑器配置", -1)),
         n("button", {
           onClick: h[0] || (h[0] = (p) => m.$emit("close")),
           class: "close-btn"
         }, "×")
       ]),
-      n("div", Eee, [
-        n("div", See, [
+      n("div", fee, [
+        n("div", Eee, [
           h[13] || (h[13] = n("h4", null, "基础设置", -1)),
-          n("div", Cee, [
+          n("div", See, [
             h[7] || (h[7] = n("label", null, "主题", -1)),
             n("select", {
               value: r.theme,
@@ -100569,19 +100567,19 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
             }, [...h[6] || (h[6] = [
               n("option", { value: "light" }, "浅色", -1),
               n("option", { value: "dark" }, "深色", -1)
-            ])], 40, xee)
+            ])], 40, Cee)
           ]),
-          n("div", vee, [
+          n("div", xee, [
             n("label", null, [
               n("input", {
                 type: "checkbox",
                 checked: r.enableSyntaxHighlight,
                 onChange: h[2] || (h[2] = (p) => m.$emit("update:enableSyntaxHighlight", p.target.checked))
-              }, null, 40, kee),
+              }, null, 40, vee),
               h[8] || (h[8] = r0(" 语法高亮 ", -1))
             ])
           ]),
-          n("div", Tee, [
+          n("div", kee, [
             h[9] || (h[9] = n("label", null, "字体大小", -1)),
             n("input", {
               type: "number",
@@ -100589,10 +100587,10 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
               onInput: h[3] || (h[3] = (p) => m.$emit("update:fontSize", Number(p.target.value))),
               min: "10",
               max: "24"
-            }, null, 40, bee),
+            }, null, 40, Tee),
             h[10] || (h[10] = n("span", { class: "unit" }, "px", -1))
           ]),
-          n("div", Ree, [
+          n("div", bee, [
             h[11] || (h[11] = n("label", null, "行高", -1)),
             n("input", {
               type: "number",
@@ -100600,14 +100598,14 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
               onInput: h[4] || (h[4] = (p) => m.$emit("update:lineHeight", Number(p.target.value))),
               min: "16",
               max: "40"
-            }, null, 40, Oee),
+            }, null, 40, Ree),
             h[12] || (h[12] = n("span", { class: "unit" }, "px", -1))
           ])
         ]),
-        n("div", Mee, [
+        n("div", Oee, [
           h[14] || (h[14] = n("h4", null, "颜色方案", -1)),
           h[15] || (h[15] = n("p", { class: "hint" }, "点击颜色块可自定义颜色", -1)),
-          n("div", Aee, [
+          n("div", Mee, [
             (o(!0), i(Ii, null, Li(s.value, (p) => (o(), i("div", {
               class: "color-item",
               key: p.key
@@ -100617,8 +100615,8 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
                 type: "color",
                 value: p.value,
                 onInput: (g) => c(p.key, g.target.value)
-              }, null, 40, Nee),
-              n("span", yee, Et(p.value), 1)
+              }, null, 40, Aee),
+              n("span", Nee, Et(p.value), 1)
             ]))), 128))
           ])
         ]),
@@ -100635,10 +100633,10 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
       ])
     ]));
   }
-}), Hee = /* @__PURE__ */ At(Iee, [["__scopeId", "data-v-c86daa5e"]]);
+}), Fee = /* @__PURE__ */ At(yee, [["__scopeId", "data-v-c86daa5e"]]);
 export {
-  Uee as CanvasEditor,
-  Hee as EditorConfig,
-  Fee as MarkdownPreviewPanel,
-  Uee as default
+  zee as CanvasEditor,
+  Fee as EditorConfig,
+  Uee as MarkdownPreviewPanel,
+  zee as VueMarkdownEditor
 };

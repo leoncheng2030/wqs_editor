@@ -71,6 +71,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **修复粘贴重复问题**: 修复 Ctrl+V 粘贴时内容重复出现两次的问题
   - 问题原因：键盘事件和浏览器原生 paste 事件同时触发
   - 解决方案：在键盘事件处理中添加 `preventDefault()` 阻止默认行为
+- **优化构建警告**: 修复 highlight.js 样式动态导入冲突和混用命名/默认导出的警告
+
+### 📚 Documentation
+
+- **双语 README**: 新增英文和中文独立 README 文件
+  - `README.md` - English documentation
+  - `README.zh-CN.md` - 简体中文文档
+  - 支持语言切换链接
 
 ### 🔧 Fixed
 
