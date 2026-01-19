@@ -1,6 +1,6 @@
 {
   "name": "@nywqs/vue-markdown-editor",
-  "version": "0.1.3",
+  "version": "2.0.0",
   "description": "A high-performance Markdown editor based on Vue 3 and Canvas with hybrid rendering architecture",
   "keywords": [
     "vue",

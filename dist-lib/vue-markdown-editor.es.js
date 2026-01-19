@@ -1,7 +1,7 @@
 var Qs = Object.defineProperty;
 var Xs = (r, t, e) => t in r ? Qs(r, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : r[t] = e;
 var k = (r, t, e) => Xs(r, typeof t != "symbol" ? t + "" : t, e);
-import { defineComponent as l, createElementBlock as i, openBlock as o, createElementVNode as n, createStaticVNode as x, computed as Pi, createCommentVNode as wt, Fragment as Ii, renderList as Li, normalizeClass as Zs, createBlock as Di, resolveDynamicComponent as tl, toDisplayString as ft, h as Pt, ref as Le, watch as Ke, nextTick as Js, withDirectives as Rt, withKeys as Bt, vModelText as nl, vModelCheckbox as Kt, onMounted as e0, onBeforeUnmount as t0, createVNode as n0, createTextVNode as r0 } from "vue";
+import { defineComponent as l, createElementBlock as i, openBlock as o, createElementVNode as n, createStaticVNode as x, computed as Pi, createCommentVNode as ft, Fragment as Ii, renderList as Li, normalizeClass as Zs, createBlock as Di, resolveDynamicComponent as tl, toDisplayString as Et, h as Pt, ref as Le, watch as Ke, nextTick as Js, withDirectives as Ot, withKeys as Bt, vModelText as nl, vModelCheckbox as Kt, onMounted as e0, onBeforeUnmount as t0, createVNode as n0, createTextVNode as r0 } from "vue";
 import { marked as rl } from "marked";
 let o0 = class {
   constructor(t = "") {
@@ -60,10 +60,10 @@ let o0 = class {
       const u = a.split(`
 `);
       this.lines[t] = c + u[0];
-      for (let m = 1; m < u.length; m++)
-        this.lines.splice(t + m, 0, u[m]);
-      const h = t + u.length - 1;
-      this.lines[h] += d, this.lexer && this.lexer.markDirtyRange(t, h), this.emit("lineChange", { startLine: t, endLine: h });
+      for (let h = 1; h < u.length; h++)
+        this.lines.splice(t + h, 0, u[h]);
+      const m = t + u.length - 1;
+      this.lines[m] += d, this.lexer && this.lexer.markDirtyRange(t, m), this.emit("lineChange", { startLine: t, endLine: m });
     } else
       this.lines[t] = c + a + d, this.lexer && this.lexer.markDirty(t), this.emit("lineChange", { startLine: t, endLine: t });
     this.emit("change");
@@ -275,20 +275,20 @@ class l0 {
       return;
     this.lastStartLine = a, this.lastEndLine = s, this.needsFullRender = !1;
     const c = { inCodeBlock: !1 };
-    for (let d = 0; d < a && d < t.getLineCount(); d++)
-      t.getLine(d).trimStart().startsWith("```") && (c.inCodeBlock = !c.inCodeBlock);
-    this.textLayer.innerHTML = "", this.renderedLines.clear();
-    for (let d = a; d < s; d++) {
-      const u = t.getLine(d), h = d * this.lineHeight;
-      this.renderLine(u, 0, h, d, c), u.trimStart().startsWith("```") && (c.inCodeBlock = !c.inCodeBlock);
+    for (let m = 0; m < a && m < t.getLineCount(); m++)
+      t.getLine(m).trimStart().startsWith("```") && (c.inCodeBlock = !c.inCodeBlock);
+    const d = globalThis.document.createDocumentFragment(), u = /* @__PURE__ */ new Map();
+    for (let m = a; m < s; m++) {
+      const h = t.getLine(m), p = m * this.lineHeight, w = this.createLineElement(h, 0, p, m, c);
+      d.appendChild(w), u.set(m, w), h.trimStart().startsWith("```") && (c.inCodeBlock = !c.inCodeBlock);
     }
-    this.lexer && this.lexer.clearDirtyMarks();
+    this.textLayer.innerHTML = "", this.textLayer.appendChild(d), this.renderedLines = u, this.lexer && this.lexer.clearDirtyMarks();
   }
   /**
-   * 渲染单行文本
+   * 创建行元素（不立即添加到DOM）
    */
-  renderLine(t, e, a, s, c = {}) {
-    const d = document.createElement("div");
+  createLineElement(t, e, a, s, c = {}) {
+    const d = globalThis.document.createElement("div");
     if (d.className = "editor-line", d.style.cssText = `
       position: absolute;
       left: ${e}px;
@@ -299,21 +299,20 @@ class l0 {
       user-select: none;
       display: flex;
       align-items: center;
-    `, !t || t.length === 0) {
-      d.innerHTML = "&nbsp;", this.textLayer.appendChild(d), this.renderedLines.set(s, d);
-      return;
-    }
-    const u = this.diagnostics.filter((m) => m.line === s);
-    if (!this.enableSyntaxHighlight || !this.lexer || !this.highlighter) {
-      u.length > 0 ? this.renderLineWithDiagnostics(d, t, u) : d.textContent = t, this.textLayer.appendChild(d), this.renderedLines.set(s, d);
-      return;
-    }
-    const h = this.lexer.parseLine(t, s, c);
-    if (h.length === 0) {
-      d.innerHTML = "&nbsp;", this.textLayer.appendChild(d), this.renderedLines.set(s, d);
-      return;
-    }
-    this.renderTokensWithDiagnostics(d, h, t, u), this.textLayer.appendChild(d), this.renderedLines.set(s, d);
+    `, !t || t.length === 0)
+      return d.innerHTML = "&nbsp;", d;
+    const u = this.diagnostics.filter((h) => h.line === s);
+    if (!this.enableSyntaxHighlight || !this.lexer || !this.highlighter)
+      return u.length > 0 ? this.renderLineWithDiagnostics(d, t, u) : d.textContent = t, d;
+    const m = this.lexer.parseLine(t, s, c);
+    return m.length === 0 ? (d.innerHTML = "&nbsp;", d) : (this.renderTokensWithDiagnostics(d, m, t, u), d);
+  }
+  /**
+   * 渲染单行文本（保留用于兼容性）
+   */
+  renderLine(t, e, a, s, c = {}) {
+    const d = this.createLineElement(t, e, a, s, c);
+    this.textLayer.appendChild(d), this.renderedLines.set(s, d);
   }
   /**
    * 渲染带诊断标记的纯文本
@@ -326,13 +325,13 @@ class l0 {
     const s = [...a].sort((d, u) => d.column - u.column);
     let c = 0;
     for (const d of s) {
-      const u = d.column, h = u + (d.length || 1);
+      const u = d.column, m = u + (d.length || 1);
       if (u > c) {
-        const _ = document.createElement("span");
-        _.textContent = e.substring(c, u), t.appendChild(_);
+        const p = document.createElement("span");
+        p.textContent = e.substring(c, u), t.appendChild(p);
       }
-      const m = document.createElement("span");
-      m.textContent = e.substring(u, h), m.className = `syntax-${d.severity}-underline`, m.title = d.message, t.appendChild(m), c = h;
+      const h = document.createElement("span");
+      h.textContent = e.substring(u, m), h.className = `syntax-${d.severity}-underline`, h.title = d.message, t.appendChild(h), c = m;
     }
     if (c < e.length) {
       const d = document.createElement("span");
@@ -346,11 +345,11 @@ class l0 {
     for (const c of e) {
       const d = this.highlighter.getStyle(c.type), u = document.createElement("span");
       u.textContent = c.text, u.style.color = d.color || "", u.dataset.tokenStart = c.start.toString(), u.dataset.tokenEnd = c.end.toString(), d.bold && (u.style.fontWeight = "bold"), d.italic && (u.style.fontStyle = "italic"), d.underline && (u.style.textDecoration = "underline"), d.strikethrough && (u.style.textDecoration = "line-through");
-      const h = s.find((m) => {
-        const _ = m.column, g = m.column + (m.length || 1);
-        return _ < c.end && g > c.start;
+      const m = s.find((h) => {
+        const p = h.column, g = h.column + (h.length || 1);
+        return p < c.end && g > c.start;
       });
-      h && (u.classList.add(`syntax-${h.severity}-underline`), u.title = h.message), t.appendChild(u);
+      m && (u.classList.add(`syntax-${m.severity}-underline`), u.title = m.message), t.appendChild(u);
     }
   }
   /**
@@ -428,8 +427,18 @@ class a0 {
     k(this, "clickCount");
     k(this, "lastClickTime");
     k(this, "clickDelay");
+    // 保存绑定的事件处理函数引用，便于清理
     k(this, "boundHandleMouseMove");
     k(this, "boundHandleMouseUp");
+    k(this, "boundHandleInput");
+    k(this, "boundHandleKeydown");
+    k(this, "boundHandleClick");
+    k(this, "boundHandleDblClick");
+    k(this, "boundHandleMouseDown");
+    k(this, "boundHandleCompositionStart");
+    k(this, "boundHandleCompositionEnd");
+    k(this, "boundHandleBlur");
+    k(this, "boundHandleFocus");
     this.container = t, this.canvas = e.canvas, this.textarea = document.createElement("textarea"), this.textarea.style.cssText = `
       position: absolute;
       width: 1px;
@@ -450,25 +459,25 @@ class a0 {
       mousedown: [],
       mousemove: [],
       mouseup: []
-    }, this.isComposing = !1, this.clickCount = 0, this.lastClickTime = 0, this.clickDelay = 500, this.boundHandleMouseMove = this.handleMouseMove.bind(this), this.boundHandleMouseUp = this.handleMouseUp.bind(this), this.bindEvents(), setTimeout(() => this.focus(), 0);
+    }, this.isComposing = !1, this.clickCount = 0, this.lastClickTime = 0, this.clickDelay = 500, this.boundHandleMouseMove = this.handleMouseMove.bind(this), this.boundHandleMouseUp = this.handleMouseUp.bind(this), this.boundHandleInput = this.handleInput.bind(this), this.boundHandleKeydown = this.handleKeydown.bind(this), this.boundHandleClick = this.handleClick.bind(this), this.boundHandleDblClick = this.handleDblClick.bind(this), this.boundHandleMouseDown = this.handleMouseDown.bind(this), this.boundHandleCompositionStart = () => {
+      this.isComposing = !0;
+    }, this.boundHandleCompositionEnd = (a) => {
+      this.isComposing = !1;
+      const s = a.data || this.textarea.value;
+      s && (this.textarea.value = "", this.emit("input", { data: s }));
+    }, this.boundHandleBlur = () => {
+      document.activeElement && document.activeElement.tagName !== "BODY" || setTimeout(() => {
+        document.activeElement && document.activeElement.tagName === "BODY" && this.focus();
+      }, 10);
+    }, this.boundHandleFocus = () => {
+      this.focus();
+    }, this.bindEvents(), setTimeout(() => this.focus(), 0);
   }
   /**
    * 绑定事件
    */
   bindEvents() {
-    this.textarea.addEventListener("input", this.handleInput.bind(this)), this.textarea.addEventListener("keydown", this.handleKeydown.bind(this)), this.textarea.addEventListener("compositionstart", () => {
-      this.isComposing = !0;
-    }), this.textarea.addEventListener("compositionend", (t) => {
-      this.isComposing = !1;
-      const e = t.data || this.textarea.value;
-      e && (this.textarea.value = "", this.emit("input", { data: e }));
-    }), this.textarea.addEventListener("blur", () => {
-      document.activeElement && document.activeElement.tagName !== "BODY" || setTimeout(() => {
-        document.activeElement && document.activeElement.tagName === "BODY" && this.focus();
-      }, 10);
-    }), this.canvas.addEventListener("click", this.handleClick.bind(this)), this.canvas.addEventListener("dblclick", this.handleDblClick.bind(this)), this.canvas.addEventListener("mousedown", this.handleMouseDown.bind(this)), document.addEventListener("mousemove", this.boundHandleMouseMove), document.addEventListener("mouseup", this.boundHandleMouseUp), this.canvas.addEventListener("mousedown", () => {
-      this.focus();
-    });
+    this.textarea.addEventListener("input", this.boundHandleInput), this.textarea.addEventListener("keydown", this.boundHandleKeydown), this.textarea.addEventListener("compositionstart", this.boundHandleCompositionStart), this.textarea.addEventListener("compositionend", this.boundHandleCompositionEnd), this.textarea.addEventListener("blur", this.boundHandleBlur), this.canvas.addEventListener("click", this.boundHandleClick), this.canvas.addEventListener("dblclick", this.boundHandleDblClick), this.canvas.addEventListener("mousedown", this.boundHandleMouseDown), this.canvas.addEventListener("mousedown", this.boundHandleFocus), document.addEventListener("mousemove", this.boundHandleMouseMove), document.addEventListener("mouseup", this.boundHandleMouseUp);
   }
   /**
    * 聚焦输入
@@ -555,7 +564,16 @@ class a0 {
    * 销毁
    */
   destroy() {
-    document.removeEventListener("mousemove", this.boundHandleMouseMove), document.removeEventListener("mouseup", this.boundHandleMouseUp), this.textarea.remove();
+    document.removeEventListener("mousemove", this.boundHandleMouseMove), document.removeEventListener("mouseup", this.boundHandleMouseUp), this.canvas.removeEventListener("click", this.boundHandleClick), this.canvas.removeEventListener("dblclick", this.boundHandleDblClick), this.canvas.removeEventListener("mousedown", this.boundHandleMouseDown), this.canvas.removeEventListener("mousedown", this.boundHandleFocus), this.textarea.removeEventListener("input", this.boundHandleInput), this.textarea.removeEventListener("keydown", this.boundHandleKeydown), this.textarea.removeEventListener("compositionstart", this.boundHandleCompositionStart), this.textarea.removeEventListener("compositionend", this.boundHandleCompositionEnd), this.textarea.removeEventListener("blur", this.boundHandleBlur), this.callbacks = {
+      input: [],
+      keydown: [],
+      click: [],
+      dblclick: [],
+      tripleclick: [],
+      mousedown: [],
+      mousemove: [],
+      mouseup: []
+    }, this.textarea.remove();
   }
 }
 class Bi {
@@ -632,7 +650,19 @@ class s0 {
     k(this, "blinkTimer");
     k(this, "blinkEnabled");
     k(this, "lastInputTime");
+    // 独立渲染相关
+    k(this, "lastCursorX", 0);
+    k(this, "lastCursorY", 0);
+    k(this, "lastCursorHeight", 0);
+    k(this, "ctx", null);
+    k(this, "backgroundColor", "#ffffff");
     this.color = t.color || "#000000", this.width = t.width || 2, this.blinkInterval = t.blinkInterval || 530, this.visible = !0, this.blinkTimer = null, this.blinkEnabled = !0, this.lastInputTime = 0;
+  }
+  /**
+   * 设置独立渲染上下文
+   */
+  setRenderContext(t, e) {
+    this.ctx = t, this.backgroundColor = e;
   }
   /**
    * 渲染光标
@@ -640,14 +670,24 @@ class s0 {
   render(t, e, a, s, c, d) {
     if (!this.visible)
       return;
-    const { x: u, y: h } = a.docToCanvas(e.line, e.column, s, c);
-    if (u < 0 || u > a.width || h < 0 || h > a.height)
+    const { x: u, y: m } = a.docToCanvas(e.line, e.column, s, c);
+    if (u < 0 || u > a.width || m < 0 || m > a.height)
       return;
-    const m = s.fontSize, _ = h + (d - m) / 2;
-    t.fillStyle = this.color, t.fillRect(u, _, this.width, m);
+    const h = s.fontSize, p = m + (d - h) / 2;
+    this.lastCursorX = u, this.lastCursorY = p, this.lastCursorHeight = h, this.ctx = t, this.backgroundColor = s.backgroundColor || "#ffffff", t.fillStyle = this.color, t.fillRect(u, p, this.width, h);
+  }
+  /**
+   * 独立渲染光标（不触发全屏重绘）
+   * 仅更新光标区域，大幅减少渲染开销
+   */
+  renderCursorOnly() {
+    if (!this.ctx) return;
+    const t = Math.max(0, this.lastCursorX - 1), e = Math.max(0, this.lastCursorY - 1), a = this.width + 2, s = this.lastCursorHeight + 2;
+    this.ctx.fillStyle = this.backgroundColor, this.ctx.fillRect(t, e, a, s), this.visible && (this.ctx.fillStyle = this.color, this.ctx.fillRect(this.lastCursorX, this.lastCursorY, this.width, this.lastCursorHeight));
   }
   /**
    * 启动光标闪烁动画
+   * @param onBlink 可选回调，仅在需要全屏重绘时调用（如选区变化）
    */
   startBlinking(t) {
     if (this.stopBlinking(), !this.blinkEnabled) {
@@ -655,7 +695,7 @@ class s0 {
       return;
     }
     this.visible = !0, this.blinkTimer = setInterval(() => {
-      this.visible = !this.visible, t && t();
+      this.visible = !this.visible, this.ctx && this.lastCursorHeight > 0 ? this.renderCursorOnly() : t && t();
     }, this.blinkInterval);
   }
   /**
@@ -695,10 +735,16 @@ class s0 {
     this.visible = !1;
   }
   /**
+   * 清除独立渲染状态
+   */
+  clearRenderState() {
+    this.lastCursorX = 0, this.lastCursorY = 0, this.lastCursorHeight = 0;
+  }
+  /**
    * 销毁光标渲染器
    */
   destroy() {
-    this.stopBlinking();
+    this.stopBlinking(), this.ctx = null;
   }
 }
 class c0 {
@@ -836,40 +882,40 @@ class d0 {
   render(t, e, a, s, c, d) {
     if (!e.hasSelection)
       return;
-    const { startLine: u, startColumn: h, endLine: m, endColumn: _ } = e.getOrderedRange(), { startLine: g, endLine: w } = a.getVisibleRange(), S = Math.max(u, g), p = Math.min(m, w - 1);
-    if (!(S > p)) {
-      if (t.fillStyle = this.color, u === m) {
-        const C = s.getLine(u);
+    const { startLine: u, startColumn: m, endLine: h, endColumn: p } = e.getOrderedRange(), { startLine: g, endLine: w } = a.getVisibleRange(), C = Math.max(u, g), _ = Math.min(h, w - 1);
+    if (!(C > _)) {
+      if (t.fillStyle = this.color, u === h) {
+        const S = s.getLine(u);
         this.renderSingleLine(
           t,
           u,
-          h,
-          _,
+          m,
+          p,
           a,
           c,
-          C,
+          S,
           d
         );
         return;
       }
       if (u >= g && u < w) {
-        const C = s.getLine(u);
+        const S = s.getLine(u);
         this.renderSingleLine(
           t,
           u,
-          h,
-          C.length,
+          m,
+          S.length,
           a,
           c,
-          C,
+          S,
           d
         );
       }
-      for (let C = Math.max(u + 1, g); C < Math.min(m, w); C++) {
-        const f = s.getLine(C);
+      for (let S = Math.max(u + 1, g); S < Math.min(h, w); S++) {
+        const f = s.getLine(S);
         this.renderSingleLine(
           t,
-          C,
+          S,
           0,
           f.length,
           a,
@@ -878,16 +924,16 @@ class d0 {
           d
         );
       }
-      if (m >= g && m < w) {
-        const C = s.getLine(m);
+      if (h >= g && h < w) {
+        const S = s.getLine(h);
         this.renderSingleLine(
           t,
-          m,
+          h,
           0,
-          _,
+          p,
           a,
           c,
-          C,
+          S,
           d
         );
       }
@@ -896,21 +942,21 @@ class d0 {
   /**
    * 渲染单行选区
    */
-  renderSingleLine(t, e, a, s, c, d, u, h) {
+  renderSingleLine(t, e, a, s, c, d, u, m) {
     if (a >= s)
       return;
-    const m = c.docToCanvas(e, a, d, u), _ = d.getColumnX(u, a), w = d.getColumnX(u, s) - _, S = d.fontSize + 4, p = m.y + (h - S) / 2;
-    t.fillRect(m.x, p, w, S);
+    const h = c.docToCanvas(e, a, d, u), p = d.getColumnX(u, a), w = d.getColumnX(u, s) - p, C = d.fontSize + 4, _ = h.y + (m - C) / 2;
+    t.fillRect(h.x, _, w, C);
   }
   /**
    * 渲染矩形选区（用于后续可能的列选择模式）
    */
-  renderRectangle(t, e, a, s, c, d, u, h) {
-    const m = Math.min(e, s), _ = Math.max(e, s), g = Math.min(a, c), w = Math.max(a, c);
+  renderRectangle(t, e, a, s, c, d, u, m) {
+    const h = Math.min(e, s), p = Math.max(e, s), g = Math.min(a, c), w = Math.max(a, c);
     t.fillStyle = this.color;
-    for (let S = m; S <= _; S++) {
-      const p = d.docToCanvas(S, g, null, ""), C = (w - g) * u;
-      t.fillRect(p.x, p.y, C, h);
+    for (let C = h; C <= p; C++) {
+      const _ = d.docToCanvas(C, g, null, ""), S = (w - g) * u;
+      t.fillRect(_.x, _.y, S, m);
     }
   }
   /**
@@ -1074,7 +1120,7 @@ let p0 = class {
     }
   }
 };
-const $ = {
+const V = {
   TEXT: "text",
   HEADING1: "heading1",
   HEADING2: "heading2",
@@ -1120,56 +1166,94 @@ const $ = {
 };
 class _0 {
   constructor() {
-    k(this, "TOKEN_TYPES", $);
+    k(this, "TOKEN_TYPES", V);
     k(this, "cache");
     k(this, "dirtyLines");
     k(this, "cacheStats");
+    k(this, "maxCacheSize");
     this.cache = /* @__PURE__ */ new Map(), this.dirtyLines = /* @__PURE__ */ new Set(), this.cacheStats = {
       hits: 0,
       misses: 0
-    };
+    }, this.maxCacheSize = 2e3;
+  }
+  /**
+   * 生成稳定的缓存键
+   * 使用哈希算法处理长文本，确保context序列化稳定
+   */
+  getCacheKey(t, e, a) {
+    const s = t.length > 100 ? this.simpleHash(t) : t, c = a.inCodeBlock ? "1" : "0";
+    return `${e}:${c}:${s}`;
+  }
+  /**
+   * 简单的字符串哈希函数
+   */
+  simpleHash(t) {
+    let e = 0;
+    for (let a = 0; a < t.length; a++) {
+      const s = t.charCodeAt(a);
+      e = (e << 5) - e + s, e = e & e;
+    }
+    return e.toString(36);
+  }
+  /**
+   * LRU缓存淘汰
+   */
+  evictCache() {
+    if (this.cache.size <= this.maxCacheSize) return;
+    const t = [];
+    let e = 0;
+    const a = Math.floor(this.maxCacheSize * 0.2);
+    for (const s of this.cache.keys()) {
+      if (e >= a) break;
+      t.push(s), e++;
+    }
+    for (const s of t)
+      this.cache.delete(s);
   }
   /**
    * 解析单行文本
    */
   parseLine(t, e = 0, a = {}) {
-    const s = `${e}:${t}:${JSON.stringify(a)}`;
-    if (!this.dirtyLines.has(e) && this.cache.has(s))
-      return this.cacheStats.hits++, this.cache.get(s);
+    const s = this.getCacheKey(t, e, a);
+    if (!this.dirtyLines.has(e) && this.cache.has(s)) {
+      this.cacheStats.hits++;
+      const d = this.cache.get(s);
+      return this.cache.delete(s), this.cache.set(s, d), d;
+    }
     this.cacheStats.misses++;
     const c = [];
     if (!t || t.trim().length === 0)
-      return this.cache.set(s, c), c;
+      return this.cache.set(s, c), this.evictCache(), c;
     if (a.inCodeBlock)
       return c.push({
-        type: $.CODE_BLOCK_TEXT,
+        type: V.CODE_BLOCK_TEXT,
         start: 0,
         end: t.length,
         text: t
-      }), this.cache.set(s, c), c;
+      }), this.cache.set(s, c), this.evictCache(), c;
     if (t.trimStart().startsWith("```")) {
       const d = t.match(/^(\s*)(```)(.*)?$/);
       if (d) {
         let u = 0;
         return d[1] && (c.push({
-          type: $.TEXT,
+          type: V.TEXT,
           start: u,
           end: u + d[1].length,
           text: d[1]
         }), u += d[1].length), c.push({
-          type: $.CODE_BLOCK_DELIMITER,
+          type: V.CODE_BLOCK_DELIMITER,
           start: u,
           end: u + 3,
           text: "```"
         }), u += 3, d[3] && c.push({
-          type: $.CODE_BLOCK_LANG,
+          type: V.CODE_BLOCK_LANG,
           start: u,
           end: t.length,
           text: d[3]
-        }), this.cache.set(s, c), c;
+        }), this.cache.set(s, c), this.evictCache(), c;
       }
     }
-    return this.parseInlineSyntax(t, c), this.cache.set(s, c), c;
+    return this.parseInlineSyntax(t, c), this.cache.set(s, c), this.evictCache(), c;
   }
   /**
    * 解析行内语法
@@ -1178,32 +1262,32 @@ class _0 {
     const a = t.match(/^\[\^(\w+)\]:\s+(.*)$/);
     if (a) {
       e.push({
-        type: $.FOOTNOTE_MARKER,
+        type: V.FOOTNOTE_MARKER,
         start: 0,
         end: 2,
         text: "[^"
       }), e.push({
-        type: $.FOOTNOTE_REF,
+        type: V.FOOTNOTE_REF,
         start: 2,
         end: 2 + a[1].length,
         text: a[1]
       });
-      const h = t.indexOf("]:");
+      const m = t.indexOf("]:");
       e.push({
-        type: $.FOOTNOTE_MARKER,
+        type: V.FOOTNOTE_MARKER,
         start: 2 + a[1].length,
-        end: h + 2,
+        end: m + 2,
         text: "]:"
       });
-      const m = t.indexOf(a[2], h + 2);
-      m > h + 2 && e.push({
-        type: $.TEXT,
-        start: h + 2,
-        end: m,
-        text: t.substring(h + 2, m)
+      const h = t.indexOf(a[2], m + 2);
+      h > m + 2 && e.push({
+        type: V.TEXT,
+        start: m + 2,
+        end: h,
+        text: t.substring(m + 2, h)
       }), e.push({
-        type: $.FOOTNOTE_DEF,
-        start: m,
+        type: V.FOOTNOTE_DEF,
+        start: h,
         end: t.length,
         text: a[2]
       });
@@ -1215,20 +1299,20 @@ class _0 {
     }
     const s = t.match(/^(#{1,6})\s+(.*)$/);
     if (s) {
-      const m = `heading${s[1].length}`;
+      const h = `heading${s[1].length}`;
       e.push({
-        type: $[m.toUpperCase()] || $.TEXT,
+        type: V[h.toUpperCase()] || V.TEXT,
         start: 0,
         end: s[1].length,
         text: s[1]
       });
-      const _ = t.indexOf(s[2]);
-      _ > s[1].length && e.push({
-        type: $.TEXT,
+      const p = t.indexOf(s[2]);
+      p > s[1].length && e.push({
+        type: V.TEXT,
         start: s[1].length,
-        end: _,
-        text: t.substring(s[1].length, _)
-      }), this.parseInlineStyles(s[2], e, _);
+        end: p,
+        text: t.substring(s[1].length, p)
+      }), this.parseInlineStyles(s[2], e, p);
       return;
     }
     const c = t.match(/^(\s*)([-*+])\s+\[([ xX])\]\s+(.*)$/);
@@ -1238,53 +1322,53 @@ class _0 {
     }
     const d = t.match(/^(\s*)([-*+])\s+(.*)$/);
     if (d) {
-      let h = 0;
+      let m = 0;
       d[1] && (e.push({
-        type: $.TEXT,
-        start: h,
-        end: h + d[1].length,
+        type: V.TEXT,
+        start: m,
+        end: m + d[1].length,
         text: d[1]
-      }), h += d[1].length), e.push({
-        type: $.LIST_MARKER,
-        start: h,
-        end: h + 1,
+      }), m += d[1].length), e.push({
+        type: V.LIST_MARKER,
+        start: m,
+        end: m + 1,
         text: d[2]
-      }), h += 1;
-      const m = t.indexOf(d[3]);
-      m > h && (e.push({
-        type: $.TEXT,
-        start: h,
-        end: m,
-        text: t.substring(h, m)
-      }), h = m), this.parseInlineStyles(d[3], e, h);
+      }), m += 1;
+      const h = t.indexOf(d[3]);
+      h > m && (e.push({
+        type: V.TEXT,
+        start: m,
+        end: h,
+        text: t.substring(m, h)
+      }), m = h), this.parseInlineStyles(d[3], e, m);
       return;
     }
     const u = t.match(/^(\s*)(>+)\s+(.*)$/);
     if (u) {
-      let h = 0;
+      let m = 0;
       u[1] && (e.push({
-        type: $.TEXT,
-        start: h,
-        end: h + u[1].length,
+        type: V.TEXT,
+        start: m,
+        end: m + u[1].length,
         text: u[1]
-      }), h += u[1].length), e.push({
-        type: $.QUOTE_MARKER,
-        start: h,
-        end: h + u[2].length,
+      }), m += u[1].length), e.push({
+        type: V.QUOTE_MARKER,
+        start: m,
+        end: m + u[2].length,
         text: u[2]
-      }), h += u[2].length;
-      const m = t.indexOf(u[3]);
-      m > h && (e.push({
-        type: $.TEXT,
-        start: h,
-        end: m,
-        text: t.substring(h, m)
-      }), h = m), this.parseInlineStyles(u[3], e, h);
+      }), m += u[2].length;
+      const h = t.indexOf(u[3]);
+      h > m && (e.push({
+        type: V.TEXT,
+        start: m,
+        end: h,
+        text: t.substring(m, h)
+      }), m = h), this.parseInlineStyles(u[3], e, m);
       return;
     }
     if (/^(\s*)([-*_])\2{2,}\s*$/.test(t)) {
       e.push({
-        type: $.HR,
+        type: V.HR,
         start: 0,
         end: t.length,
         text: t
@@ -1302,7 +1386,7 @@ class _0 {
       if (t[s] === "\\" && s + 1 < t.length) {
         const u = t[s + 1];
         e.push({
-          type: $.TEXT,
+          type: V.TEXT,
           start: a + s,
           end: a + s + 2,
           text: u,
@@ -1313,7 +1397,7 @@ class _0 {
       const c = this.findNextSpecialChar(t, s);
       if (c === -1) {
         s < t.length && e.push({
-          type: $.TEXT,
+          type: V.TEXT,
           start: a + s,
           end: a + t.length,
           text: t.substring(s)
@@ -1321,7 +1405,7 @@ class _0 {
         break;
       }
       c > s && e.push({
-        type: $.TEXT,
+        type: V.TEXT,
         start: a + s,
         end: a + c,
         text: t.substring(s, c)
@@ -1339,54 +1423,54 @@ class _0 {
     for (let u = 0; u < t.length; u++)
       if (t[u] === "|") {
         if (a) {
-          const m = t.substring(s, u), _ = m.trim();
-          if (_.length > 0) {
-            const g = m.length - m.trimStart().length, w = m.length - m.trimEnd().length, S = d ? $.TABLE_ALIGN : $.TABLE_CELL;
+          const h = t.substring(s, u), p = h.trim();
+          if (p.length > 0) {
+            const g = h.length - h.trimStart().length, w = h.length - h.trimEnd().length, C = d ? V.TABLE_ALIGN : V.TABLE_CELL;
             g > 0 && e.push({
-              type: $.TEXT,
+              type: V.TEXT,
               start: s,
               end: s + g,
-              text: m.substring(0, g)
+              text: h.substring(0, g)
             }), e.push({
-              type: S,
+              type: C,
               start: s + g,
               end: u - w,
-              text: _
+              text: p
             }), w > 0 && e.push({
-              type: $.TEXT,
+              type: V.TEXT,
               start: u - w,
               end: u,
-              text: m.substring(m.length - w)
+              text: h.substring(h.length - w)
             });
           }
           a = !1;
         }
         e.push({
-          type: $.TABLE_DELIMITER,
+          type: V.TABLE_DELIMITER,
           start: u,
           end: u + 1,
           text: "|"
         }), s = u + 1, a = !0;
       }
     if (a && s < t.length) {
-      const u = t.substring(s), h = u.trim();
-      if (h.length > 0) {
-        const m = u.length - u.trimStart().length, _ = u.length - u.trimEnd().length, g = d ? $.TABLE_ALIGN : $.TABLE_CELL;
-        m > 0 && e.push({
-          type: $.TEXT,
+      const u = t.substring(s), m = u.trim();
+      if (m.length > 0) {
+        const h = u.length - u.trimStart().length, p = u.length - u.trimEnd().length, g = d ? V.TABLE_ALIGN : V.TABLE_CELL;
+        h > 0 && e.push({
+          type: V.TEXT,
           start: s,
-          end: s + m,
-          text: u.substring(0, m)
+          end: s + h,
+          text: u.substring(0, h)
         }), e.push({
           type: g,
-          start: s + m,
-          end: t.length - _,
-          text: h
-        }), _ > 0 && e.push({
-          type: $.TEXT,
-          start: t.length - _,
+          start: s + h,
+          end: t.length - p,
+          text: m
+        }), p > 0 && e.push({
+          type: V.TEXT,
+          start: t.length - p,
           end: t.length,
-          text: u.substring(u.length - _)
+          text: u.substring(u.length - p)
         });
       }
     }
@@ -1397,44 +1481,44 @@ class _0 {
   parseTaskList(t, e, a) {
     let s = 0;
     e[1] && (a.push({
-      type: $.TEXT,
+      type: V.TEXT,
       start: s,
       end: s + e[1].length,
       text: e[1]
     }), s += e[1].length), a.push({
-      type: $.LIST_MARKER,
+      type: V.LIST_MARKER,
       start: s,
       end: s + 1,
       text: e[2]
     }), s += 1;
     const c = t.indexOf("[", s);
     c > s && (a.push({
-      type: $.TEXT,
+      type: V.TEXT,
       start: s,
       end: c,
       text: t.substring(s, c)
     }), s = c), a.push({
-      type: $.TASK_BRACKET,
+      type: V.TASK_BRACKET,
       start: s,
       end: s + 1,
       text: "["
     }), s += 1;
     const d = e[3].toLowerCase() === "x";
     a.push({
-      type: $.TASK_CHECKBOX,
+      type: V.TASK_CHECKBOX,
       start: s,
       end: s + 1,
       text: e[3],
       checked: d
     }), s += 1, a.push({
-      type: $.TASK_BRACKET,
+      type: V.TASK_BRACKET,
       start: s,
       end: s + 1,
       text: "]"
     }), s += 1;
     const u = t.indexOf(e[4], s);
     u > s && (a.push({
-      type: $.TEXT,
+      type: V.TEXT,
       start: s,
       end: u,
       text: t.substring(s, u)
@@ -1465,17 +1549,17 @@ class _0 {
       const d = t.indexOf("`", e + 1);
       if (d !== -1)
         return a.push({
-          type: $.CODE_DELIMITER,
+          type: V.CODE_DELIMITER,
           start: s + e,
           end: s + e + 1,
           text: "`"
         }), d > e + 1 && a.push({
-          type: $.CODE_TEXT,
+          type: V.CODE_TEXT,
           start: s + e + 1,
           end: s + d,
           text: t.substring(e + 1, d)
         }), a.push({
-          type: $.CODE_DELIMITER,
+          type: V.CODE_DELIMITER,
           start: s + d,
           end: s + d + 1,
           text: "`"
@@ -1485,25 +1569,25 @@ class _0 {
       const d = c + c, u = t.indexOf(d, e + 2);
       if (u !== -1) {
         a.push({
-          type: $.BOLD_DELIMITER,
+          type: V.BOLD_DELIMITER,
           start: s + e,
           end: s + e + 2,
           text: d
         });
-        const h = t.substring(e + 2, u);
-        if (h.length > 0) {
-          const m = [];
-          this.parseInlineStyles(h, m, 0);
-          for (const _ of m)
+        const m = t.substring(e + 2, u);
+        if (m.length > 0) {
+          const h = [];
+          this.parseInlineStyles(m, h, 0);
+          for (const p of h)
             a.push({
-              ..._,
-              start: s + e + 2 + _.start,
-              end: s + e + 2 + _.end,
-              type: _.type === $.TEXT ? $.BOLD_TEXT : _.type
+              ...p,
+              start: s + e + 2 + p.start,
+              end: s + e + 2 + p.end,
+              type: p.type === V.TEXT ? V.BOLD_TEXT : p.type
             });
         }
         return a.push({
-          type: $.BOLD_DELIMITER,
+          type: V.BOLD_DELIMITER,
           start: s + u,
           end: s + u + 2,
           text: d
@@ -1514,17 +1598,17 @@ class _0 {
       const d = t.indexOf(c, e + 1);
       if (d !== -1)
         return a.push({
-          type: $.ITALIC_DELIMITER,
+          type: V.ITALIC_DELIMITER,
           start: s + e,
           end: s + e + 1,
           text: c
         }), d > e + 1 && a.push({
-          type: $.ITALIC_TEXT,
+          type: V.ITALIC_TEXT,
           start: s + e + 1,
           end: s + d,
           text: t.substring(e + 1, d)
         }), a.push({
-          type: $.ITALIC_DELIMITER,
+          type: V.ITALIC_DELIMITER,
           start: s + d,
           end: s + d + 1,
           text: c
@@ -1534,17 +1618,17 @@ class _0 {
       const d = t.indexOf("~~", e + 2);
       if (d !== -1)
         return a.push({
-          type: $.STRIKETHROUGH_DELIMITER,
+          type: V.STRIKETHROUGH_DELIMITER,
           start: s + e,
           end: s + e + 2,
           text: "~~"
         }), d > e + 2 && a.push({
-          type: $.STRIKETHROUGH_TEXT,
+          type: V.STRIKETHROUGH_TEXT,
           start: s + e + 2,
           end: s + d,
           text: t.substring(e + 2, d)
         }), a.push({
-          type: $.STRIKETHROUGH_DELIMITER,
+          type: V.STRIKETHROUGH_DELIMITER,
           start: s + d,
           end: s + d + 2,
           text: "~~"
@@ -1554,64 +1638,64 @@ class _0 {
       const d = t.substring(e).match(/^\[\^(\w+)\]/);
       if (d)
         return a.push({
-          type: $.FOOTNOTE_MARKER,
+          type: V.FOOTNOTE_MARKER,
           start: s + e,
           end: s + e + 2,
           text: "[^"
         }), a.push({
-          type: $.FOOTNOTE_REF,
+          type: V.FOOTNOTE_REF,
           start: s + e + 2,
           end: s + e + 2 + d[1].length,
           text: d[1]
         }), a.push({
-          type: $.FOOTNOTE_MARKER,
+          type: V.FOOTNOTE_MARKER,
           start: s + e + 2 + d[1].length,
           end: s + e + d[0].length,
           text: "]"
         }), { nextPos: e + d[0].length };
       const u = t.indexOf("]", e + 1);
       if (u !== -1 && t[u + 1] === "(") {
-        const h = t.indexOf(")", u + 2);
-        if (h !== -1) {
+        const m = t.indexOf(")", u + 2);
+        if (m !== -1) {
           a.push({
-            type: $.LINK_BRACKET,
+            type: V.LINK_BRACKET,
             start: s + e,
             end: s + e + 1,
             text: "["
           });
-          const m = t.substring(e + 1, u);
-          if (m.length > 0) {
-            const _ = [];
-            this.parseInlineStyles(m, _, 0);
-            for (const g of _)
+          const h = t.substring(e + 1, u);
+          if (h.length > 0) {
+            const p = [];
+            this.parseInlineStyles(h, p, 0);
+            for (const g of p)
               a.push({
                 ...g,
                 start: s + e + 1 + g.start,
                 end: s + e + 1 + g.end,
-                type: g.type === $.TEXT ? $.LINK_TEXT : g.type
+                type: g.type === V.TEXT ? V.LINK_TEXT : g.type
               });
           }
           return a.push({
-            type: $.LINK_BRACKET,
+            type: V.LINK_BRACKET,
             start: s + u,
             end: s + u + 1,
             text: "]"
           }), a.push({
-            type: $.LINK_PAREN,
+            type: V.LINK_PAREN,
             start: s + u + 1,
             end: s + u + 2,
             text: "("
-          }), h > u + 2 && a.push({
-            type: $.LINK_URL,
+          }), m > u + 2 && a.push({
+            type: V.LINK_URL,
             start: s + u + 2,
-            end: s + h,
-            text: t.substring(u + 2, h)
+            end: s + m,
+            text: t.substring(u + 2, m)
           }), a.push({
-            type: $.LINK_PAREN,
-            start: s + h,
-            end: s + h + 1,
+            type: V.LINK_PAREN,
+            start: s + m,
+            end: s + m + 1,
             text: ")"
-          }), { nextPos: h + 1 };
+          }), { nextPos: m + 1 };
         }
       }
     }
@@ -1621,37 +1705,37 @@ class _0 {
         const u = t.indexOf(")", d + 2);
         if (u !== -1)
           return a.push({
-            type: $.IMAGE_BANG,
+            type: V.IMAGE_BANG,
             start: s + e,
             end: s + e + 1,
             text: "!"
           }), a.push({
-            type: $.IMAGE_BRACKET,
+            type: V.IMAGE_BRACKET,
             start: s + e + 1,
             end: s + e + 2,
             text: "["
           }), d > e + 2 && a.push({
-            type: $.IMAGE_ALT,
+            type: V.IMAGE_ALT,
             start: s + e + 2,
             end: s + d,
             text: t.substring(e + 2, d)
           }), a.push({
-            type: $.IMAGE_BRACKET,
+            type: V.IMAGE_BRACKET,
             start: s + d,
             end: s + d + 1,
             text: "]"
           }), a.push({
-            type: $.IMAGE_PAREN,
+            type: V.IMAGE_PAREN,
             start: s + d + 1,
             end: s + d + 2,
             text: "("
           }), u > d + 2 && a.push({
-            type: $.IMAGE_URL,
+            type: V.IMAGE_URL,
             start: s + d + 2,
             end: s + u,
             text: t.substring(d + 2, u)
           }), a.push({
-            type: $.IMAGE_PAREN,
+            type: V.IMAGE_PAREN,
             start: s + u,
             end: s + u + 1,
             text: ")"
@@ -1662,24 +1746,24 @@ class _0 {
       const d = t.indexOf("$", e + 1);
       if (d !== -1)
         return a.push({
-          type: $.MATH_DELIMITER,
+          type: V.MATH_DELIMITER,
           start: s + e,
           end: s + e + 1,
           text: "$"
         }), d > e + 1 && a.push({
-          type: $.MATH_CONTENT,
+          type: V.MATH_CONTENT,
           start: s + e + 1,
           end: s + d,
           text: t.substring(e + 1, d)
         }), a.push({
-          type: $.MATH_DELIMITER,
+          type: V.MATH_DELIMITER,
           start: s + d,
           end: s + d + 1,
           text: "$"
         }), { nextPos: d + 1 };
     }
     return a.push({
-      type: $.TEXT,
+      type: V.TEXT,
       start: s + e,
       end: s + e + 1,
       text: c
@@ -1909,11 +1993,11 @@ class ol {
   render(t, e, a, s, c) {
     const { startLine: d, endLine: u } = e.getVisibleRange();
     t.fillStyle = this.backgroundColor, t.fillRect(0, 0, this.width, e.height), t.strokeStyle = this.borderColor, t.lineWidth = 1, t.beginPath(), t.moveTo(this.width - 0.5, 0), t.lineTo(this.width - 0.5, e.height), t.stroke(), t.font = `${this.fontSize}px ${this.fontFamily}`, t.textAlign = "right", t.textBaseline = "middle";
-    for (let h = d; h < u && h < a; h++) {
-      const m = h * c - e.scrollTop;
-      h === s && (t.fillStyle = this.activeLineColor, t.fillRect(0, m, this.width, c)), t.fillStyle = h === s ? this.activeTextColor : this.textColor;
-      const _ = (h + 1).toString(), g = this.width - this.padding, w = m + c / 2;
-      t.fillText(_, g, w);
+    for (let m = d; m < u && m < a; m++) {
+      const h = m * c - e.scrollTop;
+      m === s && (t.fillStyle = this.activeLineColor, t.fillRect(0, h, this.width, c)), t.fillStyle = m === s ? this.activeTextColor : this.textColor;
+      const p = (m + 1).toString(), g = this.width - this.padding, w = h + c / 2;
+      t.fillText(p, g, w);
     }
   }
   /**
@@ -1965,20 +2049,39 @@ class h0 {
   }
   /**
    * 添加脏区域（用于增量渲染）
+   * 使用两阶段合并算法：先插入，后合并相邻区域
    */
   addDirtyRegion(t, e) {
     if (this.fullRenderNeeded)
       return;
     const a = { startLine: t, endLine: e };
-    let s = !1;
-    for (let c = 0; c < this.dirtyRegions.length; c++) {
-      const d = this.dirtyRegions[c];
-      if (t <= d.endLine + 1 && e >= d.startLine - 1) {
-        d.startLine = Math.min(d.startLine, t), d.endLine = Math.max(d.endLine, e), s = !0;
-        break;
-      }
+    this.dirtyRegions.push(a), this.mergeDirtyRegions(), this.shouldTriggerFullRender() && this.markFullRender();
+  }
+  /**
+   * 合并相邻的脏区域
+   */
+  mergeDirtyRegions() {
+    if (this.dirtyRegions.length <= 1) return;
+    this.dirtyRegions.sort((a, s) => a.startLine - s.startLine);
+    const t = [];
+    let e = this.dirtyRegions[0];
+    for (let a = 1; a < this.dirtyRegions.length; a++) {
+      const s = this.dirtyRegions[a];
+      s.startLine <= e.endLine + 2 ? e.endLine = Math.max(e.endLine, s.endLine) : (t.push(e), e = { ...s });
     }
-    s || this.dirtyRegions.push(a), this.dirtyRegions.length > 10 && this.markFullRender();
+    t.push(e), this.dirtyRegions = t;
+  }
+  /**
+   * 判断是否应该触发全量渲染
+   * 基于脏区域覆盖率而非简单的数量判断
+   */
+  shouldTriggerFullRender() {
+    if (this.dirtyRegions.length > 15) return !0;
+    let t = 0;
+    for (const a of this.dirtyRegions)
+      t += a.endLine - a.startLine + 1;
+    const e = Math.ceil(600 / 26);
+    return t > e * 0.7;
   }
   /**
    * 标记静态层需要重绘（如行号、背景）
@@ -2110,10 +2213,10 @@ class g0 {
   triggerPreload(t, e, a) {
     if (this.isPreloading) return;
     const s = 26, c = Math.floor(e / s), d = Math.ceil(a / s);
-    let u, h;
-    t === "down" ? (u = c + d, h = u + this.preloadLines) : (h = c, u = Math.max(0, h - this.preloadLines));
-    const m = `${u}-${h}`;
-    this.preloadedRanges.has(m) || this.performPreload(u, h, m);
+    let u, m;
+    t === "down" ? (u = c + d, m = u + this.preloadLines) : (m = c, u = Math.max(0, m - this.preloadLines));
+    const h = `${u}-${m}`;
+    this.preloadedRanges.has(h) || this.performPreload(u, m, h);
   }
   /**
    * 执行预加载
@@ -47853,42 +47956,31 @@ const f0 = {
   Woman: Tj,
   WomanOutline: Rj,
   WomanSharp: Mj
-}, Symbol.toStringTag, { value: "Module" })), Mt = (r, t) => {
-  const e = r.__vccOpts || r;
-  for (const [a, s] of t)
-    e[a] = s;
-  return e;
-}, Aj = { class: "canvas-toolbar" }, Nj = ["title", "onClick"], yj = {
+}, Symbol.toStringTag, { value: "Module" })), Aj = { class: "canvas-toolbar" }, Nj = ["title", "onClick"], yj = {
   key: 0,
   class: "toolbar-btn divider"
 }, Ij = ["title", "onClick"], Lj = {
   key: 0,
   class: "icon-text"
-}, Dj = {
+}, Dj = /* @__PURE__ */ l({
   __name: "CanvasToolbar",
   props: {
-    toolbarItems: {
-      type: Array,
-      default: () => [
-        "h1",
-        "h2",
-        "divider",
-        "bold",
-        "italic",
-        "divider",
-        "unordered-list",
-        "ordered-list",
-        "blockquote",
-        "code-block",
-        "divider",
-        "link",
-        "image"
-      ]
-    },
-    pluginButtons: {
-      type: Array,
-      default: () => []
-    }
+    toolbarItems: { default: () => [
+      "h1",
+      "h2",
+      "divider",
+      "bold",
+      "italic",
+      "divider",
+      "unordered-list",
+      "ordered-list",
+      "blockquote",
+      "code-block",
+      "divider",
+      "link",
+      "image"
+    ] },
+    pluginButtons: { default: () => [] }
   },
   emits: ["command", "plugin-command"],
   setup(r, { emit: t }) {
@@ -47914,7 +48006,7 @@ const f0 = {
       "code-block": "代码块",
       link: "插入链接",
       image: "插入图片"
-    }, u = (w) => c[w] || w, h = (w) => d[w] || w, m = (w) => il[w] ? il[w] : Vs, _ = (w) => {
+    }, u = (w) => c[w] || w, m = (w) => d[w] || w, h = (w) => il[w] ? il[w] : Vs, p = (w) => {
       w !== "divider" && a("command", w);
     }, g = (w) => {
       a("plugin-command", {
@@ -47922,33 +48014,38 @@ const f0 = {
         args: w.commandArgs || []
       });
     };
-    return (w, S) => (o(), i("div", Aj, [
-      (o(!0), i(Ii, null, Li(s.value, (p, C) => (o(), i("button", {
-        key: "builtin-" + C,
-        class: Zs(["toolbar-btn", { divider: p === "divider" }]),
-        title: h(p),
-        onClick: (f) => _(p)
+    return (w, C) => (o(), i("div", Aj, [
+      (o(!0), i(Ii, null, Li(s.value, (_, S) => (o(), i("button", {
+        key: "builtin-" + S,
+        class: Zs(["toolbar-btn", { divider: _ === "divider" }]),
+        title: m(_),
+        onClick: (f) => p(_)
       }, [
-        p !== "divider" ? (o(), Di(tl(u(p)), {
+        _ !== "divider" ? (o(), Di(tl(u(_)), {
           key: 0,
           class: "icon"
-        })) : wt("", !0)
+        })) : ft("", !0)
       ], 10, Nj))), 128)),
-      r.pluginButtons.length > 0 ? (o(), i("span", yj)) : wt("", !0),
-      (o(!0), i(Ii, null, Li(r.pluginButtons, (p) => (o(), i("button", {
-        key: "plugin-" + p.id,
+      r.pluginButtons && r.pluginButtons.length > 0 ? (o(), i("span", yj)) : ft("", !0),
+      (o(!0), i(Ii, null, Li(r.pluginButtons, (_) => (o(), i("button", {
+        key: "plugin-" + _.id,
         class: "toolbar-btn",
-        title: p.title,
-        onClick: (C) => g(p)
+        title: _.title,
+        onClick: (S) => g(_)
       }, [
-        p.icon.startsWith("text:") ? (o(), i("span", Lj, ft(p.icon.slice(5)), 1)) : (o(), Di(tl(m(p.icon)), {
+        _.icon.startsWith("text:") ? (o(), i("span", Lj, Et(_.icon.slice(5)), 1)) : (o(), Di(tl(h(_.icon)), {
           key: 1,
           class: "icon"
         }))
       ], 8, Ij))), 128))
     ]));
   }
-}, Pj = /* @__PURE__ */ Mt(Dj, [["__scopeId", "data-v-b9e4815f"]]), Bj = {
+}), At = (r, t) => {
+  const e = r.__vccOpts || r;
+  for (const [a, s] of t)
+    e[a] = s;
+  return e;
+}, Pj = /* @__PURE__ */ At(Dj, [["__scopeId", "data-v-00f9230a"]]), Bj = {
   key: 0,
   class: "search-panel"
 }, zj = { class: "search-row" }, Uj = {
@@ -47957,7 +48054,7 @@ const f0 = {
 }, Fj = {
   key: 0,
   class: "replace-row"
-}, Hj = { class: "search-options" }, Gj = {
+}, Hj = { class: "search-options" }, Gj = /* @__PURE__ */ l({
   __name: "SearchPanel",
   props: {
     visible: {
@@ -47972,117 +48069,117 @@ const f0 = {
     "replaceAll"
   ],
   setup(r, { emit: t }) {
-    const e = r, a = t, s = Le(null), c = Le(""), d = Le(""), u = Le(!1), h = Le(!1), m = Le(!1), _ = Le(!1), g = Le(0), w = Le(0);
+    const e = r, a = t, s = Le(null), c = Le(""), d = Le(""), u = Le(!1), m = Le(!1), h = Le(!1), p = Le(!1), g = Le(0), w = Le(0);
     Ke(() => e.visible, (y) => {
       y && Js(() => {
         var b;
         (b = s.value) == null || b.focus();
       });
     }), Ke(c, (y) => {
-      y ? S() : (g.value = 0, w.value = 0, a("search", { text: "", matches: [] }));
+      y ? C() : (g.value = 0, w.value = 0, a("search", { text: "", matches: [] }));
     });
-    const S = () => {
+    const C = () => {
       a("search", {
         text: c.value,
-        matchCase: h.value,
-        matchWholeWord: m.value,
-        useRegex: _.value,
+        matchCase: m.value,
+        matchWholeWord: h.value,
+        useRegex: p.value,
         callback: (y) => {
           w.value = y.length, y.length > 0 && (g.value = 0);
         }
       });
-    }, p = () => {
+    }, _ = () => {
       w.value !== 0 && (g.value = (g.value + 1) % w.value, a("search", {
         text: c.value,
-        matchCase: h.value,
-        matchWholeWord: m.value,
-        useRegex: _.value,
+        matchCase: m.value,
+        matchWholeWord: h.value,
+        useRegex: p.value,
         jumpTo: g.value
       }));
-    }, C = () => {
+    }, S = () => {
       w.value !== 0 && (g.value = (g.value - 1 + w.value) % w.value, a("search", {
         text: c.value,
-        matchCase: h.value,
-        matchWholeWord: m.value,
-        useRegex: _.value,
+        matchCase: m.value,
+        matchWholeWord: h.value,
+        useRegex: p.value,
         jumpTo: g.value
       }));
     }, f = () => {
       a("replace", {
         searchText: c.value,
         replaceText: d.value,
-        matchCase: h.value,
-        matchWholeWord: m.value,
-        useRegex: _.value,
+        matchCase: m.value,
+        matchWholeWord: h.value,
+        useRegex: p.value,
         callback: () => {
-          S();
+          C();
         }
       });
     }, R = () => {
       a("replaceAll", {
         searchText: c.value,
         replaceText: d.value,
-        matchCase: h.value,
-        matchWholeWord: m.value,
-        useRegex: _.value,
+        matchCase: m.value,
+        matchWholeWord: h.value,
+        useRegex: p.value,
         callback: () => {
-          S();
+          C();
         }
       });
     }, T = () => {
       u.value = !u.value;
-    }, A = () => {
-      c.value && S();
-    }, L = () => {
+    }, N = () => {
+      c.value && C();
+    }, I = () => {
       a("close");
     };
     return (y, b) => r.visible ? (o(), i("div", Bj, [
       n("div", zj, [
-        Rt(n("input", {
+        Ot(n("input", {
           ref_key: "searchInputRef",
           ref: s,
-          "onUpdate:modelValue": b[0] || (b[0] = (P) => c.value = P),
+          "onUpdate:modelValue": b[0] || (b[0] = (D) => c.value = D),
           type: "text",
           class: "search-input",
           placeholder: "查找",
           onKeydown: [
-            Bt(p, ["enter"]),
-            Bt(L, ["esc"])
+            Bt(_, ["enter"]),
+            Bt(I, ["esc"])
           ]
         }, null, 544), [
           [nl, c.value]
         ]),
-        c.value ? (o(), i("span", Uj, ft(g.value + 1) + "/" + ft(w.value), 1)) : wt("", !0),
+        c.value ? (o(), i("span", Uj, Et(g.value + 1) + "/" + Et(w.value), 1)) : ft("", !0),
         n("button", {
           class: "search-btn",
-          onClick: C,
+          onClick: S,
           title: "上一个 (Shift+Enter)"
         }, "↑"),
         n("button", {
           class: "search-btn",
-          onClick: p,
+          onClick: _,
           title: "下一个 (Enter)"
         }, "↓"),
         n("button", {
           class: "search-btn",
           onClick: T,
           title: "切换替换"
-        }, ft(u.value ? "▼" : "▶"), 1),
+        }, Et(u.value ? "▼" : "▶"), 1),
         n("button", {
           class: "search-btn close-btn",
-          onClick: L,
+          onClick: I,
           title: "关闭 (Esc)"
         }, "✕")
       ]),
       u.value ? (o(), i("div", Fj, [
-        Rt(n("input", {
-          "onUpdate:modelValue": b[1] || (b[1] = (P) => d.value = P),
+        Ot(n("input", {
+          "onUpdate:modelValue": b[1] || (b[1] = (D) => d.value = D),
           type: "text",
           class: "search-input",
           placeholder: "替换",
           onKeydown: [
             Bt(f, ["enter"]),
-            Bt(L, ["esc"])
+            Bt(I, ["esc"])
           ]
         }, null, 544), [
           [nl, d.value]
@@ -48095,42 +48192,42 @@ const f0 = {
           class: "action-btn",
           onClick: R
         }, "全部替换")
-      ])) : wt("", !0),
+      ])) : ft("", !0),
       n("div", Hj, [
         n("label", null, [
-          Rt(n("input", {
+          Ot(n("input", {
             type: "checkbox",
-            "onUpdate:modelValue": b[2] || (b[2] = (P) => h.value = P),
-            onChange: A
+            "onUpdate:modelValue": b[2] || (b[2] = (D) => m.value = D),
+            onChange: N
           }, null, 544), [
-            [Kt, h.value]
+            [Kt, m.value]
           ]),
           b[5] || (b[5] = n("span", null, "区分大小写", -1))
         ]),
         n("label", null, [
-          Rt(n("input", {
+          Ot(n("input", {
             type: "checkbox",
-            "onUpdate:modelValue": b[3] || (b[3] = (P) => m.value = P),
-            onChange: A
+            "onUpdate:modelValue": b[3] || (b[3] = (D) => h.value = D),
+            onChange: N
           }, null, 544), [
-            [Kt, m.value]
+            [Kt, h.value]
           ]),
           b[6] || (b[6] = n("span", null, "全字匹配", -1))
         ]),
         n("label", null, [
-          Rt(n("input", {
+          Ot(n("input", {
             type: "checkbox",
-            "onUpdate:modelValue": b[4] || (b[4] = (P) => _.value = P),
-            onChange: A
+            "onUpdate:modelValue": b[4] || (b[4] = (D) => p.value = D),
+            onChange: N
           }, null, 544), [
-            [Kt, _.value]
+            [Kt, p.value]
           ]),
           b[7] || (b[7] = n("span", null, "正则表达式", -1))
         ])
       ])
-    ])) : wt("", !0);
+    ])) : ft("", !0);
   }
-}, Vj = /* @__PURE__ */ Mt(Gj, [["__scopeId", "data-v-46382544"]]);
+}), Vj = /* @__PURE__ */ At(Gj, [["__scopeId", "data-v-fb8eb5e2"]]);
 class $j {
   constructor() {
     k(this, "nodes", /* @__PURE__ */ new Map());
@@ -48170,8 +48267,8 @@ class $j {
       e.push(c);
       const d = this.nodes.get(c);
       for (const u of d.dependents) {
-        const h = a.get(u) - 1;
-        a.set(u, h), h === 0 && s.push(u);
+        const m = a.get(u) - 1;
+        a.set(u, m), m === 0 && s.push(u);
       }
     }
     if (e.length !== t.length) {
@@ -48187,16 +48284,16 @@ class $j {
   detectCycles(t) {
     const e = [], a = /* @__PURE__ */ new Set(), s = /* @__PURE__ */ new Set(), c = [], d = (u) => {
       if (s.has(u)) {
-        const m = c.indexOf(u);
-        return m !== -1 && e.push([...c.slice(m), u]), !0;
+        const h = c.indexOf(u);
+        return h !== -1 && e.push([...c.slice(h), u]), !0;
       }
       if (a.has(u))
         return !1;
       s.add(u), c.push(u);
-      const h = this.nodes.get(u);
-      if (h)
-        for (const m of h.dependencies)
-          d(m);
+      const m = this.nodes.get(u);
+      if (m)
+        for (const h of m.dependencies)
+          d(h);
       return c.pop(), s.delete(u), a.add(u), !1;
     };
     for (const u of t)
@@ -48290,8 +48387,8 @@ class Yj {
         break;
       try {
         const u = d.handler(t);
-        u instanceof Promise && u.catch((h) => {
-          console.error(`Error in event handler for "${e}" from plugin "${d.pluginId}":`, h);
+        u instanceof Promise && u.catch((m) => {
+          console.error(`Error in event handler for "${e}" from plugin "${d.pluginId}":`, m);
         }), d.once && this.unsubscribe(d.id);
       } catch (u) {
         console.error(`Error in event handler for "${e}" from plugin "${d.pluginId}":`, u);
@@ -49059,7 +49156,7 @@ class Zj {
       conflictStrategy: s.conflictStrategy ?? "override",
       options: s
     };
-    this.keybindings.has(d.key) || this.keybindings.set(d.key, []), this.keybindings.get(d.key).push(d), this.keybindings.get(d.key).sort((u, h) => h.priority - u.priority);
+    this.keybindings.has(d.key) || this.keybindings.set(d.key, []), this.keybindings.get(d.key).push(d), this.keybindings.get(d.key).sort((u, m) => m.priority - u.priority);
   }
   /**
    * 注册工具栏按钮
@@ -49340,15 +49437,15 @@ const Jj = {
 function eQ(r, t, e) {
   const { cursor: a, document: s, history: c } = r;
   if (!a || !s) return;
-  const d = [], u = Array(e).fill("Header").map((_, g) => `${_}${g + 1}`);
+  const d = [], u = Array(e).fill("Header").map((p, g) => `${p}${g + 1}`);
   d.push("| " + u.join(" | ") + " |");
-  const h = Array(e).fill("---").join(" | ");
-  d.push("| " + h + " |");
-  for (let _ = 0; _ < t - 1; _++) {
+  const m = Array(e).fill("---").join(" | ");
+  d.push("| " + m + " |");
+  for (let p = 0; p < t - 1; p++) {
     const g = Array(e).fill("Cell");
     d.push("| " + g.join(" | ") + " |");
   }
-  const m = `
+  const h = `
 ` + d.join(`
 `) + `
 `;
@@ -49356,10 +49453,10 @@ function eQ(r, t, e) {
     type: "insert",
     line: a.line,
     column: a.column,
-    text: m,
+    text: h,
     cursorBefore: { line: a.line, column: a.column },
     cursorAfter: { line: a.line + d.length + 1, column: 0 }
-  }), s.insertText(a.line, a.column, m), a.setPosition(a.line + d.length + 1, 0), console.log(`[markdown-table] Inserted ${t}x${e} table`);
+  }), s.insertText(a.line, a.column, h), a.setPosition(a.line + d.length + 1, 0), console.log(`[markdown-table] Inserted ${t}x${e} table`);
 }
 function tQ(r) {
   const { cursor: t, document: e } = r;
@@ -49373,14 +49470,14 @@ function tQ(r) {
   if (!c) return;
   const d = oQ(e, c);
   if (!d) return;
-  const u = iQ(d), { startLine: h, endLine: m } = c;
-  for (let g = m; g >= h; g--) {
+  const u = iQ(d), { startLine: m, endLine: h } = c;
+  for (let g = h; g >= m; g--) {
     const w = e.getLine(g);
-    e.deleteText(g, 0, g, w.length), g < m && e.deleteText(g, 0, g + 1, 0);
+    e.deleteText(g, 0, g, w.length), g < h && e.deleteText(g, 0, g + 1, 0);
   }
-  const _ = u.join(`
+  const p = u.join(`
 `);
-  e.insertText(h, 0, _), console.log("[markdown-table] Table formatted");
+  e.insertText(m, 0, p), console.log("[markdown-table] Table formatted");
 }
 function nQ(r) {
   const { cursor: t, document: e } = r;
@@ -49405,9 +49502,9 @@ function rQ(r) {
   const c = Ks(e, a);
   if (!c) return;
   const { startLine: d, endLine: u } = c;
-  for (let h = d; h <= u; h++) {
-    const m = e.getLine(h), _ = m.trimEnd().replace(/\|$/, "") + " Cell |";
-    e.deleteText(h, 0, h, m.length), e.insertText(h, 0, _);
+  for (let m = d; m <= u; m++) {
+    const h = e.getLine(m), p = h.trimEnd().replace(/\|$/, "") + " Cell |";
+    e.deleteText(m, 0, m, h.length), e.insertText(m, 0, p);
   }
   console.log("[markdown-table] Added new column");
 }
@@ -49422,7 +49519,7 @@ function Ks(r, t) {
 function oQ(r, t) {
   const { startLine: e, endLine: a } = t, s = [];
   for (let c = e; c <= a; c++) {
-    const u = r.getLine(c).split("|").filter((h) => h.trim()).map((h) => h.trim());
+    const u = r.getLine(c).split("|").filter((m) => m.trim()).map((m) => m.trim());
     s.push(u);
   }
   return s;
@@ -49438,7 +49535,7 @@ function iQ(r) {
   }
   const a = [];
   for (let s = 0; s < r.length; s++) {
-    const d = r[s].map((u, h) => u.includes("-") ? "-".repeat(t[h]) : u.padEnd(t[h], " "));
+    const d = r[s].map((u, m) => u.includes("-") ? "-".repeat(t[m]) : u.padEnd(t[m], " "));
     a.push("| " + d.join(" | ") + " |");
   }
   return a;
@@ -49539,17 +49636,17 @@ function dQ(r) {
   if (s && s.hasSelection) {
     const u = s.getSelectedText(e);
     c = `$${u}$`, d = c.length;
-    const { startLine: h, startColumn: m } = s.getOrderedRange();
+    const { startLine: m, startColumn: h } = s.getOrderedRange();
     a.record({
       type: "delete",
-      line: h,
-      column: m,
+      line: m,
+      column: h,
       text: u,
       cursorBefore: { line: t.line, column: t.column },
-      cursorAfter: { line: h, column: m }
+      cursorAfter: { line: m, column: h }
     });
-    const _ = s.deleteSelectedText(e);
-    t.setPosition(_.line, _.column);
+    const p = s.deleteSelectedText(e);
+    t.setPosition(p.line, p.column);
   } else
     c = "$$", d = 1;
   a.record({
@@ -49570,17 +49667,17 @@ function uQ(r) {
     c = `$$
 ${d}
 $$`;
-    const { startLine: u, startColumn: h } = s.getOrderedRange();
+    const { startLine: u, startColumn: m } = s.getOrderedRange();
     a.record({
       type: "delete",
       line: u,
-      column: h,
+      column: m,
       text: d,
       cursorBefore: { line: t.line, column: t.column },
-      cursorAfter: { line: u, column: h }
+      cursorAfter: { line: u, column: m }
     });
-    const m = s.deleteSelectedText(e);
-    t.setPosition(m.line, m.column);
+    const h = s.deleteSelectedText(e);
+    t.setPosition(h.line, h.column);
   } else
     c = `$$
 
@@ -49784,7 +49881,7 @@ $$`,
     }
   ]
 };
-let re = {
+let oe = {
   active: !1,
   items: [],
   selectedIndex: 0,
@@ -49800,7 +49897,7 @@ const _Q = {
   activate(r) {
     var c;
     const { editor: t, registerCommand: e, registerKeybinding: a } = r, s = t;
-    re = {
+    oe = {
       active: !1,
       items: [],
       selectedIndex: 0,
@@ -49812,16 +49909,16 @@ const _Q = {
     }, {
       title: "触发补全",
       description: "手动触发代码补全"
-    }), e("accept", () => re.active ? (js(s), !0) : !1, {
+    }), e("accept", () => oe.active ? (js(s), !0) : !1, {
       title: "接受补全",
       description: "接受当前选中的补全项"
-    }), e("next", () => re.active ? (SQ(), !0) : !1, {
+    }), e("next", () => oe.active ? (SQ(), !0) : !1, {
       title: "下一个补全",
       description: "选择下一个补全项"
-    }), e("previous", () => re.active ? (CQ(), !0) : !1, {
+    }), e("previous", () => oe.active ? (CQ(), !0) : !1, {
       title: "上一个补全",
       description: "选择上一个补全项"
-    }), e("cancel", () => re.active ? (Ft(), !0) : !1, {
+    }), e("cancel", () => oe.active ? (Ft(), !0) : !1, {
       title: "取消补全",
       description: "关闭补全面板"
     }), a("ctrl+space", "trigger"), a("tab", "accept"), a("enter", "accept"), a("arrowdown", "next"), a("arrowup", "previous"), a("escape", "cancel"), (c = r.onAfterChange) == null || c.call(r, (d) => {
@@ -49848,28 +49945,28 @@ function mQ(r) {
     max-width: 400px;
     font-size: 14px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
-  `, window.document.body.appendChild(t), re.panel = t, t.addEventListener("click", (e) => {
+  `, window.document.body.appendChild(t), oe.panel = t, t.addEventListener("click", (e) => {
     const a = e.target.closest(".autocomplete-item");
     if (a) {
       const s = parseInt(a.dataset.index || "0");
-      re.selectedIndex = s, js(r);
+      oe.selectedIndex = s, js(r);
     }
   });
 }
 function hQ() {
-  re.panel && (re.panel.remove(), re.panel = null);
+  oe.panel && (oe.panel.remove(), oe.panel = null);
 }
 function gQ(r, t) {
   const { cursor: e, document: a } = r;
   if (!e || !a) return;
-  const s = e.line, c = e.column, u = a.getLine(s).slice(0, c), h = u[u.length - 1];
-  if (["#", "-", ">", "`", "[", "*", "|", "$"].includes(h) && (c === 1 || u[c - 2] === " " || h === "|" || h === "$")) {
-    zt(r, h, "markdown");
+  const s = e.line, c = e.column, u = a.getLine(s).slice(0, c), m = u[u.length - 1];
+  if (["#", "-", ">", "`", "[", "*", "|", "$"].includes(m) && (c === 1 || u[c - 2] === " " || m === "|" || m === "$")) {
+    zt(r, m, "markdown");
     return;
   }
-  const _ = u.match(/:(\w+)$/);
-  if (_) {
-    zt(r, ":", "emoji", _[1]);
+  const p = u.match(/:(\w+)$/);
+  if (p) {
+    zt(r, ":", "emoji", p[1]);
     return;
   }
   const g = u.match(/(\w+)$/);
@@ -49897,28 +49994,28 @@ function zt(r, t, e, a = "") {
     Ft();
     return;
   }
-  re.active = !0, re.items = c, re.selectedIndex = 0, re.triggerPosition = { line: s.line, column: s.column }, re.triggerChar = t, re.sourceType = e, re.prefix = a, wQ(r);
+  oe.active = !0, oe.items = c, oe.selectedIndex = 0, oe.triggerPosition = { line: s.line, column: s.column }, oe.triggerChar = t, oe.sourceType = e, oe.prefix = a, wQ(r);
 }
 function wQ(r) {
-  const { cursor: t, viewport: e, textRenderer: a, document: s } = r, c = re.panel;
+  const { cursor: t, viewport: e, textRenderer: a, document: s } = r, c = oe.panel;
   if (!c) return;
-  const d = s.getLine(t.line), { x: u, y: h } = e.docToCanvas(t.line, t.column, a, d), m = window.document.querySelector(".canvas-editor");
-  if (!m) return;
-  const _ = m.getBoundingClientRect();
-  c.style.left = `${_.left + u}px`, c.style.top = `${_.top + h + a.lineHeight}px`, c.style.display = "block";
-  const g = re.items.map((w, S) => {
-    const p = S === re.selectedIndex, C = fQ(w), f = w.description || w.detail || "";
+  const d = s.getLine(t.line), { x: u, y: m } = e.docToCanvas(t.line, t.column, a, d), h = window.document.querySelector(".canvas-editor");
+  if (!h) return;
+  const p = h.getBoundingClientRect();
+  c.style.left = `${p.left + u}px`, c.style.top = `${p.top + m + a.lineHeight}px`, c.style.display = "block";
+  const g = oe.items.map((w, C) => {
+    const _ = C === oe.selectedIndex, S = fQ(w), f = w.description || w.detail || "";
     return `
-      <div class="autocomplete-item ${p ? "selected" : ""}" data-index="${S}" style="
+      <div class="autocomplete-item ${_ ? "selected" : ""}" data-index="${C}" style="
         display: flex;
         align-items: center;
         padding: 10px 12px;
         cursor: pointer;
         border-bottom: 1px solid #f6f8fa;
         gap: 10px;
-        ${p ? "background: #ddf4ff; border-left: 3px solid #0969da; padding-left: 9px;" : ""}
+        ${_ ? "background: #ddf4ff; border-left: 3px solid #0969da; padding-left: 9px;" : ""}
       ">
-        <div style="font-size: 18px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">${C}</div>
+        <div style="font-size: 18px; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;">${S}</div>
         <div style="flex: 1; min-width: 0;">
           <div style="font-weight: 500; color: #24292f; font-size: 14px;">${al(w.label)}</div>
           ${f ? `<div style="font-size: 12px; color: #57606a; margin-top: 2px;">${al(f)}</div>` : ""}
@@ -49929,7 +50026,7 @@ function wQ(r) {
   c.innerHTML = g;
 }
 function fQ(r) {
-  const t = re.sourceType;
+  const t = oe.sourceType;
   return t === "markdown" ? {
     标题: "🎯",
     列表: "📋",
@@ -49946,28 +50043,28 @@ function EQ(r) {
   zt(r, "", "snippets", "");
 }
 function js(r) {
-  if (!re.active) return;
-  const { cursor: t, document: e, history: a } = r, s = re.items[re.selectedIndex];
+  if (!oe.active) return;
+  const { cursor: t, document: e, history: a } = r, s = oe.items[oe.selectedIndex];
   if (!s) return;
   const c = e.getLine(t.line);
   let d = 0;
-  if (re.sourceType === "emoji") {
-    const m = c.slice(0, t.column).match(/:(\w+)$/);
-    m && (d = m[0].length);
-  } else if (re.sourceType === "snippets") {
-    const m = c.slice(0, t.column).match(/(\w+)$/);
-    m && (d = m[0].length);
+  if (oe.sourceType === "emoji") {
+    const h = c.slice(0, t.column).match(/:(\w+)$/);
+    h && (d = h[0].length);
+  } else if (oe.sourceType === "snippets") {
+    const h = c.slice(0, t.column).match(/(\w+)$/);
+    h && (d = h[0].length);
   }
   if (d > 0) {
-    const m = t.column - d;
+    const h = t.column - d;
     a.record({
       type: "delete",
       line: t.line,
-      column: m,
-      text: c.slice(m, t.column),
+      column: h,
+      text: c.slice(h, t.column),
       cursorBefore: { line: t.line, column: t.column },
-      cursorAfter: { line: t.line, column: m }
-    }), e.deleteText(t.line, m, t.line, t.column), t.column = m;
+      cursorAfter: { line: t.line, column: h }
+    }), e.deleteText(t.line, h, t.line, t.column), t.column = h;
   }
   const u = s.insertText;
   a.record({
@@ -49978,36 +50075,36 @@ function js(r) {
     cursorBefore: { line: t.line, column: t.column },
     cursorAfter: { line: t.line, column: t.column + u.length }
   }), e.insertText(t.line, t.column, u);
-  const h = u.split(`
+  const m = u.split(`
 `);
-  h.length === 1 ? t.column += u.length : (t.line += h.length - 1, t.column = h[h.length - 1].length), Ft(), r.render();
+  m.length === 1 ? t.column += u.length : (t.line += m.length - 1, t.column = m[m.length - 1].length), Ft(), r.render();
 }
 function SQ() {
   var t;
-  if (!re.active) return;
-  re.selectedIndex = (re.selectedIndex + 1) % re.items.length;
-  const r = (t = re.panel) == null ? void 0 : t.querySelectorAll(".autocomplete-item");
+  if (!oe.active) return;
+  oe.selectedIndex = (oe.selectedIndex + 1) % oe.items.length;
+  const r = (t = oe.panel) == null ? void 0 : t.querySelectorAll(".autocomplete-item");
   r == null || r.forEach((e, a) => {
-    e.style.background = a === re.selectedIndex ? "#ddf4ff" : "", e.style.borderLeft = a === re.selectedIndex ? "3px solid #0969da" : "";
+    e.style.background = a === oe.selectedIndex ? "#ddf4ff" : "", e.style.borderLeft = a === oe.selectedIndex ? "3px solid #0969da" : "";
   });
 }
 function CQ() {
   var t;
-  if (!re.active) return;
-  re.selectedIndex = (re.selectedIndex - 1 + re.items.length) % re.items.length;
-  const r = (t = re.panel) == null ? void 0 : t.querySelectorAll(".autocomplete-item");
+  if (!oe.active) return;
+  oe.selectedIndex = (oe.selectedIndex - 1 + oe.items.length) % oe.items.length;
+  const r = (t = oe.panel) == null ? void 0 : t.querySelectorAll(".autocomplete-item");
   r == null || r.forEach((e, a) => {
-    e.style.background = a === re.selectedIndex ? "#ddf4ff" : "", e.style.borderLeft = a === re.selectedIndex ? "3px solid #0969da" : "";
+    e.style.background = a === oe.selectedIndex ? "#ddf4ff" : "", e.style.borderLeft = a === oe.selectedIndex ? "3px solid #0969da" : "";
   });
 }
 function Ft() {
-  re.active = !1, re.panel && (re.panel.style.display = "none");
+  oe.active = !1, oe.panel && (oe.panel.style.display = "none");
 }
 function al(r) {
   const t = document.createElement("div");
   return t.textContent = r, t.innerHTML;
 }
-const Ot = {
+const Mt = {
   heading: {
     enabled: !0,
     name: "标题格式",
@@ -50088,7 +50185,7 @@ const Ot = {
     }
   }
 };
-let Ze = [], Zt, lt = null, Je = null;
+let Xe = [], Zt, at = null, Ze = null;
 const xQ = {
   id: "syntax-checker",
   name: "Syntax Checker",
@@ -50097,7 +50194,7 @@ const xQ = {
   activate(r) {
     var s;
     const { editor: t, registerCommand: e } = r, a = t;
-    Ze = [], e("check", () => {
+    Xe = [], e("check", () => {
       Ut(a);
     }, {
       title: "检查语法",
@@ -50141,10 +50238,10 @@ function vQ(r) {
     z-index: 100;
   `;
   const e = document.querySelector(".canvas-editor-container");
-  e && e.appendChild(t), lt = t, t.addEventListener("click", () => {
-    if (Je) {
-      const s = Je.style.display !== "none";
-      Je.style.display = s ? "none" : "block";
+  e && e.appendChild(t), at = t, t.addEventListener("click", () => {
+    if (Ze) {
+      const s = Ze.style.display !== "none";
+      Ze.style.display = s ? "none" : "block";
     }
   });
   const a = document.createElement("div");
@@ -50160,15 +50257,15 @@ function vQ(r) {
     font-size: 13px;
     display: none;
     z-index: 99;
-  `, e && e.appendChild(a), Je = a;
+  `, e && e.appendChild(a), Ze = a;
 }
 function kQ() {
-  lt && (lt.remove(), lt = null), Je && (Je.remove(), Je = null);
+  at && (at.remove(), at = null), Ze && (Ze.remove(), Ze = null);
 }
 function Ut(r) {
   const { document: t } = r;
   if (!t) return;
-  Ze = [];
+  Xe = [];
   const e = {
     emptyLineCount: 0,
     inCodeBlock: !1,
@@ -50177,35 +50274,35 @@ function Ut(r) {
   for (let s = 0; s < t.getLineCount(); s++) {
     const c = t.getLine(s);
     if (c.trim() === "" ? e.emptyLineCount++ : e.emptyLineCount = 0, c.trim().startsWith("```") && (e.inCodeBlock = !e.inCodeBlock, e.inCodeBlock && (e.codeBlockStart = s)), !(e.inCodeBlock && s !== e.codeBlockStart))
-      for (const d in Ot) {
-        const u = Ot[d];
+      for (const d in Mt) {
+        const u = Mt[d];
         if (!u.enabled) continue;
-        const h = u.check(s, c, e);
-        Ze.push(...h);
+        const m = u.check(s, c, e);
+        Xe.push(...m);
       }
   }
   TQ(r);
   const { textRenderer: a } = r;
-  a && a.setDiagnostics && a.setDiagnostics(Ze), r.render();
+  a && a.setDiagnostics && a.setDiagnostics(Xe), r.render();
 }
 function TQ(r) {
-  if (!lt) return;
-  if (Ze.length === 0) {
-    lt.style.display = "none";
+  if (!at) return;
+  if (Xe.length === 0) {
+    at.style.display = "none";
     return;
   }
-  lt.style.display = "flex";
-  const t = Ze.filter((c) => c.severity === "error").length, e = Ze.filter((c) => c.severity === "warning").length, a = Ze.filter((c) => c.severity === "info").length;
+  at.style.display = "flex";
+  const t = Xe.filter((c) => c.severity === "error").length, e = Xe.filter((c) => c.severity === "warning").length, a = Xe.filter((c) => c.severity === "info").length;
   let s = "";
-  if (t > 0 && (s += `<span style="color: #f44336; margin-right: 12px;">● ${t} 错误</span>`), e > 0 && (s += `<span style="color: #ff9800; margin-right: 12px;">● ${e} 警告</span>`), a > 0 && (s += `<span style="color: #2196f3; margin-right: 12px;">● ${a} 提示</span>`), s += '<span style="color: #999;">点击查看详情</span>', lt.innerHTML = s, Je) {
-    const c = Ze.map((d) => `
+  if (t > 0 && (s += `<span style="color: #f44336; margin-right: 12px;">● ${t} 错误</span>`), e > 0 && (s += `<span style="color: #ff9800; margin-right: 12px;">● ${e} 警告</span>`), a > 0 && (s += `<span style="color: #2196f3; margin-right: 12px;">● ${a} 提示</span>`), s += '<span style="color: #999;">点击查看详情</span>', at.innerHTML = s, Ze) {
+    const c = Xe.map((d) => `
       <div style="padding: 6px 12px; border-bottom: 1px solid #f0f0f0; cursor: pointer; display: flex; align-items: center; gap: 8px;" data-line="${d.line}">
         <span style="width: 8px; height: 8px; border-radius: 50%; background: ${d.severity === "error" ? "#f44336" : d.severity === "warning" ? "#ff9800" : "#2196f3"};"></span>
         <span style="flex: 1; color: #333;">${MQ(d.message)}</span>
         <span style="color: #888; font-size: 11px;">${d.line + 1}:${d.column + 1}</span>
       </div>
     `).join("");
-    Je.innerHTML = c, Je.querySelectorAll("[data-line]").forEach((d) => {
+    Ze.innerHTML = c, Ze.querySelectorAll("[data-line]").forEach((d) => {
       d.addEventListener("click", () => {
         const u = parseInt(d.dataset.line || "0");
         bQ(r, u);
@@ -50218,7 +50315,7 @@ function bQ(r, t) {
   e.setPosition(t, 0), a.scrollToLine(t), s();
 }
 function RQ(r, t) {
-  const { document: e, history: a } = r, s = Ze.filter((c) => c.line === t && c.fix);
+  const { document: e, history: a } = r, s = Xe.filter((c) => c.line === t && c.fix);
   if (s.length === 0) {
     console.log("[syntax-checker] No fixable issues on this line");
     return;
@@ -50236,13 +50333,13 @@ function RQ(r, t) {
   }), Ut(r), r.render();
 }
 function OQ(r) {
-  Ot[r] && (Ot[r].enabled = !Ot[r].enabled);
+  Mt[r] && (Mt[r].enabled = !Mt[r].enabled);
 }
 function MQ(r) {
   const t = document.createElement("div");
   return t.textContent = r, t.innerHTML;
 }
-const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = {
+const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = /* @__PURE__ */ l({
   __name: "CanvasEditor",
   props: {
     modelValue: {
@@ -50289,29 +50386,34 @@ const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = 
   },
   emits: ["update:modelValue", "update:scrollPercentage", "scroll"],
   setup(r, { expose: t, emit: e }) {
-    const a = r, s = e, c = Le(null), d = Le(null), u = Le(800), h = Le(600), m = Le(window.devicePixelRatio || 1);
-    let _ = null, g = null, w = null, S = null, p = null, C = null, f = null, R = null, T = null, A = null, L = null, y = null, b = null, P = null, H = null, K = null, ie = !1, q = null, ae = !1;
-    const we = Le([]);
-    let le = null;
-    const ce = Le(!1), de = Le([]);
+    const a = r, s = e, c = Le(null), d = Le(null), u = Le(800), m = Le(600), h = Le(window.devicePixelRatio || 1);
+    let p = null, g = null, w = null, C = null, _ = null, S = null, f = null, R = null, T = null, N = null, I = null, y = null, b = null, D = null, U = null, W = null, le = !1, Y = null, se = !1;
+    const Ee = Le([]);
+    let ae = null;
+    const de = Le(!1), ue = Le([]);
     Le(null);
-    const ge = () => {
-      _ = new o0(a.modelValue), g = new i0({
+    let me = !1;
+    const Se = () => {
+      me || (me = !0, queueMicrotask(() => {
+        me = !1, X(!0);
+      }));
+    }, Be = () => {
+      p = new o0(a.modelValue), g = new i0({
         width: u.value,
-        height: h.value,
+        height: m.value,
         lineHeight: a.lineHeight,
         // 使用 props 的行高保持一致
         padding: 16
         // 先使用默认padding
       }), a.showLineNumbers && (y = new ol({
         fontSize: a.fontSize - 1
-      }), y.updateTheme(a.theme), g.padding = y.width + 16), g.setTotalLines(_.getLineCount()), w = new l0(c.value, {
+      }), y.updateTheme(a.theme), g.padding = y.width + 16), g.setTotalLines(p.getLineCount()), w = new l0(c.value, {
         fontSize: a.fontSize,
         lineHeight: a.lineHeight,
         enableSyntaxHighlight: a.enableSyntaxHighlight
       });
-      const v = new _0(), M = new m0({ theme: a.theme });
-      w.setSyntaxHighlight(v, M), _.setLexer(v), p = new Bi(0, 0), C = new s0({
+      const v = new _0(), O = new m0({ theme: a.theme });
+      w.setSyntaxHighlight(v, O), p.setLexer(v), _ = new Bi(0, 0), S = new s0({
         color: "#000000",
         width: 2,
         blinkInterval: 530
@@ -50320,814 +50422,824 @@ const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = 
       }), T = new u0({
         maxSize: 100,
         mergeDelay: 300
-      }), A = new p0(), P = new h0({
+      }), N = new p0(), D = new h0({
         debounceDelay: 16
         // 60fps
-      }), H = new g0({
+      }), U = new g0({
         preloadLines: 10,
         preloadThreshold: 0.3,
-        onPreload: async ({ startLine: z, endLine: I, direction: G }) => {
-          for (let Y = z; Y < I && Y < _.getLineCount(); Y++) {
-            const V = _.getLine(Y);
-            w.lexer && w.lexer.parseLine(V, Y);
-          }
+        onPreload: async ({ startLine: G, endLine: L, direction: H }) => {
+          if (!(!p || !w))
+            for (let $ = G; $ < L && $ < p.getLineCount(); $++) {
+              const J = p.getLine($);
+              w.lexer && w.lexer.parseLine(J, $);
+            }
         }
-      }), K = new w0({
+      }), W = new w0({
         enablePrediction: !0,
         learningRate: 0.1,
-        onPredict: (z) => {
-          z.nextScrollSpeed === "fast" ? H.preloadLines = 20 : H.preloadLines = 10;
+        onPredict: (G) => {
+          U && (G.nextScrollSpeed === "fast" ? U.preloadLines = 20 : U.preloadLines = 10);
         }
       });
-      const N = d.value, D = N.getBoundingClientRect();
-      u.value = D.width, h.value = D.height, L = N.getContext("2d"), S = new a0(c.value, {
-        canvas: N
-      }), S.on("input", De), S.on("keydown", Te), S.on("click", _t), S.on("dblclick", _e), S.on("tripleclick", ue), S.on("mousedown", it), S.on("mousemove", at), S.on("mouseup", st), _.on("change", Be), xe(), P.initOffscreenCanvas(u.value * m.value, h.value * m.value), Z(), C.startBlinking(Z);
-    }, xe = async () => {
+      const A = d.value, P = A.getBoundingClientRect();
+      u.value = P.width, m.value = P.height, I = A.getContext("2d"), C = new a0(c.value, {
+        canvas: A
+      }), C.on("input", Oe), C.on("keydown", he), C.on("click", ct), C.on("dblclick", xe), C.on("tripleclick", ve), C.on("mousedown", dt), C.on("mousemove", ht), C.on("mouseup", ut), p.on("change", ze), He(), D.initOffscreenCanvas(u.value * h.value, m.value * h.value), X(), S.startBlinking(X);
+    }, He = async () => {
       b = new Zj({
-        document: _,
+        document: p,
         viewport: g,
         textRenderer: w,
-        cursor: p,
+        cursor: _,
         selection: f,
         history: T,
-        clipboard: A,
-        render: Z
+        clipboard: N,
+        render: X
       }), b.register(Jj), b.register(lQ), b.register(cQ), b.register(pQ), b.register(_Q), b.register(xQ);
       try {
-        await b.activate("markdown-table"), await b.activate("todo-list"), await b.activate("math"), await b.activate("mermaid"), await b.activate("autocomplete"), await b.activate("syntax-checker"), we.value = b.getToolbarButtons();
+        await b.activate("markdown-table"), await b.activate("todo-list"), await b.activate("math"), await b.activate("mermaid"), await b.activate("autocomplete"), await b.activate("syntax-checker"), Ee.value = b.getToolbarButtons();
       } catch (v) {
         console.error("Failed to activate plugins:", v);
       }
     };
     Ke(() => a.theme, (v) => {
-      w && w.highlighter && (w.highlighter.setTheme(v), w.updateThemeColors()), y && y.updateTheme(v), P && P.markStaticLayerDirty(), Z(!0);
+      w && w.highlighter && (w.highlighter.setTheme(v), w.updateThemeColors()), y && y.updateTheme(v), D && D.markStaticLayerDirty(), Se();
     }), Ke(() => a.enableSyntaxHighlight, (v) => {
-      w && (w.enableSyntaxHighlight = v, w.markDirty && w.markDirty(), Z());
-    }), Ke(() => a.fontSize, (v, M) => {
+      w && (w.enableSyntaxHighlight = v, w.markDirty && w.markDirty(), Se());
+    }), Ke(() => a.fontSize, (v, O) => {
       w && (w.fontSize = v, w.clearMeasureCache && w.clearMeasureCache(), w.markDirty && w.markDirty()), y && (y.fontSize = v - 1);
     }), Ke(() => a.lineHeight, (v) => {
-      w && (w.lineHeight = v, w.markDirty && w.markDirty()), g && (g.lineHeight = v, g.setTotalLines(_.getLineCount())), P && P.markStaticLayerDirty(), Z(!0);
+      w && (w.lineHeight = v, w.markDirty && w.markDirty()), g && p && (g.lineHeight = v, g.setTotalLines(p.getLineCount())), D && D.markStaticLayerDirty(), Se();
     }), Ke(() => a.showLineNumbers, (v) => {
       g && (v ? (y || (y = new ol({
         fontSize: a.fontSize - 1
-      }), y.updateTheme(a.theme)), g.padding = y.width + 16) : g.padding = 16, g.setTotalLines(_.getLineCount()), P && P.markStaticLayerDirty(), Z(!0));
+      }), y.updateTheme(a.theme)), g.padding = y.width + 16) : g.padding = 16, g && p && g.setTotalLines(p.getLineCount()), D && D.markStaticLayerDirty(), Se());
     }), Ke(() => a.scrollPercentage, (v) => {
       if (a.isSyncing || !g) return;
-      const N = Math.max(0, g.totalHeight - g.height) * v;
-      g.setScrollTop(N), Z();
+      const A = Math.max(0, g.totalHeight - g.height) * v;
+      g.setScrollTop(A), X();
     });
-    const Be = (v) => {
-      g.setTotalLines(_.getLineCount()), w && w.markDirty && w.markDirty(), v && v.startLine !== void 0 && v.endLine !== void 0 ? P.addDirtyRegion(v.startLine, v.endLine) : P.markFullRender(), b && b.triggerHook("afterChange"), s("update:modelValue", _.getText()), Z();
-    }, Z = (v = !1) => {
-      !L || !_ || !g || !w || !P || P.requestRender((M) => {
-        ze(M);
+    const ze = (v) => {
+      !g || !p || !D || (g.setTotalLines(p.getLineCount()), w && w.markDirty && w.markDirty(), v && v.startLine !== void 0 && v.endLine !== void 0 ? D.addDirtyRegion(v.startLine, v.endLine) : D.markFullRender(), b && b.triggerHook("afterChange"), s("update:modelValue", p.getText()), X());
+    }, X = (v = !1) => {
+      !I || !p || !g || !w || !D || D.requestRender((O) => {
+        Ue(O);
       }, v);
-    }, ze = (v) => {
-      const { fullRender: M, staticLayerDirty: N, offscreenCtx: D, offscreenCanvas: z } = v, { startLine: I, endLine: G } = g.getVisibleRange(2);
-      if (N && D && z && Fe(D), L.clearRect(0, 0, g.width, g.height), z && !N ? L.drawImage(z, 0, 0) : (L.fillStyle = w.backgroundColor, L.fillRect(0, 0, g.width, g.height), y && a.showLineNumbers && y.render(
-        L,
+    }, Ue = (v) => {
+      if (!I || !g || !w || !p) return;
+      const { fullRender: O, staticLayerDirty: A, offscreenCtx: P, offscreenCanvas: G } = v, { startLine: L, endLine: H } = g.getVisibleRange(2);
+      if (A && P && G && De(P), I.clearRect(0, 0, g.width, g.height), G && !A ? I.drawImage(G, 0, 0) : (I.fillStyle = w.backgroundColor, I.fillRect(0, 0, g.width, g.height), y && a.showLineNumbers && _ && p && y.render(
+        I,
         g,
-        _.getLineCount(),
-        p.line,
+        p.getLineCount(),
+        _.line,
         w.lineHeight
-      )), f && R && R.render(L, f, g, _, w, w.lineHeight), w.renderContent(_, g), p && C && !f.hasSelection) {
-        const Y = _.getLine(p.line);
-        C.render(L, p, g, w, Y, w.lineHeight);
+      )), f && R && _ && p && R.render(I, f, g, p, w, w.lineHeight), w.renderContent(p, g), _ && S && f && !f.hasSelection) {
+        const $ = p.getLine(_.line);
+        S.render(I, _, g, w, $, w.lineHeight);
       }
-      if (p && S) {
-        const Y = _.getLine(p.line), { x: V, y: j } = g.docToCanvas(p.line, p.column, w, Y);
-        S.updateTextareaPosition(V, j + w.lineHeight);
+      if (_ && C) {
+        const $ = p.getLine(_.line), { x: J, y: Q } = g.docToCanvas(_.line, _.column, w, $);
+        C.updateTextareaPosition(J, Q + w.lineHeight);
       }
-    }, Fe = (v, M, N) => {
-      v && (v.clearRect(0, 0, g.width, g.height), v.fillStyle = w.backgroundColor, v.fillRect(0, 0, g.width, g.height), y && a.showLineNumbers && y.render(
+    }, De = (v, O, A) => {
+      !v || !g || !w || !p || (v.clearRect(0, 0, g.width, g.height), v.fillStyle = w.backgroundColor, v.fillRect(0, 0, g.width, g.height), y && a.showLineNumbers && _ && y.render(
         v,
         g,
-        _.getLineCount(),
-        p.line,
+        p.getLineCount(),
+        _.line,
         w.lineHeight
       ));
-    }, Ue = () => {
+    }, ke = () => {
+      var O;
       const v = {
         optimizer: null,
         preload: null,
         prediction: null
       };
-      return P && (v.optimizer = {
-        dirtyRegions: P.dirtyRegions.length,
-        fullRenderNeeded: P.fullRenderNeeded,
-        hasOffscreenCanvas: !!P.offscreenCanvas
-      }), H && (v.preload = H.getStats()), K && (v.prediction = K.getStats()), v;
-    }, De = (v) => {
-      if (!v.data || !p || !_ || v.data === `
+      return D && (v.optimizer = {
+        dirtyRegions: ((O = D.dirtyRegions) == null ? void 0 : O.length) || 0,
+        fullRenderNeeded: D.fullRenderNeeded || !1,
+        hasOffscreenCanvas: !!D.offscreenCanvas
+      }), U && (v.preload = U.getStats()), W && (v.prediction = W.getStats()), v;
+    }, Oe = (v) => {
+      if (!v.data || !_ || !p || !f || !T || !S || v.data === `
 `)
         return;
-      K && K.recordBehavior("edit", {
+      W && W.recordBehavior("edit", {
         type: "insert",
         length: v.data.length
       });
-      const M = { line: p.line, column: p.column };
+      const O = { line: _.line, column: _.column };
       if (f.hasSelection) {
-        const N = f.getSelectedText(_), { startLine: D, startColumn: z } = f.getOrderedRange();
+        const A = f.getSelectedText(p), { startLine: P, startColumn: G } = f.getOrderedRange();
         T.record({
           type: "delete",
-          line: D,
-          column: z,
-          text: N,
-          cursorBefore: M,
-          cursorAfter: { line: D, column: z }
+          line: P,
+          column: G,
+          text: A,
+          cursorBefore: O,
+          cursorAfter: { line: P, column: G }
         });
-        const I = f.deleteSelectedText(_);
-        p.setPosition(I.line, I.column);
+        const L = f.deleteSelectedText(p);
+        _.setPosition(L.line, L.column);
       }
       T.record({
         type: "insert",
-        line: p.line,
-        column: p.column,
+        line: _.line,
+        column: _.column,
         text: v.data,
-        cursorBefore: { line: p.line, column: p.column },
-        cursorAfter: { line: p.line, column: p.column + v.data.length }
-      }), _.insertText(p.line, p.column, v.data), p.column += v.data.length, C.resetBlink(() => Z(!0));
-    }, Te = (v) => {
-      const { key: M, ctrlKey: N, shiftKey: D, metaKey: z } = v;
-      if (!(!p || !_)) {
-        if (M === "Tab" && v.preventDefault(), b && b.handleKeybinding(v)) {
-          Z(!0);
+        cursorBefore: { line: _.line, column: _.column },
+        cursorAfter: { line: _.line, column: _.column + v.data.length }
+      }), p.insertText(_.line, _.column, v.data), _.column += v.data.length, S.resetBlink(() => X(!0));
+    }, he = (v) => {
+      const { key: O, ctrlKey: A, shiftKey: P, metaKey: G } = v;
+      if (!(!_ || !p || !f || !T || !S || !N)) {
+        if (O === "Tab" && v.preventDefault(), b && b.handleKeybinding(v)) {
+          X(!0);
           return;
         }
-        if ((N || z) && M === "a") {
-          f.selectAll(_), Z(!0);
+        if ((A || G) && O === "a") {
+          f.selectAll(p), X(!0);
           return;
         }
-        if ((N || z) && M === "f") {
-          ce.value = !0;
+        if ((A || G) && O === "f") {
+          de.value = !0;
           return;
         }
-        if ((N || z) && M === "h") {
-          ce.value = !0;
+        if ((A || G) && O === "h") {
+          de.value = !0;
           return;
         }
-        if ((N || z) && M === "c") {
+        if ((A || G) && O === "c") {
           if (f.hasSelection) {
-            const I = f.getSelectedText(_);
-            A.copy(I);
+            const L = f.getSelectedText(p);
+            N.copy(L);
           }
           return;
         }
-        if ((N || z) && M === "x") {
+        if ((A || G) && O === "x") {
           if (f.hasSelection) {
-            const I = f.getSelectedText(_);
-            A.cut(I);
-            const { startLine: G, startColumn: Y } = f.getOrderedRange();
+            const L = f.getSelectedText(p);
+            N.cut(L);
+            const { startLine: H, startColumn: $ } = f.getOrderedRange();
             T.record({
               type: "delete",
-              line: G,
-              column: Y,
-              text: I,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: G, column: Y }
+              line: H,
+              column: $,
+              text: L,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: H, column: $ }
             });
-            const V = f.deleteSelectedText(_);
-            p.setPosition(V.line, V.column), C.resetBlink(() => Z(!0));
+            const J = f.deleteSelectedText(p);
+            _.setPosition(J.line, J.column), S.resetBlink(() => X(!0));
           }
           return;
         }
-        if ((N || z) && M === "v") {
-          A.paste().then((I) => {
-            if (!I) return;
-            const G = { line: p.line, column: p.column };
+        if ((A || G) && O === "v") {
+          v.preventDefault && v.preventDefault(), N.paste().then((L) => {
+            if (!L || !_ || !p || !T || !f || !S) return;
+            const H = { line: _.line, column: _.column };
             if (f.hasSelection) {
-              const V = f.getSelectedText(_), { startLine: j, startColumn: fe } = f.getOrderedRange();
+              const J = f.getSelectedText(p), { startLine: Q, startColumn: ee } = f.getOrderedRange();
               T.record({
                 type: "delete",
-                line: j,
-                column: fe,
-                text: V,
-                cursorBefore: G,
-                cursorAfter: { line: j, column: fe }
+                line: Q,
+                column: ee,
+                text: J,
+                cursorBefore: H,
+                cursorAfter: { line: Q, column: ee }
               });
-              const ke = f.deleteSelectedText(_);
-              p.setPosition(ke.line, ke.column);
+              const we = f.deleteSelectedText(p);
+              _.setPosition(we.line, we.column);
             }
             T.record({
               type: "insert",
-              line: p.line,
-              column: p.column,
-              text: I,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: p.line, column: p.column + I.length }
-            }), _.insertText(p.line, p.column, I);
-            const Y = I.split(`
+              line: _.line,
+              column: _.column,
+              text: L,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: _.line, column: _.column + L.length }
+            }), p.insertText(_.line, _.column, L);
+            const $ = L.split(`
 `);
-            Y.length === 1 ? p.column += I.length : (p.line += Y.length - 1, p.column = Y[Y.length - 1].length), C.resetBlink(() => Z(!0));
+            $.length === 1 ? _.column += L.length : (_.line += $.length - 1, _.column = $[$.length - 1].length), S.resetBlink(() => X(!0));
           });
           return;
         }
-        if ((N || z) && M === "z" && !D) {
-          const I = T.undo();
-          I && ot(I, !0);
+        if ((A || G) && O === "z" && !P) {
+          const L = T.undo();
+          L && Je(L, !0);
           return;
         }
-        if ((N || z) && (M === "y" || M === "z" && D)) {
-          const I = T.redo();
-          I && ot(I, !1);
+        if ((A || G) && (O === "y" || O === "z" && P)) {
+          const L = T.redo();
+          L && Je(L, !1);
           return;
         }
-        if ((N || z) && M === "d") {
-          const I = _.getLine(p.line), G = { line: p.line, column: p.column };
-          if (p.line < _.getLineCount() - 1)
+        if ((A || G) && O === "d") {
+          const L = p.getLine(_.line), H = { line: _.line, column: _.column };
+          if (_.line < p.getLineCount() - 1)
             T.record({
               type: "delete",
-              line: p.line,
+              line: _.line,
               column: 0,
-              text: I + `
+              text: L + `
 `,
-              cursorBefore: G,
-              cursorAfter: { line: p.line, column: 0 }
-            }), _.deleteText(p.line, 0, p.line + 1, 0);
-          else if (p.line > 0) {
+              cursorBefore: H,
+              cursorAfter: { line: _.line, column: 0 }
+            }), p.deleteText(_.line, 0, _.line + 1, 0);
+          else if (_.line > 0) {
             T.record({
               type: "delete",
-              line: p.line - 1,
-              column: _.getLine(p.line - 1).length,
+              line: _.line - 1,
+              column: p.getLine(_.line - 1).length,
               text: `
-` + I,
-              cursorBefore: G,
-              cursorAfter: { line: p.line - 1, column: _.getLine(p.line - 1).length }
+` + L,
+              cursorBefore: H,
+              cursorAfter: { line: _.line - 1, column: p.getLine(_.line - 1).length }
             });
-            const Y = _.getLine(p.line - 1).length;
-            _.deleteText(p.line - 1, Y, p.line, I.length), p.line--, p.column = Math.min(p.column, Y);
+            const $ = p.getLine(_.line - 1).length;
+            p.deleteText(_.line - 1, $, _.line, L.length), _.line--, _.column = Math.min(_.column, $);
           } else
             T.record({
               type: "delete",
               line: 0,
               column: 0,
-              text: I,
-              cursorBefore: G,
+              text: L,
+              cursorBefore: H,
               cursorAfter: { line: 0, column: 0 }
-            }), _.deleteText(0, 0, 0, I.length), p.column = 0;
-          C.resetBlink(() => Z(!0));
+            }), p.deleteText(0, 0, 0, L.length), _.column = 0;
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "Tab") {
-          const I = { line: p.line, column: p.column };
-          if (D) {
-            const G = _.getLine(p.line);
-            G.startsWith("  ") ? (T.record({
+        if (O === "Tab") {
+          const L = { line: _.line, column: _.column };
+          if (P) {
+            const H = p.getLine(_.line);
+            H.startsWith("  ") ? (T.record({
               type: "delete",
-              line: p.line,
+              line: _.line,
               column: 0,
               text: "  ",
-              cursorBefore: I,
-              cursorAfter: { line: p.line, column: Math.max(0, p.column - 2) }
-            }), _.deleteText(p.line, 0, p.line, 2), p.column = Math.max(0, p.column - 2)) : G.startsWith("	") && (T.record({
+              cursorBefore: L,
+              cursorAfter: { line: _.line, column: Math.max(0, _.column - 2) }
+            }), p.deleteText(_.line, 0, _.line, 2), _.column = Math.max(0, _.column - 2)) : H.startsWith("	") && (T.record({
               type: "delete",
-              line: p.line,
+              line: _.line,
               column: 0,
               text: "	",
-              cursorBefore: I,
-              cursorAfter: { line: p.line, column: Math.max(0, p.column - 1) }
-            }), _.deleteText(p.line, 0, p.line, 1), p.column = Math.max(0, p.column - 1));
+              cursorBefore: L,
+              cursorAfter: { line: _.line, column: Math.max(0, _.column - 1) }
+            }), p.deleteText(_.line, 0, _.line, 1), _.column = Math.max(0, _.column - 1));
           } else
             T.record({
               type: "insert",
-              line: p.line,
-              column: p.column,
+              line: _.line,
+              column: _.column,
               text: "  ",
-              cursorBefore: I,
-              cursorAfter: { line: p.line, column: p.column + 2 }
-            }), _.insertText(p.line, p.column, "  "), p.column += 2;
-          C.resetBlink(() => Z(!0));
+              cursorBefore: L,
+              cursorAfter: { line: _.line, column: _.column + 2 }
+            }), p.insertText(_.line, _.column, "  "), _.column += 2;
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "ArrowLeft") {
-          if (D)
-            f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveLeft(_), f.extend(p.line, p.column);
+        if (O === "ArrowLeft") {
+          if (P)
+            f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveLeft(p), f.extend(_.line, _.column);
           else if (f.hasSelection) {
-            const { startLine: I, startColumn: G } = f.getOrderedRange();
-            p.setPosition(I, G), f.clear();
+            const { startLine: L, startColumn: H } = f.getOrderedRange();
+            _.setPosition(L, H), f.clear();
           } else
-            p.moveLeft(_);
-          C.resetBlink(() => Z(!0));
+            _.moveLeft(p);
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "ArrowRight") {
-          if (D)
-            f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveRight(_), f.extend(p.line, p.column);
+        if (O === "ArrowRight") {
+          if (P)
+            f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveRight(p), f.extend(_.line, _.column);
           else if (f.hasSelection) {
-            const { endLine: I, endColumn: G } = f.getOrderedRange();
-            p.setPosition(I, G), f.clear();
+            const { endLine: L, endColumn: H } = f.getOrderedRange();
+            _.setPosition(L, H), f.clear();
           } else
-            p.moveRight(_);
-          C.resetBlink(() => Z(!0));
+            _.moveRight(p);
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "ArrowUp") {
-          D ? (f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveUp(_), f.extend(p.line, p.column)) : (f.clear(), p.moveUp(_)), C.resetBlink(() => Z(!0));
+        if (O === "ArrowUp") {
+          P ? (f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveUp(p), f.extend(_.line, _.column)) : (f.clear(), _.moveUp(p)), S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "ArrowDown") {
-          D ? (f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveDown(_), f.extend(p.line, p.column)) : (f.clear(), p.moveDown(_)), C.resetBlink(() => Z(!0));
+        if (O === "ArrowDown") {
+          P ? (f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveDown(p), f.extend(_.line, _.column)) : (f.clear(), _.moveDown(p)), S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "Home") {
-          D ? (f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveToLineStart(), f.extend(p.line, p.column)) : (f.clear(), p.moveToLineStart()), C.resetBlink(() => Z(!0));
+        if (O === "Home") {
+          P ? (f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveToLineStart(), f.extend(_.line, _.column)) : (f.clear(), _.moveToLineStart()), S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "End") {
-          D ? (f.hasSelection || f.setRange(p.line, p.column, p.line, p.column), p.moveToLineEnd(_), f.extend(p.line, p.column)) : (f.clear(), p.moveToLineEnd(_)), C.resetBlink(() => Z(!0));
+        if (O === "End") {
+          P ? (f.hasSelection || f.setRange(_.line, _.column, _.line, _.column), _.moveToLineEnd(p), f.extend(_.line, _.column)) : (f.clear(), _.moveToLineEnd(p)), S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "Backspace") {
+        if (O === "Backspace") {
           if (f.hasSelection) {
-            const I = f.getSelectedText(_), { startLine: G, startColumn: Y } = f.getOrderedRange();
+            const L = f.getSelectedText(p), { startLine: H, startColumn: $ } = f.getOrderedRange();
             T.record({
               type: "delete",
-              line: G,
-              column: Y,
-              text: I,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: G, column: Y }
+              line: H,
+              column: $,
+              text: L,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: H, column: $ }
             });
-            const V = f.deleteSelectedText(_);
-            p.setPosition(V.line, V.column);
-          } else if (p.column > 0) {
-            const I = _.getLine(p.line).charAt(p.column - 1);
+            const J = f.deleteSelectedText(p);
+            _.setPosition(J.line, J.column);
+          } else if (_.column > 0) {
+            const L = p.getLine(_.line).charAt(_.column - 1);
             T.record({
               type: "delete",
-              line: p.line,
-              column: p.column - 1,
-              text: I,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: p.line, column: p.column - 1 }
-            }), _.deleteText(p.line, p.column - 1, p.line, p.column), p.column--;
-          } else if (p.line > 0) {
-            const I = _.getLine(p.line - 1).length;
+              line: _.line,
+              column: _.column - 1,
+              text: L,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: _.line, column: _.column - 1 }
+            }), p.deleteText(_.line, _.column - 1, _.line, _.column), _.column--;
+          } else if (_.line > 0) {
+            const L = p.getLine(_.line - 1).length;
             T.record({
               type: "delete",
-              line: p.line - 1,
-              column: I,
+              line: _.line - 1,
+              column: L,
               text: `
 `,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: p.line - 1, column: I }
-            }), _.deleteText(p.line - 1, I, p.line, 0), p.line--, p.column = I;
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: _.line - 1, column: L }
+            }), p.deleteText(_.line - 1, L, _.line, 0), _.line--, _.column = L;
           }
-          C.resetBlink(() => Z(!0));
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "Delete") {
+        if (O === "Delete") {
           if (f.hasSelection) {
-            const I = f.getSelectedText(_), { startLine: G, startColumn: Y } = f.getOrderedRange();
+            const L = f.getSelectedText(p), { startLine: H, startColumn: $ } = f.getOrderedRange();
             T.record({
               type: "delete",
-              line: G,
-              column: Y,
-              text: I,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: G, column: Y }
+              line: H,
+              column: $,
+              text: L,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: H, column: $ }
             });
-            const V = f.deleteSelectedText(_);
-            p.setPosition(V.line, V.column);
+            const J = f.deleteSelectedText(p);
+            _.setPosition(J.line, J.column);
           } else {
-            const I = _.getLine(p.line);
-            if (p.column < I.length) {
-              const G = I.charAt(p.column);
+            const L = p.getLine(_.line);
+            if (_.column < L.length) {
+              const H = L.charAt(_.column);
               T.record({
                 type: "delete",
-                line: p.line,
-                column: p.column,
-                text: G,
-                cursorBefore: { line: p.line, column: p.column },
-                cursorAfter: { line: p.line, column: p.column }
-              }), _.deleteText(p.line, p.column, p.line, p.column + 1);
-            } else p.line < _.getLineCount() - 1 && (T.record({
+                line: _.line,
+                column: _.column,
+                text: H,
+                cursorBefore: { line: _.line, column: _.column },
+                cursorAfter: { line: _.line, column: _.column }
+              }), p.deleteText(_.line, _.column, _.line, _.column + 1);
+            } else _.line < p.getLineCount() - 1 && (T.record({
               type: "delete",
-              line: p.line,
-              column: p.column,
+              line: _.line,
+              column: _.column,
               text: `
 `,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: p.line, column: p.column }
-            }), _.deleteText(p.line, p.column, p.line + 1, 0));
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: _.line, column: _.column }
+            }), p.deleteText(_.line, _.column, _.line + 1, 0));
           }
-          C.resetBlink(() => Z(!0));
+          S.resetBlink(() => X(!0));
           return;
         }
-        if (M === "Enter") {
+        if (O === "Enter") {
           if (f.hasSelection) {
-            const ke = f.getSelectedText(_), { startLine: Ge, startColumn: Qe } = f.getOrderedRange();
+            const we = f.getSelectedText(p), { startLine: Ve, startColumn: je } = f.getOrderedRange();
             T.record({
               type: "delete",
-              line: Ge,
-              column: Qe,
-              text: ke,
-              cursorBefore: { line: p.line, column: p.column },
-              cursorAfter: { line: Ge, column: Qe }
+              line: Ve,
+              column: je,
+              text: we,
+              cursorBefore: { line: _.line, column: _.column },
+              cursorAfter: { line: Ve, column: je }
             });
-            const dt = f.deleteSelectedText(_);
-            p.setPosition(dt.line, dt.column);
+            const tt = f.deleteSelectedText(p);
+            _.setPosition(tt.line, tt.column);
           }
-          const I = _.getLine(p.line);
-          let G = "";
-          const Y = I.match(/^(\s*)([-*+])\s+(.*)$/);
-          if (Y) {
-            const ke = Y[1], Ge = Y[2];
-            if (Y[3].trim() === "") {
+          const L = p.getLine(_.line);
+          let H = "";
+          const $ = L.match(/^(\s*)([-*+])\s+(.*)$/);
+          if ($) {
+            const we = $[1], Ve = $[2];
+            if ($[3].trim() === "") {
               T.record({
                 type: "delete",
-                line: p.line,
+                line: _.line,
                 column: 0,
-                text: I,
-                cursorBefore: { line: p.line, column: p.column },
-                cursorAfter: { line: p.line, column: 0 }
-              }), _.deleteText(p.line, 0, p.line, I.length), p.column = 0, C.resetBlink(() => Z(!0));
+                text: L,
+                cursorBefore: { line: _.line, column: _.column },
+                cursorAfter: { line: _.line, column: 0 }
+              }), p.deleteText(_.line, 0, _.line, L.length), _.column = 0, S.resetBlink(() => X(!0));
               return;
             }
-            G = `${ke}${Ge} `;
+            H = `${we}${Ve} `;
           }
-          const V = I.match(/^(\s*)(\d+)\.\s+(.*)$/);
-          if (V) {
-            const ke = V[1], Ge = parseInt(V[2]);
-            if (V[3].trim() === "") {
+          const J = L.match(/^(\s*)(\d+)\.\s+(.*)$/);
+          if (J) {
+            const we = J[1], Ve = parseInt(J[2]);
+            if (J[3].trim() === "") {
               T.record({
                 type: "delete",
-                line: p.line,
+                line: _.line,
                 column: 0,
-                text: I,
-                cursorBefore: { line: p.line, column: p.column },
-                cursorAfter: { line: p.line, column: 0 }
-              }), _.deleteText(p.line, 0, p.line, I.length), p.column = 0, C.resetBlink(() => Z(!0));
+                text: L,
+                cursorBefore: { line: _.line, column: _.column },
+                cursorAfter: { line: _.line, column: 0 }
+              }), p.deleteText(_.line, 0, _.line, L.length), _.column = 0, S.resetBlink(() => X(!0));
               return;
             }
-            G = `${ke}${Ge + 1}. `;
+            H = `${we}${Ve + 1}. `;
           }
-          const j = I.match(/^(\s*)([-*+])\s+\[([xX ])\]\s+(.*)$/);
-          if (j) {
-            const ke = j[1], Ge = j[2];
-            if (j[4].trim() === "") {
+          const Q = L.match(/^(\s*)([-*+])\s+\[([xX ])\]\s+(.*)$/);
+          if (Q) {
+            const we = Q[1], Ve = Q[2];
+            if (Q[4].trim() === "") {
               T.record({
                 type: "delete",
-                line: p.line,
+                line: _.line,
                 column: 0,
-                text: I,
-                cursorBefore: { line: p.line, column: p.column },
-                cursorAfter: { line: p.line, column: 0 }
-              }), _.deleteText(p.line, 0, p.line, I.length), p.column = 0, C.resetBlink(() => Z(!0));
+                text: L,
+                cursorBefore: { line: _.line, column: _.column },
+                cursorAfter: { line: _.line, column: 0 }
+              }), p.deleteText(_.line, 0, _.line, L.length), _.column = 0, S.resetBlink(() => X(!0));
               return;
             }
-            G = `${ke}${Ge} [ ] `;
+            H = `${we}${Ve} [ ] `;
           }
-          const fe = `
-` + G;
+          const ee = `
+` + H;
           T.record({
             type: "insert",
-            line: p.line,
-            column: p.column,
-            text: fe,
-            cursorBefore: { line: p.line, column: p.column },
-            cursorAfter: { line: p.line + 1, column: G.length }
-          }), _.insertText(p.line, p.column, fe), p.line++, p.column = G.length, C.resetBlink(() => Z(!0));
+            line: _.line,
+            column: _.column,
+            text: ee,
+            cursorBefore: { line: _.line, column: _.column },
+            cursorAfter: { line: _.line + 1, column: H.length }
+          }), p.insertText(_.line, _.column, ee), _.line++, _.column = H.length, S.resetBlink(() => X(!0));
           return;
         }
       }
-    }, Oe = (v, M) => {
-      const N = /[\w\u4e00-\u9fa5]/;
-      let D = M, z = M;
-      for (; D > 0 && N.test(v[D - 1]); )
-        D--;
-      for (; z < v.length && N.test(v[z]); )
-        z++;
-      return { start: D, end: z };
-    }, _e = (v) => {
-      if (!p || !g || !w || !_) return;
-      const { line: M } = g.canvasToDoc(v.x, v.y, w, ""), N = _.getLineCount() - 1, D = Math.max(0, Math.min(M, N)), z = _.getLine(D), { column: I } = g.canvasToDoc(v.x, v.y, w, z), G = Math.max(0, Math.min(I, z.length)), { start: Y, end: V } = Oe(z, G);
-      Y < V && (f.setRange(D, Y, D, V), p.setPosition(D, V), Z(!0));
-    }, ue = (v) => {
-      if (!p || !g || !w || !_) return;
-      const { line: M } = g.canvasToDoc(v.x, v.y, w, ""), N = _.getLineCount() - 1, D = Math.max(0, Math.min(M, N));
-      f.selectLine(D, _), p.setPosition(D, _.getLine(D).length), Z(!0);
-    }, Se = (v) => {
-      if (!p || !_) return;
-      let M = "", N = 0;
+    }, pe = (v, O) => {
+      const A = /[\w\u4e00-\u9fa5]/;
+      let P = O, G = O;
+      for (; P > 0 && A.test(v[P - 1]); )
+        P--;
+      for (; G < v.length && A.test(v[G]); )
+        G++;
+      return { start: P, end: G };
+    }, xe = (v) => {
+      if (!_ || !g || !w || !p || !f) return;
+      const { line: O } = g.canvasToDoc(v.x, v.y, w, ""), A = p.getLineCount() - 1, P = Math.max(0, Math.min(O, A)), G = p.getLine(P), { column: L } = g.canvasToDoc(v.x, v.y, w, G), H = Math.max(0, Math.min(L, G.length)), { start: $, end: J } = pe(G, H);
+      $ < J && (f.setRange(P, $, P, J), _.setPosition(P, J), X(!0));
+    }, ve = (v) => {
+      if (!_ || !g || !w || !p || !f) return;
+      const { line: O } = g.canvasToDoc(v.x, v.y, w, ""), A = p.getLineCount() - 1, P = Math.max(0, Math.min(O, A));
+      f.selectLine(P, p), _.setPosition(P, p.getLine(P).length), X(!0);
+    }, Te = (v) => {
+      if (!_ || !p || !f || !T) return;
+      let O = "", A = 0;
       switch (v) {
         case "h1":
-          M = "# ", N = M.length;
+          O = "# ", A = O.length;
           break;
         case "h2":
-          M = "## ", N = M.length;
+          O = "## ", A = O.length;
           break;
         case "bold":
-          f.hasSelection ? (M = `**${f.getSelectedText(_)}**`, N = M.length) : (M = "****", N = 2);
+          f.hasSelection ? (O = `**${f.getSelectedText(p)}**`, A = O.length) : (O = "****", A = 2);
           break;
         case "italic":
-          f.hasSelection ? (M = `*${f.getSelectedText(_)}*`, N = M.length) : (M = "**", N = 1);
+          f.hasSelection ? (O = `*${f.getSelectedText(p)}*`, A = O.length) : (O = "**", A = 1);
           break;
         case "unordered-list":
-          M = "- ", N = M.length;
+          O = "- ", A = O.length;
           break;
         case "ordered-list":
-          M = "1. ", N = M.length;
+          O = "1. ", A = O.length;
           break;
         case "blockquote":
-          M = "> ", N = M.length;
+          O = "> ", A = O.length;
           break;
         case "code-block":
-          M = "```\n\n```", N = 4;
+          O = "```\n\n```", A = 4;
           break;
         case "link":
-          M = "[链接文字](url)", N = 1;
+          O = "[链接文字](url)", A = 1;
           break;
         case "image":
-          M = "![图片描述](url)", N = 2;
+          O = "![图片描述](url)", A = 2;
           break;
         default:
           return;
       }
-      const D = { line: p.line, column: p.column };
+      const P = { line: _.line, column: _.column };
       if (f.hasSelection && (v === "bold" || v === "italic")) {
-        const z = f.getSelectedText(_), { startLine: I, startColumn: G } = f.getOrderedRange();
+        const G = f.getSelectedText(p), { startLine: L, startColumn: H } = f.getOrderedRange();
         T.record({
           type: "delete",
-          line: I,
-          column: G,
-          text: z,
-          cursorBefore: D,
-          cursorAfter: { line: I, column: G }
+          line: L,
+          column: H,
+          text: G,
+          cursorBefore: P,
+          cursorAfter: { line: L, column: H }
         });
-        const Y = f.deleteSelectedText(_);
-        p.setPosition(Y.line, Y.column);
+        const $ = f.deleteSelectedText(p);
+        _.setPosition($.line, $.column);
       }
       T.record({
         type: "insert",
-        line: p.line,
-        column: p.column,
-        text: M,
-        cursorBefore: { line: p.line, column: p.column },
-        cursorAfter: { line: p.line, column: p.column + N }
-      }), _.insertText(p.line, p.column, M), p.column += N, C.resetBlink(() => Z(!0));
-    }, Ce = ({ command: v, args: M }) => {
+        line: _.line,
+        column: _.column,
+        text: O,
+        cursorBefore: { line: _.line, column: _.column },
+        cursorAfter: { line: _.line, column: _.column + A }
+      }), p.insertText(_.line, _.column, O), _.column += A, S && S.resetBlink(() => X(!0));
+    }, Pe = ({ command: v, args: O }) => {
       if (b)
         try {
-          b.executeCommand(v, ...M);
-        } catch (N) {
-          console.error("Failed to execute plugin command:", v, N);
+          b.executeCommand(v, ...O);
+        } catch (A) {
+          console.error("Failed to execute plugin command:", v, A);
         }
-    }, ve = (v) => {
-      if (!_) return;
-      const { text: M, matchCase: N, matchWholeWord: D, useRegex: z, jumpTo: I, callback: G } = v;
-      if (!M) {
-        de.value = [], G && G([]);
+    }, Fe = (v) => {
+      if (!p) return;
+      const { text: O, matchCase: A, matchWholeWord: P, useRegex: G, jumpTo: L, callback: H } = v;
+      if (!O) {
+        ue.value = [], H && H([]);
         return;
       }
-      const Y = [];
-      let V;
+      const $ = [];
+      let J;
       try {
-        if (z)
-          V = new RegExp(M, N ? "g" : "gi");
+        if (G)
+          J = new RegExp(O, A ? "g" : "gi");
         else {
-          const j = M.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), fe = D ? `\\b${j}\\b` : j;
-          V = new RegExp(fe, N ? "g" : "gi");
+          const Q = O.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), ee = P ? `\\b${Q}\\b` : Q;
+          J = new RegExp(ee, A ? "g" : "gi");
         }
       } catch {
-        G && G([]);
+        H && H([]);
         return;
       }
-      for (let j = 0; j < _.getLineCount(); j++) {
-        const fe = _.getLine(j);
-        let ke;
-        for (V.lastIndex = 0; (ke = V.exec(fe)) !== null; )
-          Y.push({
-            line: j,
-            startColumn: ke.index,
-            endColumn: ke.index + ke[0].length,
-            text: ke[0]
-          }), ke.index === V.lastIndex && V.lastIndex++;
+      for (let Q = 0; Q < p.getLineCount(); Q++) {
+        const ee = p.getLine(Q);
+        let we;
+        for (J.lastIndex = 0; (we = J.exec(ee)) !== null; )
+          $.push({
+            line: Q,
+            startColumn: we.index,
+            endColumn: we.index + we[0].length,
+            text: we[0]
+          }), we.index === J.lastIndex && J.lastIndex++;
       }
-      if (de.value = Y, G && G(Y), typeof I == "number" && Y[I]) {
-        K && K.recordBehavior("jump", {
-          from: p.line,
-          to: Y[I].line
+      if (ue.value = $, H && H($), typeof L == "number" && $[L]) {
+        W && _ && W.recordBehavior("jump", {
+          from: _.line,
+          to: $[L].line
         });
-        const j = Y[I];
-        p.setPosition(j.line, j.startColumn);
-        const fe = j.line * g.lineHeight;
-        (fe < g.scrollTop || fe > g.scrollTop + g.height) && g.setScrollTop(fe - g.height / 3), Z(!0);
+        const Q = $[L];
+        if (_ && g) {
+          _.setPosition(Q.line, Q.startColumn);
+          const ee = Q.line * g.lineHeight;
+          (ee < g.scrollTop || ee > g.scrollTop + g.height) && g.setScrollTop(ee - g.height / 3), X(!0);
+        }
       }
-    }, Pe = (v) => {
-      if (!_ || !p) return;
-      const { searchText: M, replaceText: N, matchCase: D, matchWholeWord: z, useRegex: I, callback: G } = v;
-      ve({
-        text: M,
-        matchCase: D,
-        matchWholeWord: z,
-        useRegex: I,
-        callback: (Y) => {
-          if (Y.length === 0) return;
-          const V = Y.find(
-            (j) => j.line === p.line && p.column >= j.startColumn && p.column <= j.endColumn
+    }, st = (v) => {
+      if (!p || !_ || !T) return;
+      const { searchText: O, replaceText: A, matchCase: P, matchWholeWord: G, useRegex: L, callback: H } = v;
+      Fe({
+        text: O,
+        matchCase: P,
+        matchWholeWord: G,
+        useRegex: L,
+        callback: ($) => {
+          if ($.length === 0 || !_ || !T || !p) return;
+          const J = _.line, Q = _.column, ee = $.find(
+            (we) => we.line === J && Q >= we.startColumn && Q <= we.endColumn
           );
-          if (V) {
-            const j = { line: p.line, column: p.column };
+          if (ee) {
+            const we = { line: _.line, column: _.column };
             T.record({
               type: "delete",
-              line: V.line,
-              column: V.startColumn,
-              text: V.text,
-              cursorBefore: j,
-              cursorAfter: { line: V.line, column: V.startColumn }
-            }), _.deleteText(V.line, V.startColumn, V.line, V.endColumn), T.record({
+              line: ee.line,
+              column: ee.startColumn,
+              text: ee.text,
+              cursorBefore: we,
+              cursorAfter: { line: ee.line, column: ee.startColumn }
+            }), p.deleteText(ee.line, ee.startColumn, ee.line, ee.endColumn), T.record({
               type: "insert",
-              line: V.line,
-              column: V.startColumn,
-              text: N,
-              cursorBefore: { line: V.line, column: V.startColumn },
-              cursorAfter: { line: V.line, column: V.startColumn + N.length }
-            }), _.insertText(V.line, V.startColumn, N), p.setPosition(V.line, V.startColumn + N.length), Z(!0);
+              line: ee.line,
+              column: ee.startColumn,
+              text: A,
+              cursorBefore: { line: ee.line, column: ee.startColumn },
+              cursorAfter: { line: ee.line, column: ee.startColumn + A.length }
+            }), p.insertText(ee.line, ee.startColumn, A), _.setPosition(ee.line, ee.startColumn + A.length), X(!0);
           }
-          G && G();
+          H && H();
         }
       });
-    }, He = (v) => {
-      if (!_) return;
-      const { searchText: M, replaceText: N, matchCase: D, matchWholeWord: z, useRegex: I, callback: G } = v;
-      ve({
-        text: M,
-        matchCase: D,
-        matchWholeWord: z,
-        useRegex: I,
-        callback: (Y) => {
-          if (Y.length === 0) {
-            G && G();
+    }, mt = (v) => {
+      if (!p || !T) return;
+      const { searchText: O, replaceText: A, matchCase: P, matchWholeWord: G, useRegex: L, callback: H } = v;
+      Fe({
+        text: O,
+        matchCase: P,
+        matchWholeWord: G,
+        useRegex: L,
+        callback: ($) => {
+          if ($.length === 0 || !T || !p || !_) {
+            H && H();
             return;
           }
-          for (let V = Y.length - 1; V >= 0; V--) {
-            const j = Y[V];
+          for (let J = $.length - 1; J >= 0; J--) {
+            const Q = $[J];
             T.record({
               type: "delete",
-              line: j.line,
-              column: j.startColumn,
-              text: j.text,
-              cursorBefore: { line: j.line, column: j.startColumn },
-              cursorAfter: { line: j.line, column: j.startColumn }
-            }), _.deleteText(j.line, j.startColumn, j.line, j.endColumn), T.record({
+              line: Q.line,
+              column: Q.startColumn,
+              text: Q.text,
+              cursorBefore: { line: Q.line, column: Q.startColumn },
+              cursorAfter: { line: Q.line, column: Q.startColumn }
+            }), p.deleteText(Q.line, Q.startColumn, Q.line, Q.endColumn), T.record({
               type: "insert",
-              line: j.line,
-              column: j.startColumn,
-              text: N,
-              cursorBefore: { line: j.line, column: j.startColumn },
-              cursorAfter: { line: j.line, column: j.startColumn + N.length }
-            }), _.insertText(j.line, j.startColumn, N);
+              line: Q.line,
+              column: Q.startColumn,
+              text: A,
+              cursorBefore: { line: Q.line, column: Q.startColumn },
+              cursorAfter: { line: Q.line, column: Q.startColumn + A.length }
+            }), p.insertText(Q.line, Q.startColumn, A);
           }
-          Z(!0), G && G();
+          X(!0), H && H();
         }
       });
-    }, ot = (v, M) => {
-      T.startApplying();
-      try {
-        if (M)
-          if (v.type === "insert") {
-            const N = v.text.split(`
-`), D = N.length === 1 ? v.line : v.line + N.length - 1, z = N.length === 1 ? v.column + v.text.length : N[N.length - 1].length;
-            _.deleteText(v.line, v.column, D, z), p.setPosition(v.cursorBefore.line, v.cursorBefore.column);
-          } else
-            _.insertText(v.line, v.column, v.text), p.setPosition(v.cursorBefore.line, v.cursorBefore.column);
-        else if (v.type === "insert")
-          _.insertText(v.line, v.column, v.text), p.setPosition(v.cursorAfter.line, v.cursorAfter.column);
-        else {
-          const N = v.text.split(`
-`), D = N.length === 1 ? v.line : v.line + N.length - 1, z = N.length === 1 ? v.column + v.text.length : N[N.length - 1].length;
-          _.deleteText(v.line, v.column, D, z), p.setPosition(v.cursorAfter.line, v.cursorAfter.column);
+    }, Je = (v, O) => {
+      if (!(!T || !p || !_ || !f || !S)) {
+        T.startApplying();
+        try {
+          if (O)
+            if (v.type === "insert") {
+              const A = v.text.split(`
+`), P = A.length === 1 ? v.line : v.line + A.length - 1, G = A.length === 1 ? v.column + v.text.length : A[A.length - 1].length;
+              p.deleteText(v.line, v.column, P, G), _.setPosition(v.cursorBefore.line, v.cursorBefore.column);
+            } else
+              p.insertText(v.line, v.column, v.text), _.setPosition(v.cursorBefore.line, v.cursorBefore.column);
+          else if (v.type === "insert")
+            p.insertText(v.line, v.column, v.text), _.setPosition(v.cursorAfter.line, v.cursorAfter.column);
+          else {
+            const A = v.text.split(`
+`), P = A.length === 1 ? v.line : v.line + A.length - 1, G = A.length === 1 ? v.column + v.text.length : A[A.length - 1].length;
+            p.deleteText(v.line, v.column, P, G), _.setPosition(v.cursorAfter.line, v.cursorAfter.column);
+          }
+          f.clear(), S.resetBlink(() => X(!0));
+        } finally {
+          T.endApplying();
         }
-        f.clear(), C.resetBlink(() => Z(!0));
-      } finally {
-        T.endApplying();
       }
-    }, _t = (v) => {
-      if (!p || !g || !w || !_ || f.hasSelection)
+    }, ct = (v) => {
+      if (!_ || !g || !w || !p || !f || !S || f.hasSelection)
         return;
-      const { line: M } = g.canvasToDoc(v.x, v.y, w, ""), N = _.getLineCount() - 1, D = Math.max(0, Math.min(M, N)), z = _.getLine(D), { column: I } = g.canvasToDoc(v.x, v.y, w, z), G = Math.max(0, Math.min(I, z.length));
-      f.clear(), p.setPosition(D, G), C.resetBlink(() => Z(!0));
-    }, it = (v) => {
-      if (!g || !w || !_) return;
-      ie = !0, ae = !1;
-      const { line: M } = g.canvasToDoc(v.x, v.y, w, ""), N = _.getLineCount() - 1, D = Math.max(0, Math.min(M, N)), z = _.getLine(D), { column: I } = g.canvasToDoc(v.x, v.y, w, z), G = Math.max(0, Math.min(I, z.length));
-      if (q = { line: D, column: G }, f.hasSelection) {
-        const { startLine: Y, startColumn: V, endLine: j, endColumn: fe } = f.getOrderedRange();
-        if ((D > Y || D === Y && G >= V) && (D < j || D === j && G <= fe)) {
-          le = {
-            startLine: Y,
-            startColumn: V,
-            endLine: j,
-            endColumn: fe,
-            text: f.getSelectedText(_)
+      const { line: O } = g.canvasToDoc(v.x, v.y, w, ""), A = p.getLineCount() - 1, P = Math.max(0, Math.min(O, A)), G = p.getLine(P), { column: L } = g.canvasToDoc(v.x, v.y, w, G), H = Math.max(0, Math.min(L, G.length));
+      f.clear(), _.setPosition(P, H), S.resetBlink(() => X(!0));
+    }, dt = (v) => {
+      if (!g || !w || !p || !f || !_ || !S) return;
+      le = !0, se = !1;
+      const { line: O } = g.canvasToDoc(v.x, v.y, w, ""), A = p.getLineCount() - 1, P = Math.max(0, Math.min(O, A)), G = p.getLine(P), { column: L } = g.canvasToDoc(v.x, v.y, w, G), H = Math.max(0, Math.min(L, G.length));
+      if (Y = { x: v.x, y: v.y, line: P, column: H }, f.hasSelection) {
+        const { startLine: $, startColumn: J, endLine: Q, endColumn: ee } = f.getOrderedRange();
+        if ((P > $ || P === $ && H >= J) && (P < Q || P === Q && H <= ee)) {
+          ae = {
+            startLine: $,
+            startColumn: J,
+            endLine: Q,
+            endColumn: ee,
+            text: f.getSelectedText(p)
           };
           return;
         }
       }
-      le = null, f.setRange(D, G, D, G), p.setPosition(D, G), C.resetBlink(() => Z(!0));
-    }, at = (v) => {
-      if (!ie || !g || !w || !_) return;
-      const { line: M } = g.canvasToDoc(v.x, v.y, w, ""), N = _.getLineCount() - 1, D = Math.max(0, Math.min(M, N)), z = _.getLine(D), { column: I } = g.canvasToDoc(v.x, v.y, w, z), G = Math.max(0, Math.min(I, z.length));
-      le && !ae && (Math.abs(D - q.line) > 0 || Math.abs(G - q.column) > 2) && (ae = !0, d.value.style.cursor = "move"), ae ? (p.setPosition(D, G), Z()) : q && (f.setRange(
-        q.line,
-        q.column,
-        D,
-        G
-      ), p.setPosition(D, G), Z());
-    }, st = () => {
-      if (!ae && !le && f.hasSelection) {
-        const { startLine: v, startColumn: M, endLine: N, endColumn: D } = f.getOrderedRange();
-        (v === N && M === D || isNaN(M) || isNaN(D)) && f.clear();
-      }
-      if (ae && le) {
-        const v = p.line, M = p.column, { startLine: N, startColumn: D, endLine: z, endColumn: I } = le;
-        if ((v > N || v === N && M >= D) && (v < z || v === z && M <= I))
-          f.clear(), C.resetBlink(() => Z(!0));
-        else {
-          T.record({
-            type: "delete",
-            line: N,
-            column: D,
-            text: le.text,
-            cursorBefore: { line: N, column: D },
-            cursorAfter: { line: N, column: D }
-          }), _.deleteText(N, D, z, I);
-          let Y = v, V = M;
-          if (v > z || v === z && M > I) {
-            const fe = le.text.split(`
-`);
-            fe.length === 1 ? v === z && (V = M - le.text.length) : (Y = v - (fe.length - 1), v === z && (V = M - fe[fe.length - 1].length));
-          }
-          T.record({
-            type: "insert",
-            line: Y,
-            column: V,
-            text: le.text,
-            cursorBefore: { line: Y, column: V },
-            cursorAfter: { line: Y, column: V + le.text.length }
-          }), _.insertText(Y, V, le.text);
-          const j = le.text.split(`
-`);
-          j.length === 1 ? p.setPosition(Y, V + le.text.length) : p.setPosition(
-            Y + j.length - 1,
-            j[j.length - 1].length
-          ), f.clear(), C.resetBlink(() => Z(!0));
+      ae = null, f.setRange(P, H, P, H), _.setPosition(P, H), S.resetBlink(() => X(!0));
+    }, ht = (v) => {
+      if (!le || !g || !w || !p || !_ || !f || !Y || !d.value) return;
+      const { line: O } = g.canvasToDoc(v.x, v.y, w, ""), A = p.getLineCount() - 1, P = Math.max(0, Math.min(O, A)), G = p.getLine(P), { column: L } = g.canvasToDoc(v.x, v.y, w, G), H = Math.max(0, Math.min(L, G.length));
+      ae && !se && (Math.abs(P - Y.line) > 0 || Math.abs(H - Y.column) > 2) && (se = !0, d.value.style.cursor = "move"), se ? (_.setPosition(P, H), X()) : Y && (f.setRange(
+        Y.line,
+        Y.column,
+        P,
+        H
+      ), _.setPosition(P, H), X());
+    }, ut = () => {
+      if (!(!f || !_ || !T || !p || !S)) {
+        if (!se && !ae && f.hasSelection) {
+          const { startLine: v, startColumn: O, endLine: A, endColumn: P } = f.getOrderedRange();
+          (v === A && O === P || isNaN(O) || isNaN(P)) && f.clear();
         }
-        d.value.style.cursor = "text";
-      } else le && !ae && (f.clear(), q && p.setPosition(q.line, q.column), C.resetBlink(() => Z(!0)));
-      if (ie = !1, q = null, ae = !1, le = null, f.hasSelection) {
-        const { startLine: v, startColumn: M, endLine: N, endColumn: D } = f.getOrderedRange();
-        (v === N && M === D || isNaN(M) || isNaN(D)) && (f.clear(), Z(!0));
+        if (se && ae) {
+          const v = _.line, O = _.column, { startLine: A, startColumn: P, endLine: G, endColumn: L } = ae;
+          if ((v > A || v === A && O >= P) && (v < G || v === G && O <= L))
+            f.clear(), S.resetBlink(() => X(!0));
+          else {
+            T.record({
+              type: "delete",
+              line: A,
+              column: P,
+              text: ae.text,
+              cursorBefore: { line: A, column: P },
+              cursorAfter: { line: A, column: P }
+            }), p.deleteText(A, P, G, L);
+            let $ = v, J = O;
+            if (v > G || v === G && O > L) {
+              const ee = ae.text.split(`
+`);
+              ee.length === 1 ? v === G && (J = O - ae.text.length) : ($ = v - (ee.length - 1), v === G && (J = O - ee[ee.length - 1].length));
+            }
+            T.record({
+              type: "insert",
+              line: $,
+              column: J,
+              text: ae.text,
+              cursorBefore: { line: $, column: J },
+              cursorAfter: { line: $, column: J + ae.text.length }
+            }), p.insertText($, J, ae.text);
+            const Q = ae.text.split(`
+`);
+            Q.length === 1 ? _.setPosition($, J + ae.text.length) : _.setPosition(
+              $ + Q.length - 1,
+              Q[Q.length - 1].length
+            ), f.clear(), S.resetBlink(() => X(!0));
+          }
+          d.value && (d.value.style.cursor = "text");
+        } else ae && !se && (f.clear(), Y && _.setPosition(Y.line, Y.column), S.resetBlink(() => X(!0)));
+        if (le = !1, Y = null, se = !1, ae = null, f.hasSelection) {
+          const { startLine: v, startColumn: O, endLine: A, endColumn: P } = f.getOrderedRange();
+          (v === A && O === P || isNaN(O) || isNaN(P)) && (f.clear(), X(!0));
+        }
       }
-    }, mt = (v) => {
+    }, lt = (v) => {
+      if (!g || !W) return;
       v.preventDefault();
-      const M = v.deltaY;
-      if (g.scrollTop, g.setScrollTop(g.scrollTop + M), K) {
-        const N = Math.abs(M) / 100;
-        K.recordBehavior("scroll", {
-          direction: M > 0 ? "down" : "up",
-          speed: N,
-          delta: Math.abs(M)
+      const O = v.deltaY;
+      if (g.scrollTop, g.setScrollTop(g.scrollTop + O), W) {
+        const A = Math.abs(O) / 100;
+        W.recordBehavior("scroll", {
+          direction: O > 0 ? "down" : "up",
+          speed: A,
+          delta: Math.abs(O)
         });
       }
-      H && g && H.updateScroll(
+      U && g && U.updateScroll(
         g.scrollTop,
         g.height,
         g.totalHeight
-      ), ct(), Z();
-    }, ct = () => {
+      ), gt(), X();
+    }, gt = () => {
       if (!g || a.isSyncing) return;
       const v = Math.max(0, g.totalHeight - g.height);
       if (v <= 0) {
         s("update:scrollPercentage", 0), s("scroll", 0);
         return;
       }
-      const M = g.scrollTop / v;
-      s("update:scrollPercentage", M), s("scroll", M);
-    }, je = () => {
+      const O = g.scrollTop / v;
+      s("update:scrollPercentage", O), s("scroll", O);
+    }, et = () => {
       if (!c.value || !d.value) return;
-      const v = c.value, M = d.value, N = v.getBoundingClientRect(), D = window.devicePixelRatio || 1, z = Math.floor(N.width), I = Math.floor(N.height);
-      u.value = z, h.value = I, M.width = z * D, M.height = I * D, M.style.width = `${z}px`, M.style.height = `${I}px`, L && (L.scale(D, D), L.imageSmoothingEnabled = !0, L.imageSmoothingQuality = "high", "textRendering" in L && (L.textRendering = "optimizeLegibility"), "fontSmoothing" in L && (L.fontSmoothing = "antialiased"), "webkitFontSmoothing" in L && (L.webkitFontSmoothing = "antialiased"), "mozFontSmoothing" in L && (L.mozFontSmoothing = "antialiased")), g && (g.setSize(u.value, h.value), P && (P.resizeOffscreenCanvas(z * D, I * D), P.markFullRender()), Z(!0));
+      const v = c.value, O = d.value, A = v.getBoundingClientRect(), P = window.devicePixelRatio || 1, G = Math.floor(A.width), L = Math.floor(A.height);
+      u.value = G, m.value = L, O.width = G * P, O.height = L * P, O.style.width = `${G}px`, O.style.height = `${L}px`, I && (I.scale(P, P), I.imageSmoothingEnabled = !0, I.imageSmoothingQuality = "high", "textRendering" in I && (I.textRendering = "optimizeLegibility"), "fontSmoothing" in I && (I.fontSmoothing = "antialiased"), "webkitFontSmoothing" in I && (I.webkitFontSmoothing = "antialiased"), "mozFontSmoothing" in I && (I.mozFontSmoothing = "antialiased")), g && (g.setSize(u.value, m.value), D && (D.resizeOffscreenCanvas(G * P, L * P), D.markFullRender()), X(!0));
     };
     return Ke(() => a.modelValue, (v) => {
-      _ && _.getText() !== v && _.setText(v);
+      p && p.getText() !== v && p.setText(v);
     }), e0(() => {
-      ge(), je(), window.addEventListener("resize", je);
+      Be(), et(), window.addEventListener("resize", et);
     }), t0(() => {
-      C && C.destroy(), S && S.destroy(), w && w.destroy && w.destroy(), b && b.destroy(), P && P.destroy(), H && H.destroy(), K && K.destroy(), window.removeEventListener("resize", je);
+      S && S.destroy(), C && C.destroy(), w && w.destroy && w.destroy(), b && b.destroy(), D && D.destroy(), U && U.destroy(), W && W.destroy(), window.removeEventListener("resize", et);
     }), t({
-      getPerformanceStats: Ue,
-      document: _,
-      cursor: p,
+      getPerformanceStats: ke,
+      document: p,
+      cursor: _,
       selection: f
-    }), (v, M) => (o(), i("div", AQ, [
+    }), (v, O) => (o(), i("div", AQ, [
       r.showToolbar ? (o(), Di(Pj, {
         key: 0,
-        "plugin-buttons": we.value,
-        onCommand: Se,
-        onPluginCommand: Ce
-      }, null, 8, ["plugin-buttons"])) : wt("", !0),
+        "plugin-buttons": Ee.value,
+        onCommand: Te,
+        onPluginCommand: Pe
+      }, null, 8, ["plugin-buttons"])) : ft("", !0),
       n("div", {
         class: "canvas-editor",
         ref_key: "containerRef",
@@ -51136,21 +51248,21 @@ const AQ = { class: "canvas-editor-container" }, NQ = ["width", "height"], yQ = 
         n("canvas", {
           ref_key: "canvasRef",
           ref: d,
-          onWheel: mt,
+          onWheel: lt,
           width: u.value,
-          height: h.value
+          height: m.value
         }, null, 40, NQ),
         n0(Vj, {
-          visible: ce.value,
-          onClose: M[0] || (M[0] = (N) => ce.value = !1),
-          onSearch: ve,
-          onReplace: Pe,
-          onReplaceAll: He
+          visible: de.value,
+          onClose: O[0] || (O[0] = (A) => de.value = !1),
+          onSearch: Fe,
+          onReplace: st,
+          onReplaceAll: mt
         }, null, 8, ["visible"])
       ], 512)
     ]));
   }
-}, Uee = /* @__PURE__ */ Mt(yQ, [["__scopeId", "data-v-aeedbe2e"]]);
+}), Uee = /* @__PURE__ */ At(yQ, [["__scopeId", "data-v-1f42f28b"]]);
 function IQ(r) {
   return r && r.__esModule && Object.prototype.hasOwnProperty.call(r, "default") ? r.default : r;
 }
@@ -51163,17 +51275,17 @@ function LQ() {
       throw new Error("map is read-only");
     } : E instanceof Set && (E.add = E.clear = E.delete = function() {
       throw new Error("set is read-only");
-    }), Object.freeze(E), Object.getOwnPropertyNames(E).forEach((O) => {
-      const U = E[O], te = typeof U;
-      (te === "object" || te === "function") && !Object.isFrozen(U) && r(U);
+    }), Object.freeze(E), Object.getOwnPropertyNames(E).forEach((M) => {
+      const z = E[M], ne = typeof z;
+      (ne === "object" || ne === "function") && !Object.isFrozen(z) && r(z);
     }), E;
   }
   class t {
     /**
      * @param {CompiledMode} mode
      */
-    constructor(O) {
-      O.data === void 0 && (O.data = {}), this.data = O.data, this.isMatchIgnored = !1;
+    constructor(M) {
+      M.data === void 0 && (M.data = {}), this.data = M.data, this.isMatchIgnored = !1;
     }
     ignoreMatch() {
       this.isMatchIgnored = !0;
@@ -51182,27 +51294,27 @@ function LQ() {
   function e(E) {
     return E.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
   }
-  function a(E, ...O) {
-    const U = /* @__PURE__ */ Object.create(null);
-    for (const te in E)
-      U[te] = E[te];
-    return O.forEach(function(te) {
-      for (const be in te)
-        U[be] = te[be];
+  function a(E, ...M) {
+    const z = /* @__PURE__ */ Object.create(null);
+    for (const ne in E)
+      z[ne] = E[ne];
+    return M.forEach(function(ne) {
+      for (const be in ne)
+        z[be] = ne[be];
     }), /** @type {T} */
-    U;
+    z;
   }
-  const s = "</span>", c = (E) => !!E.scope, d = (E, { prefix: O }) => {
+  const s = "</span>", c = (E) => !!E.scope, d = (E, { prefix: M }) => {
     if (E.startsWith("language:"))
       return E.replace("language:", "language-");
     if (E.includes(".")) {
-      const U = E.split(".");
+      const z = E.split(".");
       return [
-        `${O}${U.shift()}`,
-        ...U.map((te, be) => `${te}${"_".repeat(be + 1)}`)
+        `${M}${z.shift()}`,
+        ...z.map((ne, be) => `${ne}${"_".repeat(be + 1)}`)
       ].join(" ");
     }
-    return `${O}${E}`;
+    return `${M}${E}`;
   };
   class u {
     /**
@@ -51211,34 +51323,34 @@ function LQ() {
      * @param {Tree} parseTree - the parse tree (must support `walk` API)
      * @param {{classPrefix: string}} options
      */
-    constructor(O, U) {
-      this.buffer = "", this.classPrefix = U.classPrefix, O.walk(this);
+    constructor(M, z) {
+      this.buffer = "", this.classPrefix = z.classPrefix, M.walk(this);
     }
     /**
      * Adds texts to the output stream
      *
      * @param {string} text */
-    addText(O) {
-      this.buffer += e(O);
+    addText(M) {
+      this.buffer += e(M);
     }
     /**
      * Adds a node open to the output stream (if needed)
      *
      * @param {Node} node */
-    openNode(O) {
-      if (!c(O)) return;
-      const U = d(
-        O.scope,
+    openNode(M) {
+      if (!c(M)) return;
+      const z = d(
+        M.scope,
         { prefix: this.classPrefix }
       );
-      this.span(U);
+      this.span(z);
     }
     /**
      * Adds a node close to the output stream (if needed)
      *
      * @param {Node} node */
-    closeNode(O) {
-      c(O) && (this.buffer += s);
+    closeNode(M) {
+      c(M) && (this.buffer += s);
     }
     /**
      * returns the accumulated buffer
@@ -51251,17 +51363,17 @@ function LQ() {
      * Builds a span element
      *
      * @param {string} className */
-    span(O) {
-      this.buffer += `<span class="${O}">`;
+    span(M) {
+      this.buffer += `<span class="${M}">`;
     }
   }
-  const h = (E = {}) => {
-    const O = { children: [] };
-    return Object.assign(O, E), O;
+  const m = (E = {}) => {
+    const M = { children: [] };
+    return Object.assign(M, E), M;
   };
-  class m {
+  class h {
     constructor() {
-      this.rootNode = h(), this.stack = [this.rootNode];
+      this.rootNode = m(), this.stack = [this.rootNode];
     }
     get top() {
       return this.stack[this.stack.length - 1];
@@ -51270,13 +51382,13 @@ function LQ() {
       return this.rootNode;
     }
     /** @param {Node} node */
-    add(O) {
-      this.top.children.push(O);
+    add(M) {
+      this.top.children.push(M);
     }
     /** @param {string} scope */
-    openNode(O) {
-      const U = h({ scope: O });
-      this.add(U), this.stack.push(U);
+    openNode(M) {
+      const z = m({ scope: M });
+      this.add(z), this.stack.push(z);
     }
     closeNode() {
       if (this.stack.length > 1)
@@ -51292,41 +51404,41 @@ function LQ() {
      * @typedef { import("./html_renderer").Renderer } Renderer
      * @param {Renderer} builder
      */
-    walk(O) {
-      return this.constructor._walk(O, this.rootNode);
+    walk(M) {
+      return this.constructor._walk(M, this.rootNode);
     }
     /**
      * @param {Renderer} builder
      * @param {Node} node
      */
-    static _walk(O, U) {
-      return typeof U == "string" ? O.addText(U) : U.children && (O.openNode(U), U.children.forEach((te) => this._walk(O, te)), O.closeNode(U)), O;
+    static _walk(M, z) {
+      return typeof z == "string" ? M.addText(z) : z.children && (M.openNode(z), z.children.forEach((ne) => this._walk(M, ne)), M.closeNode(z)), M;
     }
     /**
      * @param {Node} node
      */
-    static _collapse(O) {
-      typeof O != "string" && O.children && (O.children.every((U) => typeof U == "string") ? O.children = [O.children.join("")] : O.children.forEach((U) => {
-        m._collapse(U);
+    static _collapse(M) {
+      typeof M != "string" && M.children && (M.children.every((z) => typeof z == "string") ? M.children = [M.children.join("")] : M.children.forEach((z) => {
+        h._collapse(z);
       }));
     }
   }
-  class _ extends m {
+  class p extends h {
     /**
      * @param {*} options
      */
-    constructor(O) {
-      super(), this.options = O;
+    constructor(M) {
+      super(), this.options = M;
     }
     /**
      * @param {string} text
      */
-    addText(O) {
-      O !== "" && this.add(O);
+    addText(M) {
+      M !== "" && this.add(M);
     }
     /** @param {string} scope */
-    startScope(O) {
-      this.openNode(O);
+    startScope(M) {
+      this.openNode(M);
     }
     endScope() {
       this.closeNode();
@@ -51335,9 +51447,9 @@ function LQ() {
      * @param {Emitter & {root: DataNode}} emitter
      * @param {string} name
      */
-    __addSublanguage(O, U) {
-      const te = O.root;
-      U && (te.scope = `language:${U}`), this.add(te);
+    __addSublanguage(M, z) {
+      const ne = M.root;
+      z && (ne.scope = `language:${z}`), this.add(ne);
     }
     toHTML() {
       return new u(this, this.options).value();
@@ -51350,94 +51462,94 @@ function LQ() {
     return E ? typeof E == "string" ? E : E.source : null;
   }
   function w(E) {
-    return C("(?=", E, ")");
+    return S("(?=", E, ")");
   }
-  function S(E) {
-    return C("(?:", E, ")*");
+  function C(E) {
+    return S("(?:", E, ")*");
   }
-  function p(E) {
-    return C("(?:", E, ")?");
+  function _(E) {
+    return S("(?:", E, ")?");
   }
-  function C(...E) {
-    return E.map((U) => g(U)).join("");
+  function S(...E) {
+    return E.map((z) => g(z)).join("");
   }
   function f(E) {
-    const O = E[E.length - 1];
-    return typeof O == "object" && O.constructor === Object ? (E.splice(E.length - 1, 1), O) : {};
+    const M = E[E.length - 1];
+    return typeof M == "object" && M.constructor === Object ? (E.splice(E.length - 1, 1), M) : {};
   }
   function R(...E) {
-    return "(" + (f(E).capture ? "" : "?:") + E.map((te) => g(te)).join("|") + ")";
+    return "(" + (f(E).capture ? "" : "?:") + E.map((ne) => g(ne)).join("|") + ")";
   }
   function T(E) {
     return new RegExp(E.toString() + "|").exec("").length - 1;
   }
-  function A(E, O) {
-    const U = E && E.exec(O);
-    return U && U.index === 0;
+  function N(E, M) {
+    const z = E && E.exec(M);
+    return z && z.index === 0;
   }
-  const L = /\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\./;
-  function y(E, { joinWith: O }) {
-    let U = 0;
-    return E.map((te) => {
-      U += 1;
-      const be = U;
-      let Re = g(te), X = "";
+  const I = /\[(?:[^\\\]]|\\.)*\]|\(\??|\\([1-9][0-9]*)|\\./;
+  function y(E, { joinWith: M }) {
+    let z = 0;
+    return E.map((ne) => {
+      z += 1;
+      const be = z;
+      let Re = g(ne), j = "";
       for (; Re.length > 0; ) {
-        const W = L.exec(Re);
-        if (!W) {
-          X += Re;
+        const q = I.exec(Re);
+        if (!q) {
+          j += Re;
           break;
         }
-        X += Re.substring(0, W.index), Re = Re.substring(W.index + W[0].length), W[0][0] === "\\" && W[1] ? X += "\\" + String(Number(W[1]) + be) : (X += W[0], W[0] === "(" && U++);
+        j += Re.substring(0, q.index), Re = Re.substring(q.index + q[0].length), q[0][0] === "\\" && q[1] ? j += "\\" + String(Number(q[1]) + be) : (j += q[0], q[0] === "(" && z++);
       }
-      return X;
-    }).map((te) => `(${te})`).join(O);
+      return j;
+    }).map((ne) => `(${ne})`).join(M);
   }
-  const b = /\b\B/, P = "[a-zA-Z]\\w*", H = "[a-zA-Z_]\\w*", K = "\\b\\d+(\\.\\d+)?", ie = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", q = "\\b(0b[01]+)", ae = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", we = (E = {}) => {
-    const O = /^#![ ]*\//;
-    return E.binary && (E.begin = C(
-      O,
+  const b = /\b\B/, D = "[a-zA-Z]\\w*", U = "[a-zA-Z_]\\w*", W = "\\b\\d+(\\.\\d+)?", le = "(-?)(\\b0[xX][a-fA-F0-9]+|(\\b\\d+(\\.\\d*)?|\\.\\d+)([eE][-+]?\\d+)?)", Y = "\\b(0b[01]+)", se = "!|!=|!==|%|%=|&|&&|&=|\\*|\\*=|\\+|\\+=|,|-|-=|/=|/|:|;|<<|<<=|<=|<|===|==|=|>>>=|>>=|>=|>>>|>>|>|\\?|\\[|\\{|\\(|\\^|\\^=|\\||\\|=|\\|\\||~", Ee = (E = {}) => {
+    const M = /^#![ ]*\//;
+    return E.binary && (E.begin = S(
+      M,
       /.*\b/,
       E.binary,
       /\b.*/
     )), a({
       scope: "meta",
-      begin: O,
+      begin: M,
       end: /$/,
       relevance: 0,
       /** @type {ModeCallback} */
-      "on:begin": (U, te) => {
-        U.index !== 0 && te.ignoreMatch();
+      "on:begin": (z, ne) => {
+        z.index !== 0 && ne.ignoreMatch();
       }
     }, E);
-  }, le = {
+  }, ae = {
     begin: "\\\\[\\s\\S]",
     relevance: 0
-  }, ce = {
+  }, de = {
     scope: "string",
     begin: "'",
     end: "'",
     illegal: "\\n",
-    contains: [le]
-  }, de = {
+    contains: [ae]
+  }, ue = {
     scope: "string",
     begin: '"',
     end: '"',
     illegal: "\\n",
-    contains: [le]
-  }, ge = {
+    contains: [ae]
+  }, me = {
     begin: /\b(a|an|the|are|I'm|isn't|don't|doesn't|won't|but|just|should|pretty|simply|enough|gonna|going|wtf|so|such|will|you|your|they|like|more)\b/
-  }, xe = function(E, O, U = {}) {
-    const te = a(
+  }, Se = function(E, M, z = {}) {
+    const ne = a(
       {
         scope: "comment",
         begin: E,
-        end: O,
+        end: M,
         contains: []
       },
-      U
+      z
     );
-    te.contains.push({
+    ne.contains.push({
       scope: "doctag",
       // hack to avoid the space from being included. the space is necessary to
       // match here to prevent the plain text rule below from gobbling up doctags
@@ -51467,7 +51579,7 @@ function LQ() {
       /[A-Za-z][a-z]{2,}/
       // allow capitalized words at beginning of sentences
     );
-    return te.contains.push(
+    return ne.contains.push(
       {
         // TODO: how to include ", (, ) without breaking grammars that use these for
         // comment delimiters?
@@ -51482,7 +51594,7 @@ function LQ() {
         //
         // for a visual example please see:
         // https://github.com/highlightjs/highlight.js/issues/2827
-        begin: C(
+        begin: S(
           /[ ]+/,
           // necessary to prevent us gobbling up doctags like /* @author Bob Mcgill */
           "(",
@@ -51492,120 +51604,120 @@ function LQ() {
         )
         // look for 3 words in a row
       }
-    ), te;
-  }, Be = xe("//", "$"), Z = xe("/\\*", "\\*/"), ze = xe("#", "$"), Fe = {
+    ), ne;
+  }, Be = Se("//", "$"), He = Se("/\\*", "\\*/"), ze = Se("#", "$"), X = {
     scope: "number",
-    begin: K,
+    begin: W,
     relevance: 0
   }, Ue = {
     scope: "number",
-    begin: ie,
+    begin: le,
     relevance: 0
   }, De = {
     scope: "number",
-    begin: q,
+    begin: Y,
     relevance: 0
-  }, Te = {
+  }, ke = {
     scope: "regexp",
     begin: /\/(?=[^/\n]*\/)/,
     end: /\/[gimuy]*/,
     contains: [
-      le,
+      ae,
       {
         begin: /\[/,
         end: /\]/,
         relevance: 0,
-        contains: [le]
+        contains: [ae]
       }
     ]
   }, Oe = {
     scope: "title",
-    begin: P,
+    begin: D,
     relevance: 0
-  }, _e = {
+  }, he = {
     scope: "title",
-    begin: H,
+    begin: U,
     relevance: 0
-  }, ue = {
+  }, pe = {
     // excludes method names from keyword processing
-    begin: "\\.\\s*" + H,
+    begin: "\\.\\s*" + U,
     relevance: 0
   };
-  var Ce = /* @__PURE__ */ Object.freeze({
+  var ve = /* @__PURE__ */ Object.freeze({
     __proto__: null,
-    APOS_STRING_MODE: ce,
-    BACKSLASH_ESCAPE: le,
+    APOS_STRING_MODE: de,
+    BACKSLASH_ESCAPE: ae,
     BINARY_NUMBER_MODE: De,
-    BINARY_NUMBER_RE: q,
-    COMMENT: xe,
-    C_BLOCK_COMMENT_MODE: Z,
+    BINARY_NUMBER_RE: Y,
+    COMMENT: Se,
+    C_BLOCK_COMMENT_MODE: He,
     C_LINE_COMMENT_MODE: Be,
     C_NUMBER_MODE: Ue,
-    C_NUMBER_RE: ie,
+    C_NUMBER_RE: le,
     END_SAME_AS_BEGIN: function(E) {
       return Object.assign(
         E,
         {
           /** @type {ModeCallback} */
-          "on:begin": (O, U) => {
-            U.data._beginMatch = O[1];
+          "on:begin": (M, z) => {
+            z.data._beginMatch = M[1];
           },
           /** @type {ModeCallback} */
-          "on:end": (O, U) => {
-            U.data._beginMatch !== O[1] && U.ignoreMatch();
+          "on:end": (M, z) => {
+            z.data._beginMatch !== M[1] && z.ignoreMatch();
           }
         }
       );
     },
     HASH_COMMENT_MODE: ze,
-    IDENT_RE: P,
+    IDENT_RE: D,
     MATCH_NOTHING_RE: b,
-    METHOD_GUARD: ue,
-    NUMBER_MODE: Fe,
-    NUMBER_RE: K,
-    PHRASAL_WORDS_MODE: ge,
-    QUOTE_STRING_MODE: de,
-    REGEXP_MODE: Te,
-    RE_STARTERS_RE: ae,
-    SHEBANG: we,
+    METHOD_GUARD: pe,
+    NUMBER_MODE: X,
+    NUMBER_RE: W,
+    PHRASAL_WORDS_MODE: me,
+    QUOTE_STRING_MODE: ue,
+    REGEXP_MODE: ke,
+    RE_STARTERS_RE: se,
+    SHEBANG: Ee,
     TITLE_MODE: Oe,
-    UNDERSCORE_IDENT_RE: H,
-    UNDERSCORE_TITLE_MODE: _e
+    UNDERSCORE_IDENT_RE: U,
+    UNDERSCORE_TITLE_MODE: he
   });
-  function ve(E, O) {
-    E.input[E.index - 1] === "." && O.ignoreMatch();
+  function Te(E, M) {
+    E.input[E.index - 1] === "." && M.ignoreMatch();
   }
-  function Pe(E, O) {
+  function Pe(E, M) {
     E.className !== void 0 && (E.scope = E.className, delete E.className);
   }
-  function He(E, O) {
-    O && E.beginKeywords && (E.begin = "\\b(" + E.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)", E.__beforeBegin = ve, E.keywords = E.keywords || E.beginKeywords, delete E.beginKeywords, E.relevance === void 0 && (E.relevance = 0));
+  function Fe(E, M) {
+    M && E.beginKeywords && (E.begin = "\\b(" + E.beginKeywords.split(" ").join("|") + ")(?!\\.)(?=\\b|\\s)", E.__beforeBegin = Te, E.keywords = E.keywords || E.beginKeywords, delete E.beginKeywords, E.relevance === void 0 && (E.relevance = 0));
   }
-  function ot(E, O) {
+  function st(E, M) {
     Array.isArray(E.illegal) && (E.illegal = R(...E.illegal));
   }
-  function _t(E, O) {
+  function mt(E, M) {
     if (E.match) {
       if (E.begin || E.end) throw new Error("begin & end are not supported with match");
       E.begin = E.match, delete E.match;
     }
   }
-  function it(E, O) {
+  function Je(E, M) {
     E.relevance === void 0 && (E.relevance = 1);
   }
-  const at = (E, O) => {
+  const ct = (E, M) => {
     if (!E.beforeMatch) return;
     if (E.starts) throw new Error("beforeMatch cannot be used with starts");
-    const U = Object.assign({}, E);
-    Object.keys(E).forEach((te) => {
-      delete E[te];
-    }), E.keywords = U.keywords, E.begin = C(U.beforeMatch, w(U.begin)), E.starts = {
+    const z = Object.assign({}, E);
+    Object.keys(E).forEach((ne) => {
+      delete E[ne];
+    }), E.keywords = z.keywords, E.begin = S(z.beforeMatch, w(z.begin)), E.starts = {
       relevance: 0,
       contains: [
-        Object.assign(U, { endsParent: !0 })
+        Object.assign(z, { endsParent: !0 })
       ]
-    }, E.relevance = 0, delete U.beforeMatch;
-  }, st = [
+    }, E.relevance = 0, delete z.beforeMatch;
+  }, dt = [
     "of",
     "and",
     "for",
@@ -51620,105 +51732,105 @@ function LQ() {
     // common variable name
     "value"
     // common variable name
-  ], mt = "keyword";
-  function ct(E, O, U = mt) {
-    const te = /* @__PURE__ */ Object.create(null);
-    return typeof E == "string" ? be(U, E.split(" ")) : Array.isArray(E) ? be(U, E) : Object.keys(E).forEach(function(Re) {
+  ], ht = "keyword";
+  function ut(E, M, z = ht) {
+    const ne = /* @__PURE__ */ Object.create(null);
+    return typeof E == "string" ? be(z, E.split(" ")) : Array.isArray(E) ? be(z, E) : Object.keys(E).forEach(function(Re) {
       Object.assign(
-        te,
-        ct(E[Re], O, Re)
+        ne,
+        ut(E[Re], M, Re)
       );
-    }), te;
-    function be(Re, X) {
-      O && (X = X.map((W) => W.toLowerCase())), X.forEach(function(W) {
-        const ee = W.split("|");
-        te[ee[0]] = [Re, je(ee[0], ee[1])];
+    }), ne;
+    function be(Re, j) {
+      M && (j = j.map((q) => q.toLowerCase())), j.forEach(function(q) {
+        const te = q.split("|");
+        ne[te[0]] = [Re, lt(te[0], te[1])];
       });
     }
   }
-  function je(E, O) {
-    return O ? Number(O) : v(E) ? 0 : 1;
+  function lt(E, M) {
+    return M ? Number(M) : gt(E) ? 0 : 1;
   }
-  function v(E) {
-    return st.includes(E.toLowerCase());
+  function gt(E) {
+    return dt.includes(E.toLowerCase());
   }
-  const M = {}, N = (E) => {
+  const et = {}, v = (E) => {
     console.error(E);
-  }, D = (E, ...O) => {
-    console.log(`WARN: ${E}`, ...O);
-  }, z = (E, O) => {
-    M[`${E}/${O}`] || (console.log(`Deprecated as of ${E}. ${O}`), M[`${E}/${O}`] = !0);
-  }, I = new Error();
-  function G(E, O, { key: U }) {
-    let te = 0;
-    const be = E[U], Re = {}, X = {};
-    for (let W = 1; W <= O.length; W++)
-      X[W + te] = be[W], Re[W + te] = !0, te += T(O[W - 1]);
-    E[U] = X, E[U]._emit = Re, E[U]._multi = !0;
+  }, O = (E, ...M) => {
+    console.log(`WARN: ${E}`, ...M);
+  }, A = (E, M) => {
+    et[`${E}/${M}`] || (console.log(`Deprecated as of ${E}. ${M}`), et[`${E}/${M}`] = !0);
+  }, P = new Error();
+  function G(E, M, { key: z }) {
+    let ne = 0;
+    const be = E[z], Re = {}, j = {};
+    for (let q = 1; q <= M.length; q++)
+      j[q + ne] = be[q], Re[q + ne] = !0, ne += T(M[q - 1]);
+    E[z] = j, E[z]._emit = Re, E[z]._multi = !0;
   }
-  function Y(E) {
+  function L(E) {
     if (Array.isArray(E.begin)) {
       if (E.skip || E.excludeBegin || E.returnBegin)
-        throw N("skip, excludeBegin, returnBegin not compatible with beginScope: {}"), I;
+        throw v("skip, excludeBegin, returnBegin not compatible with beginScope: {}"), P;
       if (typeof E.beginScope != "object" || E.beginScope === null)
-        throw N("beginScope must be object"), I;
+        throw v("beginScope must be object"), P;
       G(E, E.begin, { key: "beginScope" }), E.begin = y(E.begin, { joinWith: "" });
     }
   }
-  function V(E) {
+  function H(E) {
     if (Array.isArray(E.end)) {
       if (E.skip || E.excludeEnd || E.returnEnd)
-        throw N("skip, excludeEnd, returnEnd not compatible with endScope: {}"), I;
+        throw v("skip, excludeEnd, returnEnd not compatible with endScope: {}"), P;
       if (typeof E.endScope != "object" || E.endScope === null)
-        throw N("endScope must be object"), I;
+        throw v("endScope must be object"), P;
       G(E, E.end, { key: "endScope" }), E.end = y(E.end, { joinWith: "" });
     }
   }
-  function j(E) {
+  function $(E) {
     E.scope && typeof E.scope == "object" && E.scope !== null && (E.beginScope = E.scope, delete E.scope);
   }
-  function fe(E) {
-    j(E), typeof E.beginScope == "string" && (E.beginScope = { _wrap: E.beginScope }), typeof E.endScope == "string" && (E.endScope = { _wrap: E.endScope }), Y(E), V(E);
+  function J(E) {
+    $(E), typeof E.beginScope == "string" && (E.beginScope = { _wrap: E.beginScope }), typeof E.endScope == "string" && (E.endScope = { _wrap: E.endScope }), L(E), H(E);
   }
-  function ke(E) {
-    function O(X, W) {
+  function Q(E) {
+    function M(j, q) {
       return new RegExp(
-        g(X),
-        "m" + (E.case_insensitive ? "i" : "") + (E.unicodeRegex ? "u" : "") + (W ? "g" : "")
+        g(j),
+        "m" + (E.case_insensitive ? "i" : "") + (E.unicodeRegex ? "u" : "") + (q ? "g" : "")
       );
     }
-    class U {
+    class z {
       constructor() {
         this.matchIndexes = {}, this.regexes = [], this.matchAt = 1, this.position = 0;
       }
       // @ts-ignore
-      addRule(W, ee) {
-        ee.position = this.position++, this.matchIndexes[this.matchAt] = ee, this.regexes.push([ee, W]), this.matchAt += T(W) + 1;
+      addRule(q, te) {
+        te.position = this.position++, this.matchIndexes[this.matchAt] = te, this.regexes.push([te, q]), this.matchAt += T(q) + 1;
       }
       compile() {
         this.regexes.length === 0 && (this.exec = () => null);
-        const W = this.regexes.map((ee) => ee[1]);
-        this.matcherRe = O(y(W, { joinWith: "|" }), !0), this.lastIndex = 0;
+        const q = this.regexes.map((te) => te[1]);
+        this.matcherRe = M(y(q, { joinWith: "|" }), !0), this.lastIndex = 0;
       }
       /** @param {string} s */
-      exec(W) {
+      exec(q) {
         this.matcherRe.lastIndex = this.lastIndex;
-        const ee = this.matcherRe.exec(W);
-        if (!ee)
+        const te = this.matcherRe.exec(q);
+        if (!te)
           return null;
-        const Ne = ee.findIndex((gt, Nt) => Nt > 0 && gt !== void 0), Me = this.matchIndexes[Ne];
-        return ee.splice(0, Ne), Object.assign(ee, Me);
+        const Ne = te.findIndex((wt, Nt) => Nt > 0 && wt !== void 0), Me = this.matchIndexes[Ne];
+        return te.splice(0, Ne), Object.assign(te, Me);
       }
     }
-    class te {
+    class ne {
       constructor() {
         this.rules = [], this.multiRegexes = [], this.count = 0, this.lastIndex = 0, this.regexIndex = 0;
       }
       // @ts-ignore
-      getMatcher(W) {
-        if (this.multiRegexes[W]) return this.multiRegexes[W];
-        const ee = new U();
-        return this.rules.slice(W).forEach(([Ne, Me]) => ee.addRule(Ne, Me)), ee.compile(), this.multiRegexes[W] = ee, ee;
+      getMatcher(q) {
+        if (this.multiRegexes[q]) return this.multiRegexes[q];
+        const te = new z();
+        return this.rules.slice(q).forEach(([Ne, Me]) => te.addRule(Ne, Me)), te.compile(), this.multiRegexes[q] = te, te;
       }
       resumingScanAtSamePosition() {
         return this.regexIndex !== 0;
@@ -51727,59 +51839,59 @@ function LQ() {
         this.regexIndex = 0;
       }
       // @ts-ignore
-      addRule(W, ee) {
-        this.rules.push([W, ee]), ee.type === "begin" && this.count++;
+      addRule(q, te) {
+        this.rules.push([q, te]), te.type === "begin" && this.count++;
       }
       /** @param {string} s */
-      exec(W) {
-        const ee = this.getMatcher(this.regexIndex);
-        ee.lastIndex = this.lastIndex;
-        let Ne = ee.exec(W);
+      exec(q) {
+        const te = this.getMatcher(this.regexIndex);
+        te.lastIndex = this.lastIndex;
+        let Ne = te.exec(q);
         if (this.resumingScanAtSamePosition() && !(Ne && Ne.index === this.lastIndex)) {
           const Me = this.getMatcher(0);
-          Me.lastIndex = this.lastIndex + 1, Ne = Me.exec(W);
+          Me.lastIndex = this.lastIndex + 1, Ne = Me.exec(q);
         }
         return Ne && (this.regexIndex += Ne.position + 1, this.regexIndex === this.count && this.considerAll()), Ne;
       }
     }
-    function be(X) {
-      const W = new te();
-      return X.contains.forEach((ee) => W.addRule(ee.begin, { rule: ee, type: "begin" })), X.terminatorEnd && W.addRule(X.terminatorEnd, { type: "end" }), X.illegal && W.addRule(X.illegal, { type: "illegal" }), W;
+    function be(j) {
+      const q = new ne();
+      return j.contains.forEach((te) => q.addRule(te.begin, { rule: te, type: "begin" })), j.terminatorEnd && q.addRule(j.terminatorEnd, { type: "end" }), j.illegal && q.addRule(j.illegal, { type: "illegal" }), q;
     }
-    function Re(X, W) {
-      const ee = (
+    function Re(j, q) {
+      const te = (
         /** @type CompiledMode */
-        X
+        j
       );
-      if (X.isCompiled) return ee;
+      if (j.isCompiled) return te;
       [
         Pe,
         // do this early so compiler extensions generally don't have to worry about
         // the distinction between match/begin
-        _t,
-        fe,
-        at
-      ].forEach((Me) => Me(X, W)), E.compilerExtensions.forEach((Me) => Me(X, W)), X.__beforeBegin = null, [
-        He,
+        mt,
+        J,
+        ct
+      ].forEach((Me) => Me(j, q)), E.compilerExtensions.forEach((Me) => Me(j, q)), j.__beforeBegin = null, [
+        Fe,
         // do this later so compiler extensions that come earlier have access to the
         // raw array if they wanted to perhaps manipulate it, etc.
-        ot,
+        st,
         // default to 1 relevance if not specified
-        it
-      ].forEach((Me) => Me(X, W)), X.isCompiled = !0;
+        Je
+      ].forEach((Me) => Me(j, q)), j.isCompiled = !0;
       let Ne = null;
-      return typeof X.keywords == "object" && X.keywords.$pattern && (X.keywords = Object.assign({}, X.keywords), Ne = X.keywords.$pattern, delete X.keywords.$pattern), Ne = Ne || /\w+/, X.keywords && (X.keywords = ct(X.keywords, E.case_insensitive)), ee.keywordPatternRe = O(Ne, !0), W && (X.begin || (X.begin = /\B|\b/), ee.beginRe = O(ee.begin), !X.end && !X.endsWithParent && (X.end = /\B|\b/), X.end && (ee.endRe = O(ee.end)), ee.terminatorEnd = g(ee.end) || "", X.endsWithParent && W.terminatorEnd && (ee.terminatorEnd += (X.end ? "|" : "") + W.terminatorEnd)), X.illegal && (ee.illegalRe = O(
+      return typeof j.keywords == "object" && j.keywords.$pattern && (j.keywords = Object.assign({}, j.keywords), Ne = j.keywords.$pattern, delete j.keywords.$pattern), Ne = Ne || /\w+/, j.keywords && (j.keywords = ut(j.keywords, E.case_insensitive)), te.keywordPatternRe = M(Ne, !0), q && (j.begin || (j.begin = /\B|\b/), te.beginRe = M(te.begin), !j.end && !j.endsWithParent && (j.end = /\B|\b/), j.end && (te.endRe = M(te.end)), te.terminatorEnd = g(te.end) || "", j.endsWithParent && q.terminatorEnd && (te.terminatorEnd += (j.end ? "|" : "") + q.terminatorEnd)), j.illegal && (te.illegalRe = M(
         /** @type {RegExp | string} */
-        X.illegal
-      )), X.contains || (X.contains = []), X.contains = [].concat(...X.contains.map(function(Me) {
-        return Qe(Me === "self" ? X : Me);
-      })), X.contains.forEach(function(Me) {
+        j.illegal
+      )), j.contains || (j.contains = []), j.contains = [].concat(...j.contains.map(function(Me) {
+        return we(Me === "self" ? j : Me);
+      })), j.contains.forEach(function(Me) {
         Re(
           /** @type Mode */
           Me,
-          ee
+          te
         );
-      }), X.starts && Re(X.starts, W), ee.matcher = be(ee), ee;
+      }), j.starts && Re(j.starts, q), te.matcher = be(te), te;
     }
     if (E.compilerExtensions || (E.compilerExtensions = []), E.contains && E.contains.includes("self"))
       throw new Error("ERR: contains `self` is not supported at the top-level of a language.  See documentation.");
@@ -51788,25 +51900,25 @@ function LQ() {
       E
     );
   }
-  function Ge(E) {
-    return E ? E.endsWithParent || Ge(E.starts) : !1;
+  function ee(E) {
+    return E ? E.endsWithParent || ee(E.starts) : !1;
   }
-  function Qe(E) {
-    return E.variants && !E.cachedVariants && (E.cachedVariants = E.variants.map(function(O) {
-      return a(E, { variants: null }, O);
-    })), E.cachedVariants ? E.cachedVariants : Ge(E) ? a(E, { starts: E.starts ? a(E.starts) : null }) : Object.isFrozen(E) ? a(E) : E;
+  function we(E) {
+    return E.variants && !E.cachedVariants && (E.cachedVariants = E.variants.map(function(M) {
+      return a(E, { variants: null }, M);
+    })), E.cachedVariants ? E.cachedVariants : ee(E) ? a(E, { starts: E.starts ? a(E.starts) : null }) : Object.isFrozen(E) ? a(E) : E;
   }
-  var dt = "11.11.1";
-  class At extends Error {
-    constructor(O, U) {
-      super(O), this.name = "HTMLInjectionError", this.html = U;
+  var Ve = "11.11.1";
+  class je extends Error {
+    constructor(M, z) {
+      super(M), this.name = "HTMLInjectionError", this.html = z;
     }
   }
-  const ht = e, Et = a, me = Symbol("nomatch"), ut = 7, et = function(E) {
-    const O = /* @__PURE__ */ Object.create(null), U = /* @__PURE__ */ Object.create(null), te = [];
+  const tt = e, St = a, ge = Symbol("nomatch"), pt = 7, nt = function(E) {
+    const M = /* @__PURE__ */ Object.create(null), z = /* @__PURE__ */ Object.create(null), ne = [];
     let be = !0;
-    const Re = "Could not find the language '{}', did you forget to load/include a language module?", X = { disableAutodetect: !0, name: "Plain text", contains: [] };
-    let W = {
+    const Re = "Could not find the language '{}', did you forget to load/include a language module?", j = { disableAutodetect: !0, name: "Plain text", contains: [] };
+    let q = {
       ignoreUnescapedHTML: !1,
       throwUnescapedHTML: !1,
       noHighlightRe: /^(no-?highlight)$/i,
@@ -51816,279 +51928,279 @@ function LQ() {
       languages: null,
       // beta configuration options, subject to change, welcome to discuss
       // https://github.com/highlightjs/highlight.js/issues/1086
-      __emitter: _
+      __emitter: p
     };
-    function ee(B) {
-      return W.noHighlightRe.test(B);
+    function te(B) {
+      return q.noHighlightRe.test(B);
     }
     function Ne(B) {
-      let J = B.className + " ";
-      J += B.parentNode ? B.parentNode.className : "";
-      const se = W.languageDetectRe.exec(J);
-      if (se) {
-        const Ee = nt(se[1]);
-        return Ee || (D(Re.replace("{}", se[1])), D("Falling back to no-highlight mode for this block.", B)), Ee ? se[1] : "no-highlight";
+      let Z = B.className + " ";
+      Z += B.parentNode ? B.parentNode.className : "";
+      const ce = q.languageDetectRe.exec(Z);
+      if (ce) {
+        const Ce = ot(ce[1]);
+        return Ce || (O(Re.replace("{}", ce[1])), O("Falling back to no-highlight mode for this block.", B)), Ce ? ce[1] : "no-highlight";
       }
-      return J.split(/\s+/).find((Ee) => ee(Ee) || nt(Ee));
+      return Z.split(/\s+/).find((Ce) => te(Ce) || ot(Ce));
     }
-    function Me(B, J, se) {
-      let Ee = "", Ae = "";
-      typeof J == "object" ? (Ee = B, se = J.ignoreIllegals, Ae = J.language) : (z("10.7.0", "highlight(lang, code, ...args) has been deprecated."), z("10.7.0", `Please use highlight(code, options) instead.
-https://github.com/highlightjs/highlight.js/issues/2277`), Ae = B, Ee = J), se === void 0 && (se = !0);
+    function Me(B, Z, ce) {
+      let Ce = "", Ae = "";
+      typeof Z == "object" ? (Ce = B, ce = Z.ignoreIllegals, Ae = Z.language) : (A("10.7.0", "highlight(lang, code, ...args) has been deprecated."), A("10.7.0", `Please use highlight(code, options) instead.
+https://github.com/highlightjs/highlight.js/issues/2277`), Ae = B, Ce = Z), ce === void 0 && (ce = !0);
       const $e = {
-        code: Ee,
+        code: Ce,
         language: Ae
       };
-      Ct("before:highlight", $e);
-      const rt = $e.result ? $e.result : gt($e.language, $e.code, se);
-      return rt.code = $e.code, Ct("after:highlight", rt), rt;
+      xt("before:highlight", $e);
+      const it = $e.result ? $e.result : wt($e.language, $e.code, ce);
+      return it.code = $e.code, xt("after:highlight", it), it;
     }
-    function gt(B, J, se, Ee) {
+    function wt(B, Z, ce, Ce) {
       const Ae = /* @__PURE__ */ Object.create(null);
-      function $e(F, Q) {
-        return F.keywords[Q];
+      function $e(F, K) {
+        return F.keywords[K];
       }
-      function rt() {
-        if (!ne.keywords) {
-          ye.addText(he);
+      function it() {
+        if (!re.keywords) {
+          ye.addText(fe);
           return;
         }
         let F = 0;
-        ne.keywordPatternRe.lastIndex = 0;
-        let Q = ne.keywordPatternRe.exec(he), oe = "";
-        for (; Q; ) {
-          oe += he.substring(F, Q.index);
-          const pe = Ye.case_insensitive ? Q[0].toLowerCase() : Q[0], Ie = $e(ne, pe);
+        re.keywordPatternRe.lastIndex = 0;
+        let K = re.keywordPatternRe.exec(fe), ie = "";
+        for (; K; ) {
+          ie += fe.substring(F, K.index);
+          const _e = Ye.case_insensitive ? K[0].toLowerCase() : K[0], Ie = $e(re, _e);
           if (Ie) {
             const [qe, Ji] = Ie;
-            if (ye.addText(oe), oe = "", Ae[pe] = (Ae[pe] || 0) + 1, Ae[pe] <= ut && (pt += Ji), qe.startsWith("_"))
-              oe += Q[0];
+            if (ye.addText(ie), ie = "", Ae[_e] = (Ae[_e] || 0) + 1, Ae[_e] <= pt && (_t += Ji), qe.startsWith("_"))
+              ie += K[0];
             else {
               const el = Ye.classNameAliases[qe] || qe;
-              We(Q[0], el);
+              We(K[0], el);
             }
           } else
-            oe += Q[0];
-          F = ne.keywordPatternRe.lastIndex, Q = ne.keywordPatternRe.exec(he);
+            ie += K[0];
+          F = re.keywordPatternRe.lastIndex, K = re.keywordPatternRe.exec(fe);
         }
-        oe += he.substring(F), ye.addText(oe);
+        ie += fe.substring(F), ye.addText(ie);
       }
-      function xt() {
-        if (he === "") return;
+      function vt() {
+        if (fe === "") return;
         let F = null;
-        if (typeof ne.subLanguage == "string") {
-          if (!O[ne.subLanguage]) {
-            ye.addText(he);
+        if (typeof re.subLanguage == "string") {
+          if (!M[re.subLanguage]) {
+            ye.addText(fe);
             return;
           }
-          F = gt(ne.subLanguage, he, !0, Dt[ne.subLanguage]), Dt[ne.subLanguage] = /** @type {CompiledMode} */
+          F = wt(re.subLanguage, fe, !0, Dt[re.subLanguage]), Dt[re.subLanguage] = /** @type {CompiledMode} */
           F._top;
         } else
-          F = yt(he, ne.subLanguage.length ? ne.subLanguage : null);
-        ne.relevance > 0 && (pt += F.relevance), ye.__addSublanguage(F._emitter, F.language);
+          F = yt(fe, re.subLanguage.length ? re.subLanguage : null);
+        re.relevance > 0 && (_t += F.relevance), ye.__addSublanguage(F._emitter, F.language);
       }
-      function Ve() {
-        ne.subLanguage != null ? xt() : rt(), he = "";
+      function Ge() {
+        re.subLanguage != null ? vt() : it(), fe = "";
       }
-      function We(F, Q) {
-        F !== "" && (ye.startScope(Q), ye.addText(F), ye.endScope());
+      function We(F, K) {
+        F !== "" && (ye.startScope(K), ye.addText(F), ye.endScope());
       }
-      function $t(F, Q) {
-        let oe = 1;
-        const pe = Q.length - 1;
-        for (; oe <= pe; ) {
-          if (!F._emit[oe]) {
-            oe++;
+      function $t(F, K) {
+        let ie = 1;
+        const _e = K.length - 1;
+        for (; ie <= _e; ) {
+          if (!F._emit[ie]) {
+            ie++;
             continue;
           }
-          const Ie = Ye.classNameAliases[F[oe]] || F[oe], qe = Q[oe];
-          Ie ? We(qe, Ie) : (he = qe, rt(), he = ""), oe++;
+          const Ie = Ye.classNameAliases[F[ie]] || F[ie], qe = K[ie];
+          Ie ? We(qe, Ie) : (fe = qe, it(), fe = ""), ie++;
         }
       }
-      function Yt(F, Q) {
-        return F.scope && typeof F.scope == "string" && ye.openNode(Ye.classNameAliases[F.scope] || F.scope), F.beginScope && (F.beginScope._wrap ? (We(he, Ye.classNameAliases[F.beginScope._wrap] || F.beginScope._wrap), he = "") : F.beginScope._multi && ($t(F.beginScope, Q), he = "")), ne = Object.create(F, { parent: { value: ne } }), ne;
+      function Yt(F, K) {
+        return F.scope && typeof F.scope == "string" && ye.openNode(Ye.classNameAliases[F.scope] || F.scope), F.beginScope && (F.beginScope._wrap ? (We(fe, Ye.classNameAliases[F.beginScope._wrap] || F.beginScope._wrap), fe = "") : F.beginScope._multi && ($t(F.beginScope, K), fe = "")), re = Object.create(F, { parent: { value: re } }), re;
       }
-      function qt(F, Q, oe) {
-        let pe = A(F.endRe, oe);
-        if (pe) {
+      function qt(F, K, ie) {
+        let _e = N(F.endRe, ie);
+        if (_e) {
           if (F["on:end"]) {
             const Ie = new t(F);
-            F["on:end"](Q, Ie), Ie.isMatchIgnored && (pe = !1);
+            F["on:end"](K, Ie), Ie.isMatchIgnored && (_e = !1);
           }
-          if (pe) {
+          if (_e) {
             for (; F.endsParent && F.parent; )
               F = F.parent;
             return F;
           }
         }
         if (F.endsWithParent)
-          return qt(F.parent, Q, oe);
+          return qt(F.parent, K, ie);
       }
       function ji(F) {
-        return ne.matcher.regexIndex === 0 ? (he += F[0], 1) : (bt = !0, 0);
+        return re.matcher.regexIndex === 0 ? (fe += F[0], 1) : (Rt = !0, 0);
       }
       function Qi(F) {
-        const Q = F[0], oe = F.rule, pe = new t(oe), Ie = [oe.__beforeBegin, oe["on:begin"]];
+        const K = F[0], ie = F.rule, _e = new t(ie), Ie = [ie.__beforeBegin, ie["on:begin"]];
         for (const qe of Ie)
-          if (qe && (qe(F, pe), pe.isMatchIgnored))
-            return ji(Q);
-        return oe.skip ? he += Q : (oe.excludeBegin && (he += Q), Ve(), !oe.returnBegin && !oe.excludeBegin && (he = Q)), Yt(oe, F), oe.returnBegin ? 0 : Q.length;
+          if (qe && (qe(F, _e), _e.isMatchIgnored))
+            return ji(K);
+        return ie.skip ? fe += K : (ie.excludeBegin && (fe += K), Ge(), !ie.returnBegin && !ie.excludeBegin && (fe = K)), Yt(ie, F), ie.returnBegin ? 0 : K.length;
       }
       function Xi(F) {
-        const Q = F[0], oe = J.substring(F.index), pe = qt(ne, F, oe);
-        if (!pe)
-          return me;
-        const Ie = ne;
-        ne.endScope && ne.endScope._wrap ? (Ve(), We(Q, ne.endScope._wrap)) : ne.endScope && ne.endScope._multi ? (Ve(), $t(ne.endScope, F)) : Ie.skip ? he += Q : (Ie.returnEnd || Ie.excludeEnd || (he += Q), Ve(), Ie.excludeEnd && (he = Q));
+        const K = F[0], ie = Z.substring(F.index), _e = qt(re, F, ie);
+        if (!_e)
+          return ge;
+        const Ie = re;
+        re.endScope && re.endScope._wrap ? (Ge(), We(K, re.endScope._wrap)) : re.endScope && re.endScope._multi ? (Ge(), $t(re.endScope, F)) : Ie.skip ? fe += K : (Ie.returnEnd || Ie.excludeEnd || (fe += K), Ge(), Ie.excludeEnd && (fe = K));
         do
-          ne.scope && ye.closeNode(), !ne.skip && !ne.subLanguage && (pt += ne.relevance), ne = ne.parent;
-        while (ne !== pe.parent);
-        return pe.starts && Yt(pe.starts, F), Ie.returnEnd ? 0 : Q.length;
+          re.scope && ye.closeNode(), !re.skip && !re.subLanguage && (_t += re.relevance), re = re.parent;
+        while (re !== _e.parent);
+        return _e.starts && Yt(_e.starts, F), Ie.returnEnd ? 0 : K.length;
       }
       function Zi() {
         const F = [];
-        for (let Q = ne; Q !== Ye; Q = Q.parent)
-          Q.scope && F.unshift(Q.scope);
-        F.forEach((Q) => ye.openNode(Q));
+        for (let K = re; K !== Ye; K = K.parent)
+          K.scope && F.unshift(K.scope);
+        F.forEach((K) => ye.openNode(K));
       }
-      let vt = {};
-      function Lt(F, Q) {
-        const oe = Q && Q[0];
-        if (he += F, oe == null)
-          return Ve(), 0;
-        if (vt.type === "begin" && Q.type === "end" && vt.index === Q.index && oe === "") {
-          if (he += J.slice(Q.index, Q.index + 1), !be) {
-            const pe = new Error(`0 width match regex (${B})`);
-            throw pe.languageName = B, pe.badRule = vt.rule, pe;
+      let kt = {};
+      function Lt(F, K) {
+        const ie = K && K[0];
+        if (fe += F, ie == null)
+          return Ge(), 0;
+        if (kt.type === "begin" && K.type === "end" && kt.index === K.index && ie === "") {
+          if (fe += Z.slice(K.index, K.index + 1), !be) {
+            const _e = new Error(`0 width match regex (${B})`);
+            throw _e.languageName = B, _e.badRule = kt.rule, _e;
           }
           return 1;
         }
-        if (vt = Q, Q.type === "begin")
-          return Qi(Q);
-        if (Q.type === "illegal" && !se) {
-          const pe = new Error('Illegal lexeme "' + oe + '" for mode "' + (ne.scope || "<unnamed>") + '"');
-          throw pe.mode = ne, pe;
-        } else if (Q.type === "end") {
-          const pe = Xi(Q);
-          if (pe !== me)
-            return pe;
+        if (kt = K, K.type === "begin")
+          return Qi(K);
+        if (K.type === "illegal" && !ce) {
+          const _e = new Error('Illegal lexeme "' + ie + '" for mode "' + (re.scope || "<unnamed>") + '"');
+          throw _e.mode = re, _e;
+        } else if (K.type === "end") {
+          const _e = Xi(K);
+          if (_e !== ge)
+            return _e;
         }
-        if (Q.type === "illegal" && oe === "")
-          return he += `
+        if (K.type === "illegal" && ie === "")
+          return fe += `
 `, 1;
-        if (Tt > 1e5 && Tt > Q.index * 3)
+        if (bt > 1e5 && bt > K.index * 3)
           throw new Error("potential infinite loop, way more iterations than matches");
-        return he += oe, oe.length;
+        return fe += ie, ie.length;
       }
-      const Ye = nt(B);
+      const Ye = ot(B);
       if (!Ye)
-        throw N(Re.replace("{}", B)), new Error('Unknown language: "' + B + '"');
-      const Wt = ke(Ye);
-      let kt = "", ne = Ee || Wt;
-      const Dt = {}, ye = new W.__emitter(W);
+        throw v(Re.replace("{}", B)), new Error('Unknown language: "' + B + '"');
+      const Wt = Q(Ye);
+      let Tt = "", re = Ce || Wt;
+      const Dt = {}, ye = new q.__emitter(q);
       Zi();
-      let he = "", pt = 0, Xe = 0, Tt = 0, bt = !1;
+      let fe = "", _t = 0, Qe = 0, bt = 0, Rt = !1;
       try {
         if (Ye.__emitTokens)
-          Ye.__emitTokens(J, ye);
+          Ye.__emitTokens(Z, ye);
         else {
-          for (ne.matcher.considerAll(); ; ) {
-            Tt++, bt ? bt = !1 : ne.matcher.considerAll(), ne.matcher.lastIndex = Xe;
-            const F = ne.matcher.exec(J);
+          for (re.matcher.considerAll(); ; ) {
+            bt++, Rt ? Rt = !1 : re.matcher.considerAll(), re.matcher.lastIndex = Qe;
+            const F = re.matcher.exec(Z);
             if (!F) break;
-            const Q = J.substring(Xe, F.index), oe = Lt(Q, F);
-            Xe = F.index + oe;
+            const K = Z.substring(Qe, F.index), ie = Lt(K, F);
+            Qe = F.index + ie;
           }
-          Lt(J.substring(Xe));
+          Lt(Z.substring(Qe));
         }
-        return ye.finalize(), kt = ye.toHTML(), {
+        return ye.finalize(), Tt = ye.toHTML(), {
           language: B,
-          value: kt,
-          relevance: pt,
+          value: Tt,
+          relevance: _t,
           illegal: !1,
           _emitter: ye,
-          _top: ne
+          _top: re
         };
       } catch (F) {
         if (F.message && F.message.includes("Illegal"))
           return {
             language: B,
-            value: ht(J),
+            value: tt(Z),
             illegal: !0,
             relevance: 0,
             _illegalBy: {
               message: F.message,
-              index: Xe,
-              context: J.slice(Xe - 100, Xe + 100),
+              index: Qe,
+              context: Z.slice(Qe - 100, Qe + 100),
               mode: F.mode,
-              resultSoFar: kt
+              resultSoFar: Tt
             },
             _emitter: ye
           };
         if (be)
           return {
             language: B,
-            value: ht(J),
+            value: tt(Z),
             illegal: !1,
             relevance: 0,
             errorRaised: F,
             _emitter: ye,
-            _top: ne
+            _top: re
           };
         throw F;
       }
     }
     function Nt(B) {
-      const J = {
-        value: ht(B),
+      const Z = {
+        value: tt(B),
         illegal: !1,
         relevance: 0,
-        _top: X,
-        _emitter: new W.__emitter(W)
+        _top: j,
+        _emitter: new q.__emitter(q)
       };
-      return J._emitter.addText(B), J;
+      return Z._emitter.addText(B), Z;
     }
-    function yt(B, J) {
-      J = J || W.languages || Object.keys(O);
-      const se = Nt(B), Ee = J.filter(nt).filter(Vt).map(
-        (Ve) => gt(Ve, B, !1)
+    function yt(B, Z) {
+      Z = Z || q.languages || Object.keys(M);
+      const ce = Nt(B), Ce = Z.filter(ot).filter(Vt).map(
+        (Ge) => wt(Ge, B, !1)
       );
-      Ee.unshift(se);
-      const Ae = Ee.sort((Ve, We) => {
-        if (Ve.relevance !== We.relevance) return We.relevance - Ve.relevance;
-        if (Ve.language && We.language) {
-          if (nt(Ve.language).supersetOf === We.language)
+      Ce.unshift(ce);
+      const Ae = Ce.sort((Ge, We) => {
+        if (Ge.relevance !== We.relevance) return We.relevance - Ge.relevance;
+        if (Ge.language && We.language) {
+          if (ot(Ge.language).supersetOf === We.language)
             return 1;
-          if (nt(We.language).supersetOf === Ve.language)
+          if (ot(We.language).supersetOf === Ge.language)
             return -1;
         }
         return 0;
-      }), [$e, rt] = Ae, xt = $e;
-      return xt.secondBest = rt, xt;
+      }), [$e, it] = Ae, vt = $e;
+      return vt.secondBest = it, vt;
     }
-    function zi(B, J, se) {
-      const Ee = J && U[J] || se;
-      B.classList.add("hljs"), B.classList.add(`language-${Ee}`);
+    function zi(B, Z, ce) {
+      const Ce = Z && z[Z] || ce;
+      B.classList.add("hljs"), B.classList.add(`language-${Ce}`);
     }
     function It(B) {
-      let J = null;
-      const se = Ne(B);
-      if (ee(se)) return;
-      if (Ct(
+      let Z = null;
+      const ce = Ne(B);
+      if (te(ce)) return;
+      if (xt(
         "before:highlightElement",
-        { el: B, language: se }
+        { el: B, language: ce }
       ), B.dataset.highlighted) {
         console.log("Element previously highlighted. To highlight again, first unset `dataset.highlighted`.", B);
         return;
       }
-      if (B.children.length > 0 && (W.ignoreUnescapedHTML || (console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."), console.warn("https://github.com/highlightjs/highlight.js/wiki/security"), console.warn("The element with unescaped HTML:"), console.warn(B)), W.throwUnescapedHTML))
-        throw new At(
+      if (B.children.length > 0 && (q.ignoreUnescapedHTML || (console.warn("One of your code blocks includes unescaped HTML. This is a potentially serious security risk."), console.warn("https://github.com/highlightjs/highlight.js/wiki/security"), console.warn("The element with unescaped HTML:"), console.warn(B)), q.throwUnescapedHTML))
+        throw new je(
           "One of your code blocks includes unescaped HTML.",
           B.innerHTML
         );
-      J = B;
-      const Ee = J.textContent, Ae = se ? Me(Ee, { language: se, ignoreIllegals: !0 }) : yt(Ee);
-      B.innerHTML = Ae.value, B.dataset.highlighted = "yes", zi(B, se, Ae.language), B.result = {
+      Z = B;
+      const Ce = Z.textContent, Ae = ce ? Me(Ce, { language: ce, ignoreIllegals: !0 }) : yt(Ce);
+      B.innerHTML = Ae.value, B.dataset.highlighted = "yes", zi(B, ce, Ae.language), B.result = {
         language: Ae.language,
         // TODO: remove with version 11.0
         re: Ae.relevance,
@@ -52096,92 +52208,92 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ae = B, Ee = J), se =
       }, Ae.secondBest && (B.secondBest = {
         language: Ae.secondBest.language,
         relevance: Ae.secondBest.relevance
-      }), Ct("after:highlightElement", { el: B, result: Ae, text: Ee });
+      }), xt("after:highlightElement", { el: B, result: Ae, text: Ce });
     }
     function Ui(B) {
-      W = Et(W, B);
+      q = St(q, B);
     }
     const Fi = () => {
-      St(), z("10.6.0", "initHighlighting() deprecated.  Use highlightAll() now.");
+      Ct(), A("10.6.0", "initHighlighting() deprecated.  Use highlightAll() now.");
     };
     function Hi() {
-      St(), z("10.6.0", "initHighlightingOnLoad() deprecated.  Use highlightAll() now.");
+      Ct(), A("10.6.0", "initHighlightingOnLoad() deprecated.  Use highlightAll() now.");
     }
     let Ht = !1;
-    function St() {
+    function Ct() {
       function B() {
-        St();
+        Ct();
       }
       if (document.readyState === "loading") {
         Ht || window.addEventListener("DOMContentLoaded", B, !1), Ht = !0;
         return;
       }
-      document.querySelectorAll(W.cssSelector).forEach(It);
+      document.querySelectorAll(q.cssSelector).forEach(It);
     }
-    function Gi(B, J) {
-      let se = null;
+    function Gi(B, Z) {
+      let ce = null;
       try {
-        se = J(E);
-      } catch (Ee) {
-        if (N("Language definition for '{}' could not be registered.".replace("{}", B)), be)
-          N(Ee);
+        ce = Z(E);
+      } catch (Ce) {
+        if (v("Language definition for '{}' could not be registered.".replace("{}", B)), be)
+          v(Ce);
         else
-          throw Ee;
-        se = X;
+          throw Ce;
+        ce = j;
       }
-      se.name || (se.name = B), O[B] = se, se.rawDefinition = J.bind(null, E), se.aliases && Gt(se.aliases, { languageName: B });
+      ce.name || (ce.name = B), M[B] = ce, ce.rawDefinition = Z.bind(null, E), ce.aliases && Gt(ce.aliases, { languageName: B });
     }
     function Vi(B) {
-      delete O[B];
-      for (const J of Object.keys(U))
-        U[J] === B && delete U[J];
+      delete M[B];
+      for (const Z of Object.keys(z))
+        z[Z] === B && delete z[Z];
     }
     function $i() {
-      return Object.keys(O);
+      return Object.keys(M);
     }
-    function nt(B) {
-      return B = (B || "").toLowerCase(), O[B] || O[U[B]];
+    function ot(B) {
+      return B = (B || "").toLowerCase(), M[B] || M[z[B]];
     }
-    function Gt(B, { languageName: J }) {
-      typeof B == "string" && (B = [B]), B.forEach((se) => {
-        U[se.toLowerCase()] = J;
+    function Gt(B, { languageName: Z }) {
+      typeof B == "string" && (B = [B]), B.forEach((ce) => {
+        z[ce.toLowerCase()] = Z;
       });
     }
     function Vt(B) {
-      const J = nt(B);
-      return J && !J.disableAutodetect;
+      const Z = ot(B);
+      return Z && !Z.disableAutodetect;
     }
     function Yi(B) {
-      B["before:highlightBlock"] && !B["before:highlightElement"] && (B["before:highlightElement"] = (J) => {
+      B["before:highlightBlock"] && !B["before:highlightElement"] && (B["before:highlightElement"] = (Z) => {
         B["before:highlightBlock"](
-          Object.assign({ block: J.el }, J)
+          Object.assign({ block: Z.el }, Z)
         );
-      }), B["after:highlightBlock"] && !B["after:highlightElement"] && (B["after:highlightElement"] = (J) => {
+      }), B["after:highlightBlock"] && !B["after:highlightElement"] && (B["after:highlightElement"] = (Z) => {
         B["after:highlightBlock"](
-          Object.assign({ block: J.el }, J)
+          Object.assign({ block: Z.el }, Z)
         );
       });
     }
     function qi(B) {
-      Yi(B), te.push(B);
+      Yi(B), ne.push(B);
     }
     function Wi(B) {
-      const J = te.indexOf(B);
-      J !== -1 && te.splice(J, 1);
+      const Z = ne.indexOf(B);
+      Z !== -1 && ne.splice(Z, 1);
     }
-    function Ct(B, J) {
-      const se = B;
-      te.forEach(function(Ee) {
-        Ee[se] && Ee[se](J);
+    function xt(B, Z) {
+      const ce = B;
+      ne.forEach(function(Ce) {
+        Ce[ce] && Ce[ce](Z);
       });
     }
     function Ki(B) {
-      return z("10.7.0", "highlightBlock will be removed entirely in v12.0"), z("10.7.0", "Please use highlightElement now."), It(B);
+      return A("10.7.0", "highlightBlock will be removed entirely in v12.0"), A("10.7.0", "Please use highlightElement now."), It(B);
     }
     Object.assign(E, {
       highlight: Me,
       highlightAuto: yt,
-      highlightAll: St,
+      highlightAll: Ct,
       highlightElement: It,
       // TODO: Remove with v12 API
       highlightBlock: Ki,
@@ -52191,40 +52303,40 @@ https://github.com/highlightjs/highlight.js/issues/2277`), Ae = B, Ee = J), se =
       registerLanguage: Gi,
       unregisterLanguage: Vi,
       listLanguages: $i,
-      getLanguage: nt,
+      getLanguage: ot,
       registerAliases: Gt,
       autoDetection: Vt,
-      inherit: Et,
+      inherit: St,
       addPlugin: qi,
       removePlugin: Wi
     }), E.debugMode = function() {
       be = !1;
     }, E.safeMode = function() {
       be = !0;
-    }, E.versionString = dt, E.regex = {
-      concat: C,
+    }, E.versionString = Ve, E.regex = {
+      concat: S,
       lookahead: w,
       either: R,
-      optional: p,
-      anyNumberOfTimes: S
+      optional: _,
+      anyNumberOfTimes: C
     };
-    for (const B in Ce)
-      typeof Ce[B] == "object" && r(Ce[B]);
-    return Object.assign(E, Ce), E;
-  }, tt = et({});
-  return tt.newInstance = () => et({}), Jt = tt, tt.HighlightJS = tt, tt.default = tt, Jt;
+    for (const B in ve)
+      typeof ve[B] == "object" && r(ve[B]);
+    return Object.assign(E, ve), E;
+  }, rt = nt({});
+  return rt.newInstance = () => nt({}), Jt = rt, rt.HighlightJS = rt, rt.default = rt, Jt;
 }
 var en, cl;
 function DQ() {
   if (cl) return en;
   cl = 1;
   function r(t) {
-    const e = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]+", c = "далее " + "возврат вызватьисключение выполнить для если и из или иначе иначеесли исключение каждого конецесли конецпопытки конеццикла не новый перейти перем по пока попытка прервать продолжить тогда цикл экспорт ", h = "загрузитьизфайла " + "вебклиент вместо внешнеесоединение клиент конецобласти мобильноеприложениеклиент мобильноеприложениесервер наклиенте наклиентенасервере наклиентенасерверебезконтекста насервере насерверебезконтекста область перед после сервер толстыйклиентобычноеприложение толстыйклиентуправляемоеприложение тонкийклиент ", S = "разделительстраниц разделительстрок символтабуляции " + "ansitooem oemtoansi ввестивидсубконто ввестиперечисление ввестипериод ввестиплансчетов выбранныйплансчетов датагод датамесяц датачисло заголовоксистемы значениевстроку значениеизстроки каталогиб каталогпользователя кодсимв конгода конецпериодаби конецрассчитанногопериодаби конецстандартногоинтервала конквартала конмесяца коннедели лог лог10 максимальноеколичествосубконто названиеинтерфейса названиенабораправ назначитьвид назначитьсчет найтиссылки началопериодаби началостандартногоинтервала начгода начквартала начмесяца начнедели номерднягода номерднянедели номернеделигода обработкаожидания основнойжурналрасчетов основнойплансчетов основнойязык очиститьокносообщений периодстр получитьвремята получитьдатута получитьдокументта получитьзначенияотбора получитьпозициюта получитьпустоезначение получитьта префиксавтонумерации пропись пустоезначение разм разобратьпозициюдокумента рассчитатьрегистрына рассчитатьрегистрыпо симв создатьобъект статусвозврата стрколичествострок сформироватьпозициюдокумента счетпокоду текущеевремя типзначения типзначениястр установитьтана установитьтапо фиксшаблон шаблон " + "acos asin atan base64значение base64строка cos exp log log10 pow sin sqrt tan xmlзначение xmlстрока xmlтип xmlтипзнч активноеокно безопасныйрежим безопасныйрежимразделенияданных булево ввестидату ввестизначение ввестистроку ввестичисло возможностьчтенияxml вопрос восстановитьзначение врег выгрузитьжурналрегистрации выполнитьобработкуоповещения выполнитьпроверкуправдоступа вычислить год данныеформывзначение дата день деньгода деньнедели добавитьмесяц заблокироватьданныедляредактирования заблокироватьработупользователя завершитьработусистемы загрузитьвнешнююкомпоненту закрытьсправку записатьjson записатьxml записатьдатуjson записьжурналарегистрации заполнитьзначениясвойств запроситьразрешениепользователя запуститьприложение запуститьсистему зафиксироватьтранзакцию значениевданныеформы значениевстрокувнутр значениевфайл значениезаполнено значениеизстрокивнутр значениеизфайла изxmlтипа импортмоделиxdto имякомпьютера имяпользователя инициализироватьпредопределенныеданные информацияобошибке каталогбиблиотекимобильногоустройства каталогвременныхфайлов каталогдокументов каталогпрограммы кодироватьстроку кодлокализацииинформационнойбазы кодсимвола командасистемы конецгода конецдня конецквартала конецмесяца конецминуты конецнедели конецчаса конфигурациябазыданныхизмененадинамически конфигурацияизменена копироватьданныеформы копироватьфайл краткоепредставлениеошибки лев макс местноевремя месяц мин минута монопольныйрежим найти найтинедопустимыесимволыxml найтиокнопонавигационнойссылке найтипомеченныенаудаление найтипоссылкам найтифайлы началогода началодня началоквартала началомесяца началоминуты началонедели началочаса начатьзапросразрешенияпользователя начатьзапускприложения начатькопированиефайла начатьперемещениефайла начатьподключениевнешнейкомпоненты начатьподключениерасширенияработыскриптографией начатьподключениерасширенияработысфайлами начатьпоискфайлов начатьполучениекаталогавременныхфайлов начатьполучениекаталогадокументов начатьполучениерабочегокаталогаданныхпользователя начатьполучениефайлов начатьпомещениефайла начатьпомещениефайлов начатьсозданиедвоичныхданныхизфайла начатьсозданиекаталога начатьтранзакцию начатьудалениефайлов начатьустановкувнешнейкомпоненты начатьустановкурасширенияработыскриптографией начатьустановкурасширенияработысфайлами неделягода необходимостьзавершениясоединения номерсеансаинформационнойбазы номерсоединенияинформационнойбазы нрег нстр обновитьинтерфейс обновитьнумерациюобъектов обновитьповторноиспользуемыезначения обработкапрерыванияпользователя объединитьфайлы окр описаниеошибки оповестить оповеститьобизменении отключитьобработчикзапросанастроекклиенталицензирования отключитьобработчикожидания отключитьобработчикоповещения открытьзначение открытьиндекссправки открытьсодержаниесправки открытьсправку открытьформу открытьформумодально отменитьтранзакцию очиститьжурналрегистрации очиститьнастройкипользователя очиститьсообщения параметрыдоступа перейтипонавигационнойссылке переместитьфайл подключитьвнешнююкомпоненту подключитьобработчикзапросанастроекклиенталицензирования подключитьобработчикожидания подключитьобработчикоповещения подключитьрасширениеработыскриптографией подключитьрасширениеработысфайлами подробноепредставлениеошибки показатьвводдаты показатьвводзначения показатьвводстроки показатьвводчисла показатьвопрос показатьзначение показатьинформациюобошибке показатьнакарте показатьоповещениепользователя показатьпредупреждение полноеимяпользователя получитьcomобъект получитьxmlтип получитьадреспоместоположению получитьблокировкусеансов получитьвремязавершенияспящегосеанса получитьвремязасыпанияпассивногосеанса получитьвремяожиданияблокировкиданных получитьданныевыбора получитьдополнительныйпараметрклиенталицензирования получитьдопустимыекодылокализации получитьдопустимыечасовыепояса получитьзаголовокклиентскогоприложения получитьзаголовоксистемы получитьзначенияотборажурналарегистрации получитьидентификаторконфигурации получитьизвременногохранилища получитьимявременногофайла получитьимяклиенталицензирования получитьинформациюэкрановклиента получитьиспользованиежурналарегистрации получитьиспользованиесобытияжурналарегистрации получитькраткийзаголовокприложения получитьмакетоформления получитьмаскувсефайлы получитьмаскувсефайлыклиента получитьмаскувсефайлысервера получитьместоположениепоадресу получитьминимальнуюдлинупаролейпользователей получитьнавигационнуюссылку получитьнавигационнуюссылкуинформационнойбазы получитьобновлениеконфигурациибазыданных получитьобновлениепредопределенныхданныхинформационнойбазы получитьобщиймакет получитьобщуюформу получитьокна получитьоперативнуюотметкувремени получитьотключениебезопасногорежима получитьпараметрыфункциональныхопцийинтерфейса получитьполноеимяпредопределенногозначения получитьпредставлениянавигационныхссылок получитьпроверкусложностипаролейпользователей получитьразделительпути получитьразделительпутиклиента получитьразделительпутисервера получитьсеансыинформационнойбазы получитьскоростьклиентскогосоединения получитьсоединенияинформационнойбазы получитьсообщенияпользователю получитьсоответствиеобъектаиформы получитьсоставстандартногоинтерфейсаodata получитьструктурухранениябазыданных получитьтекущийсеансинформационнойбазы получитьфайл получитьфайлы получитьформу получитьфункциональнуюопцию получитьфункциональнуюопциюинтерфейса получитьчасовойпоясинформационнойбазы пользователиос поместитьвовременноехранилище поместитьфайл поместитьфайлы прав праводоступа предопределенноезначение представлениекодалокализации представлениепериода представлениеправа представлениеприложения представлениесобытияжурналарегистрации представлениечасовогопояса предупреждение прекратитьработусистемы привилегированныйрежим продолжитьвызов прочитатьjson прочитатьxml прочитатьдатуjson пустаястрока рабочийкаталогданныхпользователя разблокироватьданныедляредактирования разделитьфайл разорватьсоединениесвнешнимисточникомданных раскодироватьстроку рольдоступна секунда сигнал символ скопироватьжурналрегистрации смещениелетнеговремени смещениестандартноговремени соединитьбуферыдвоичныхданных создатькаталог создатьфабрикуxdto сокрл сокрлп сокрп сообщить состояние сохранитьзначение сохранитьнастройкипользователя сред стрдлина стрзаканчиваетсяна стрзаменить стрнайти стрначинаетсяс строка строкасоединенияинформационнойбазы стрполучитьстроку стрразделить стрсоединить стрсравнить стрчисловхождений стрчислострок стршаблон текущаядата текущаядатасеанса текущаяуниверсальнаядата текущаяуниверсальнаядатавмиллисекундах текущийвариантинтерфейсаклиентскогоприложения текущийвариантосновногошрифтаклиентскогоприложения текущийкодлокализации текущийрежимзапуска текущийязык текущийязыксистемы тип типзнч транзакцияактивна трег удалитьданныеинформационнойбазы удалитьизвременногохранилища удалитьобъекты удалитьфайлы универсальноевремя установитьбезопасныйрежим установитьбезопасныйрежимразделенияданных установитьблокировкусеансов установитьвнешнююкомпоненту установитьвремязавершенияспящегосеанса установитьвремязасыпанияпассивногосеанса установитьвремяожиданияблокировкиданных установитьзаголовокклиентскогоприложения установитьзаголовоксистемы установитьиспользованиежурналарегистрации установитьиспользованиесобытияжурналарегистрации установитькраткийзаголовокприложения установитьминимальнуюдлинупаролейпользователей установитьмонопольныйрежим установитьнастройкиклиенталицензирования установитьобновлениепредопределенныхданныхинформационнойбазы установитьотключениебезопасногорежима установитьпараметрыфункциональныхопцийинтерфейса установитьпривилегированныйрежим установитьпроверкусложностипаролейпользователей установитьрасширениеработыскриптографией установитьрасширениеработысфайлами установитьсоединениесвнешнимисточникомданных установитьсоответствиеобъектаиформы установитьсоставстандартногоинтерфейсаodata установитьчасовойпоясинформационнойбазы установитьчасовойпояссеанса формат цел час часовойпояс часовойпояссеанса число числопрописью этоадресвременногохранилища " + "wsссылки библиотекакартинок библиотекамакетовоформлениякомпоновкиданных библиотекастилей бизнеспроцессы внешниеисточникиданных внешниеобработки внешниеотчеты встроенныепокупки главныйинтерфейс главныйстиль документы доставляемыеуведомления журналыдокументов задачи информацияобинтернетсоединении использованиерабочейдаты историяработыпользователя константы критерииотбора метаданные обработки отображениерекламы отправкадоставляемыхуведомлений отчеты панельзадачос параметрзапуска параметрысеанса перечисления планывидоврасчета планывидовхарактеристик планыобмена планысчетов полнотекстовыйпоиск пользователиинформационнойбазы последовательности проверкавстроенныхпокупок рабочаядата расширенияконфигурации регистрыбухгалтерии регистрынакопления регистрырасчета регистрысведений регламентныезадания сериализаторxdto справочники средствагеопозиционирования средствакриптографии средствамультимедиа средстваотображениярекламы средствапочты средствателефонии фабрикаxdto файловыепотоки фоновыезадания хранилищанастроек хранилищевариантовотчетов хранилищенастроекданныхформ хранилищеобщихнастроек хранилищепользовательскихнастроекдинамическихсписков хранилищепользовательскихнастроекотчетов хранилищесистемныхнастроек ", Z = "webцвета windowsцвета windowsшрифты библиотекакартинок рамкистиля символы цветастиля шрифтыстиля " + "автоматическоесохранениеданныхформывнастройках автонумерациявформе автораздвижениесерий анимациядиаграммы вариантвыравниванияэлементовизаголовков вариантуправлениявысотойтаблицы вертикальнаяпрокруткаформы вертикальноеположение вертикальноеположениеэлемента видгруппыформы виддекорацииформы виддополненияэлементаформы видизмененияданных видкнопкиформы видпереключателя видподписейкдиаграмме видполяформы видфлажка влияниеразмеранапузырекдиаграммы горизонтальноеположение горизонтальноеположениеэлемента группировкаколонок группировкаподчиненныхэлементовформы группыиэлементы действиеперетаскивания дополнительныйрежимотображения допустимыедействияперетаскивания интервалмеждуэлементамиформы использованиевывода использованиеполосыпрокрутки используемоезначениеточкибиржевойдиаграммы историявыборапривводе источникзначенийоситочекдиаграммы источникзначенияразмерапузырькадиаграммы категориягруппыкоманд максимумсерий начальноеотображениедерева начальноеотображениесписка обновлениетекстаредактирования ориентациядендрограммы ориентациядиаграммы ориентацияметокдиаграммы ориентацияметоксводнойдиаграммы ориентацияэлементаформы отображениевдиаграмме отображениевлегендедиаграммы отображениегруппыкнопок отображениезаголовкашкалыдиаграммы отображениезначенийсводнойдиаграммы отображениезначенияизмерительнойдиаграммы отображениеинтерваладиаграммыганта отображениекнопки отображениекнопкивыбора отображениеобсужденийформы отображениеобычнойгруппы отображениеотрицательныхзначенийпузырьковойдиаграммы отображениепанелипоиска отображениеподсказки отображениепредупрежденияприредактировании отображениеразметкиполосырегулирования отображениестраницформы отображениетаблицы отображениетекстазначениядиаграммыганта отображениеуправленияобычнойгруппы отображениефигурыкнопки палитрацветовдиаграммы поведениеобычнойгруппы поддержкамасштабадендрограммы поддержкамасштабадиаграммыганта поддержкамасштабасводнойдиаграммы поисквтаблицепривводе положениезаголовкаэлементаформы положениекартинкикнопкиформы положениекартинкиэлементаграфическойсхемы положениекоманднойпанелиформы положениекоманднойпанелиэлементаформы положениеопорнойточкиотрисовки положениеподписейкдиаграмме положениеподписейшкалызначенийизмерительнойдиаграммы положениесостоянияпросмотра положениестрокипоиска положениетекстасоединительнойлинии положениеуправленияпоиском положениешкалывремени порядокотображенияточекгоризонтальнойгистограммы порядоксерийвлегендедиаграммы размеркартинки расположениезаголовкашкалыдиаграммы растягиваниеповертикалидиаграммыганта режимавтоотображениясостояния режимвводастроктаблицы режимвыборанезаполненного режимвыделениядаты режимвыделениястрокитаблицы режимвыделениятаблицы режимизмененияразмера режимизменениясвязанногозначения режимиспользованиядиалогапечати режимиспользованияпараметракоманды режиммасштабированияпросмотра режимосновногоокнаклиентскогоприложения режимоткрытияокнаформы режимотображениявыделения режимотображениягеографическойсхемы режимотображениязначенийсерии режимотрисовкисеткиграфическойсхемы режимполупрозрачностидиаграммы режимпробеловдиаграммы режимразмещениянастранице режимредактированияколонки режимсглаживаниядиаграммы режимсглаживанияиндикатора режимсписказадач сквозноевыравнивание сохранениеданныхформывнастройках способзаполнениятекстазаголовкашкалыдиаграммы способопределенияограничивающегозначениядиаграммы стандартнаягруппакоманд стандартноеоформление статусоповещенияпользователя стильстрелки типаппроксимациилиниитрендадиаграммы типдиаграммы типединицышкалывремени типимпортасерийслоягеографическойсхемы типлиниигеографическойсхемы типлиниидиаграммы типмаркерагеографическойсхемы типмаркерадиаграммы типобластиоформления типорганизацииисточникаданныхгеографическойсхемы типотображениясериислоягеографическойсхемы типотображенияточечногообъектагеографическойсхемы типотображенияшкалыэлементалегендыгеографическойсхемы типпоискаобъектовгеографическойсхемы типпроекциигеографическойсхемы типразмещенияизмерений типразмещенияреквизитовизмерений типрамкиэлементауправления типсводнойдиаграммы типсвязидиаграммыганта типсоединениязначенийпосериямдиаграммы типсоединенияточекдиаграммы типсоединительнойлинии типстороныэлементаграфическойсхемы типформыотчета типшкалырадарнойдиаграммы факторлиниитрендадиаграммы фигуракнопки фигурыграфическойсхемы фиксациявтаблице форматдняшкалывремени форматкартинки ширинаподчиненныхэлементовформы " + "виддвижениябухгалтерии виддвижениянакопления видпериодарегистрарасчета видсчета видточкимаршрутабизнеспроцесса использованиеагрегатарегистранакопления использованиегруппиэлементов использованиережимапроведения использованиесреза периодичностьагрегатарегистранакопления режимавтовремя режимзаписидокумента режимпроведениядокумента " + "авторегистрацияизменений допустимыйномерсообщения отправкаэлементаданных получениеэлементаданных " + "использованиерасшифровкитабличногодокумента ориентациястраницы положениеитоговколоноксводнойтаблицы положениеитоговстроксводнойтаблицы положениетекстаотносительнокартинки расположениезаголовкагруппировкитабличногодокумента способчтениязначенийтабличногодокумента типдвустороннейпечати типзаполненияобластитабличногодокумента типкурсоровтабличногодокумента типлиниирисункатабличногодокумента типлинииячейкитабличногодокумента типнаправленияпереходатабличногодокумента типотображениявыделениятабличногодокумента типотображениялинийсводнойтаблицы типразмещениятекстатабличногодокумента типрисункатабличногодокумента типсмещениятабличногодокумента типузоратабличногодокумента типфайлатабличногодокумента точностьпечати чередованиерасположениястраниц " + "отображениевремениэлементовпланировщика " + "типфайлаформатированногодокумента " + "обходрезультатазапроса типзаписизапроса " + "видзаполнениярасшифровкипостроителяотчета типдобавленияпредставлений типизмеренияпостроителяотчета типразмещенияитогов " + "доступкфайлу режимдиалогавыборафайла режимоткрытияфайла " + "типизмеренияпостроителязапроса " + "видданныханализа методкластеризации типединицыинтервалавременианализаданных типзаполнениятаблицырезультатаанализаданных типиспользованиячисловыхзначенийанализаданных типисточникаданныхпоискаассоциаций типколонкианализаданныхдереворешений типколонкианализаданныхкластеризация типколонкианализаданныхобщаястатистика типколонкианализаданныхпоискассоциаций типколонкианализаданныхпоискпоследовательностей типколонкимоделипрогноза типмерырасстоянияанализаданных типотсеченияправилассоциации типполяанализаданных типстандартизациианализаданных типупорядочиванияправилассоциациианализаданных типупорядочиванияшаблоновпоследовательностейанализаданных типупрощениядереварешений " + "wsнаправлениепараметра вариантxpathxs вариантзаписидатыjson вариантпростоготипаxs видгруппымоделиxs видфасетаxdto действиепостроителяdom завершенностьпростоготипаxs завершенностьсоставноготипаxs завершенностьсхемыxs запрещенныеподстановкиxs исключениягруппподстановкиxs категорияиспользованияатрибутаxs категорияограниченияидентичностиxs категорияограниченияпространствименxs методнаследованияxs модельсодержимогоxs назначениетипаxml недопустимыеподстановкиxs обработкапробельныхсимволовxs обработкасодержимогоxs ограничениезначенияxs параметрыотбораузловdom переносстрокjson позициявдокументеdom пробельныесимволыxml типатрибутаxml типзначенияjson типканоническогоxml типкомпонентыxs типпроверкиxml типрезультатаdomxpath типузлаdom типузлаxml формаxml формапредставленияxs форматдатыjson экранированиесимволовjson " + "видсравнениякомпоновкиданных действиеобработкирасшифровкикомпоновкиданных направлениесортировкикомпоновкиданных расположениевложенныхэлементоврезультатакомпоновкиданных расположениеитоговкомпоновкиданных расположениегруппировкикомпоновкиданных расположениеполейгруппировкикомпоновкиданных расположениеполякомпоновкиданных расположениереквизитовкомпоновкиданных расположениересурсовкомпоновкиданных типбухгалтерскогоостаткакомпоновкиданных типвыводатекстакомпоновкиданных типгруппировкикомпоновкиданных типгруппыэлементовотборакомпоновкиданных типдополненияпериодакомпоновкиданных типзаголовкаполейкомпоновкиданных типмакетагруппировкикомпоновкиданных типмакетаобластикомпоновкиданных типостаткакомпоновкиданных типпериодакомпоновкиданных типразмещениятекстакомпоновкиданных типсвязинаборовданныхкомпоновкиданных типэлементарезультатакомпоновкиданных расположениелегендыдиаграммыкомпоновкиданных типпримененияотборакомпоновкиданных режимотображенияэлементанастройкикомпоновкиданных режимотображениянастроеккомпоновкиданных состояниеэлементанастройкикомпоновкиданных способвосстановлениянастроеккомпоновкиданных режимкомпоновкирезультата использованиепараметракомпоновкиданных автопозицияресурсовкомпоновкиданных вариантиспользованиягруппировкикомпоновкиданных расположениересурсоввдиаграммекомпоновкиданных фиксациякомпоновкиданных использованиеусловногооформлениякомпоновкиданных " + "важностьинтернетпочтовогосообщения обработкатекстаинтернетпочтовогосообщения способкодированияинтернетпочтовоговложения способкодированиянеasciiсимволовинтернетпочтовогосообщения типтекстапочтовогосообщения протоколинтернетпочты статусразборапочтовогосообщения " + "режимтранзакциизаписижурналарегистрации статустранзакциизаписижурналарегистрации уровеньжурналарегистрации " + "расположениехранилищасертификатовкриптографии режимвключениясертификатовкриптографии режимпроверкисертификатакриптографии типхранилищасертификатовкриптографии " + "кодировкаименфайловвzipфайле методсжатияzip методшифрованияzip режимвосстановленияпутейфайловzip режимобработкиподкаталоговzip режимсохраненияпутейzip уровеньсжатияzip " + "звуковоеоповещение направлениепереходакстроке позициявпотоке порядокбайтов режимблокировкиданных режимуправленияблокировкойданных сервисвстроенныхпокупок состояниефоновогозадания типподписчикадоставляемыхуведомлений уровеньиспользованиязащищенногосоединенияftp " + "направлениепорядкасхемызапроса типдополненияпериодамисхемызапроса типконтрольнойточкисхемызапроса типобъединениясхемызапроса типпараметрадоступнойтаблицысхемызапроса типсоединениясхемызапроса " + "httpметод автоиспользованиеобщегореквизита автопрефиксномеразадачи вариантвстроенногоязыка видиерархии видрегистранакопления видтаблицывнешнегоисточникаданных записьдвиженийприпроведении заполнениепоследовательностей индексирование использованиебазыпланавидоврасчета использованиебыстроговыбора использованиеобщегореквизита использованиеподчинения использованиеполнотекстовогопоиска использованиеразделяемыхданныхобщегореквизита использованиереквизита назначениеиспользованияприложения назначениерасширенияконфигурации направлениепередачи обновлениепредопределенныхданных оперативноепроведение основноепредставлениевидарасчета основноепредставлениевидахарактеристики основноепредставлениезадачи основноепредставлениепланаобмена основноепредставлениесправочника основноепредставлениесчета перемещениеграницыприпроведении периодичностьномерабизнеспроцесса периодичностьномерадокумента периодичностьрегистрарасчета периодичностьрегистрасведений повторноеиспользованиевозвращаемыхзначений полнотекстовыйпоискпривводепостроке принадлежностьобъекта проведение разделениеаутентификацииобщегореквизита разделениеданныхобщегореквизита разделениерасширенийконфигурацииобщегореквизита режимавтонумерацииобъектов режимзаписирегистра режимиспользованиямодальности режимиспользованиясинхронныхвызововрасширенийплатформыивнешнихкомпонент режимповторногоиспользованиясеансов режимполученияданныхвыборапривводепостроке режимсовместимости режимсовместимостиинтерфейса режимуправленияблокировкойданныхпоумолчанию сериикодовпланавидовхарактеристик сериикодовпланасчетов сериикодовсправочника созданиепривводе способвыбора способпоискастрокипривводепостроке способредактирования типданныхтаблицывнешнегоисточникаданных типкодапланавидоврасчета типкодасправочника типмакета типномерабизнеспроцесса типномерадокумента типномеразадачи типформы удалениедвижений " + "важностьпроблемыприменениярасширенияконфигурации вариантинтерфейсаклиентскогоприложения вариантмасштабаформклиентскогоприложения вариантосновногошрифтаклиентскогоприложения вариантстандартногопериода вариантстандартнойдатыначала видграницы видкартинки видотображенияполнотекстовогопоиска видрамки видсравнения видцвета видчисловогозначения видшрифта допустимаядлина допустимыйзнак использованиеbyteordermark использованиеметаданныхполнотекстовогопоиска источникрасширенийконфигурации клавиша кодвозвратадиалога кодировкаxbase кодировкатекста направлениепоиска направлениесортировки обновлениепредопределенныхданных обновлениеприизмененииданных отображениепанелиразделов проверказаполнения режимдиалогавопрос режимзапускаклиентскогоприложения режимокругления режимоткрытияформприложения режимполнотекстовогопоиска скоростьклиентскогосоединения состояниевнешнегоисточникаданных состояниеобновленияконфигурациибазыданных способвыборасертификатаwindows способкодированиястроки статуссообщения типвнешнейкомпоненты типплатформы типповеденияклавишиenter типэлементаинформацииовыполненииобновленияконфигурациибазыданных уровеньизоляциитранзакций хешфункция частидаты", Ue = "comобъект ftpсоединение httpзапрос httpсервисответ httpсоединение wsопределения wsпрокси xbase анализданных аннотацияxs блокировкаданных буфердвоичныхданных включениеxs выражениекомпоновкиданных генераторслучайныхчисел географическаясхема географическиекоординаты графическаясхема группамоделиxs данныерасшифровкикомпоновкиданных двоичныеданные дендрограмма диаграмма диаграммаганта диалогвыборафайла диалогвыборацвета диалогвыборашрифта диалограсписаниярегламентногозадания диалогредактированиястандартногопериода диапазон документdom документhtml документацияxs доставляемоеуведомление записьdom записьfastinfoset записьhtml записьjson записьxml записьzipфайла записьданных записьтекста записьузловdom запрос защищенноесоединениеopenssl значенияполейрасшифровкикомпоновкиданных извлечениетекста импортxs интернетпочта интернетпочтовоесообщение интернетпочтовыйпрофиль интернетпрокси интернетсоединение информациядляприложенияxs использованиеатрибутаxs использованиесобытияжурналарегистрации источникдоступныхнастроеккомпоновкиданных итераторузловdom картинка квалификаторыдаты квалификаторыдвоичныхданных квалификаторыстроки квалификаторычисла компоновщикмакетакомпоновкиданных компоновщикнастроеккомпоновкиданных конструктормакетаоформлениякомпоновкиданных конструкторнастроеккомпоновкиданных конструкторформатнойстроки линия макеткомпоновкиданных макетобластикомпоновкиданных макетоформлениякомпоновкиданных маскаxs менеджеркриптографии наборсхемxml настройкикомпоновкиданных настройкисериализацииjson обработкакартинок обработкарасшифровкикомпоновкиданных обходдереваdom объявлениеатрибутаxs объявлениенотацииxs объявлениеэлементаxs описаниеиспользованиясобытиядоступжурналарегистрации описаниеиспользованиясобытияотказвдоступежурналарегистрации описаниеобработкирасшифровкикомпоновкиданных описаниепередаваемогофайла описаниетипов определениегруппыатрибутовxs определениегруппымоделиxs определениеограниченияидентичностиxs определениепростоготипаxs определениесоставноготипаxs определениетипадокументаdom определенияxpathxs отборкомпоновкиданных пакетотображаемыхдокументов параметрвыбора параметркомпоновкиданных параметрызаписиjson параметрызаписиxml параметрычтенияxml переопределениеxs планировщик полеанализаданных полекомпоновкиданных построительdom построительзапроса построительотчета построительотчетаанализаданных построительсхемxml поток потоквпамяти почта почтовоесообщение преобразованиеxsl преобразованиекканоническомуxml процессорвыводарезультатакомпоновкиданныхвколлекциюзначений процессорвыводарезультатакомпоновкиданныхвтабличныйдокумент процессоркомпоновкиданных разыменовательпространствименdom рамка расписаниерегламентногозадания расширенноеимяxml результатчтенияданных своднаядиаграмма связьпараметравыбора связьпотипу связьпотипукомпоновкиданных сериализаторxdto сертификатклиентаwindows сертификатклиентафайл сертификаткриптографии сертификатыудостоверяющихцентровwindows сертификатыудостоверяющихцентровфайл сжатиеданных системнаяинформация сообщениепользователю сочетаниеклавиш сравнениезначений стандартнаядатаначала стандартныйпериод схемаxml схемакомпоновкиданных табличныйдокумент текстовыйдокумент тестируемоеприложение типданныхxml уникальныйидентификатор фабрикаxdto файл файловыйпоток фасетдлиныxs фасетколичестваразрядовдробнойчастиxs фасетмаксимальноговключающегозначенияxs фасетмаксимальногоисключающегозначенияxs фасетмаксимальнойдлиныxs фасетминимальноговключающегозначенияxs фасетминимальногоисключающегозначенияxs фасетминимальнойдлиныxs фасетобразцаxs фасетобщегоколичестваразрядовxs фасетперечисленияxs фасетпробельныхсимволовxs фильтрузловdom форматированнаястрока форматированныйдокумент фрагментxs хешированиеданных хранилищезначения цвет чтениеfastinfoset чтениеhtml чтениеjson чтениеxml чтениеzipфайла чтениеданных чтениетекста чтениеузловdom шрифт элементрезультатакомпоновкиданных " + "comsafearray деревозначений массив соответствие списокзначений структура таблицазначений фиксированнаяструктура фиксированноесоответствие фиксированныймассив ", De = "null истина ложь неопределено", Te = t.inherit(t.NUMBER_MODE), Oe = {
+    const e = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]+", c = "далее " + "возврат вызватьисключение выполнить для если и из или иначе иначеесли исключение каждого конецесли конецпопытки конеццикла не новый перейти перем по пока попытка прервать продолжить тогда цикл экспорт ", m = "загрузитьизфайла " + "вебклиент вместо внешнеесоединение клиент конецобласти мобильноеприложениеклиент мобильноеприложениесервер наклиенте наклиентенасервере наклиентенасерверебезконтекста насервере насерверебезконтекста область перед после сервер толстыйклиентобычноеприложение толстыйклиентуправляемоеприложение тонкийклиент ", C = "разделительстраниц разделительстрок символтабуляции " + "ansitooem oemtoansi ввестивидсубконто ввестиперечисление ввестипериод ввестиплансчетов выбранныйплансчетов датагод датамесяц датачисло заголовоксистемы значениевстроку значениеизстроки каталогиб каталогпользователя кодсимв конгода конецпериодаби конецрассчитанногопериодаби конецстандартногоинтервала конквартала конмесяца коннедели лог лог10 максимальноеколичествосубконто названиеинтерфейса названиенабораправ назначитьвид назначитьсчет найтиссылки началопериодаби началостандартногоинтервала начгода начквартала начмесяца начнедели номерднягода номерднянедели номернеделигода обработкаожидания основнойжурналрасчетов основнойплансчетов основнойязык очиститьокносообщений периодстр получитьвремята получитьдатута получитьдокументта получитьзначенияотбора получитьпозициюта получитьпустоезначение получитьта префиксавтонумерации пропись пустоезначение разм разобратьпозициюдокумента рассчитатьрегистрына рассчитатьрегистрыпо симв создатьобъект статусвозврата стрколичествострок сформироватьпозициюдокумента счетпокоду текущеевремя типзначения типзначениястр установитьтана установитьтапо фиксшаблон шаблон " + "acos asin atan base64значение base64строка cos exp log log10 pow sin sqrt tan xmlзначение xmlстрока xmlтип xmlтипзнч активноеокно безопасныйрежим безопасныйрежимразделенияданных булево ввестидату ввестизначение ввестистроку ввестичисло возможностьчтенияxml вопрос восстановитьзначение врег выгрузитьжурналрегистрации выполнитьобработкуоповещения выполнитьпроверкуправдоступа вычислить год данныеформывзначение дата день деньгода деньнедели добавитьмесяц заблокироватьданныедляредактирования заблокироватьработупользователя завершитьработусистемы загрузитьвнешнююкомпоненту закрытьсправку записатьjson записатьxml записатьдатуjson записьжурналарегистрации заполнитьзначениясвойств запроситьразрешениепользователя запуститьприложение запуститьсистему зафиксироватьтранзакцию значениевданныеформы значениевстрокувнутр значениевфайл значениезаполнено значениеизстрокивнутр значениеизфайла изxmlтипа импортмоделиxdto имякомпьютера имяпользователя инициализироватьпредопределенныеданные информацияобошибке каталогбиблиотекимобильногоустройства каталогвременныхфайлов каталогдокументов каталогпрограммы кодироватьстроку кодлокализацииинформационнойбазы кодсимвола командасистемы конецгода конецдня конецквартала конецмесяца конецминуты конецнедели конецчаса конфигурациябазыданныхизмененадинамически конфигурацияизменена копироватьданныеформы копироватьфайл краткоепредставлениеошибки лев макс местноевремя месяц мин минута монопольныйрежим найти найтинедопустимыесимволыxml найтиокнопонавигационнойссылке найтипомеченныенаудаление найтипоссылкам найтифайлы началогода началодня началоквартала началомесяца началоминуты началонедели началочаса начатьзапросразрешенияпользователя начатьзапускприложения начатькопированиефайла начатьперемещениефайла начатьподключениевнешнейкомпоненты начатьподключениерасширенияработыскриптографией начатьподключениерасширенияработысфайлами начатьпоискфайлов начатьполучениекаталогавременныхфайлов начатьполучениекаталогадокументов начатьполучениерабочегокаталогаданныхпользователя начатьполучениефайлов начатьпомещениефайла начатьпомещениефайлов начатьсозданиедвоичныхданныхизфайла начатьсозданиекаталога начатьтранзакцию начатьудалениефайлов начатьустановкувнешнейкомпоненты начатьустановкурасширенияработыскриптографией начатьустановкурасширенияработысфайлами неделягода необходимостьзавершениясоединения номерсеансаинформационнойбазы номерсоединенияинформационнойбазы нрег нстр обновитьинтерфейс обновитьнумерациюобъектов обновитьповторноиспользуемыезначения обработкапрерыванияпользователя объединитьфайлы окр описаниеошибки оповестить оповеститьобизменении отключитьобработчикзапросанастроекклиенталицензирования отключитьобработчикожидания отключитьобработчикоповещения открытьзначение открытьиндекссправки открытьсодержаниесправки открытьсправку открытьформу открытьформумодально отменитьтранзакцию очиститьжурналрегистрации очиститьнастройкипользователя очиститьсообщения параметрыдоступа перейтипонавигационнойссылке переместитьфайл подключитьвнешнююкомпоненту подключитьобработчикзапросанастроекклиенталицензирования подключитьобработчикожидания подключитьобработчикоповещения подключитьрасширениеработыскриптографией подключитьрасширениеработысфайлами подробноепредставлениеошибки показатьвводдаты показатьвводзначения показатьвводстроки показатьвводчисла показатьвопрос показатьзначение показатьинформациюобошибке показатьнакарте показатьоповещениепользователя показатьпредупреждение полноеимяпользователя получитьcomобъект получитьxmlтип получитьадреспоместоположению получитьблокировкусеансов получитьвремязавершенияспящегосеанса получитьвремязасыпанияпассивногосеанса получитьвремяожиданияблокировкиданных получитьданныевыбора получитьдополнительныйпараметрклиенталицензирования получитьдопустимыекодылокализации получитьдопустимыечасовыепояса получитьзаголовокклиентскогоприложения получитьзаголовоксистемы получитьзначенияотборажурналарегистрации получитьидентификаторконфигурации получитьизвременногохранилища получитьимявременногофайла получитьимяклиенталицензирования получитьинформациюэкрановклиента получитьиспользованиежурналарегистрации получитьиспользованиесобытияжурналарегистрации получитькраткийзаголовокприложения получитьмакетоформления получитьмаскувсефайлы получитьмаскувсефайлыклиента получитьмаскувсефайлысервера получитьместоположениепоадресу получитьминимальнуюдлинупаролейпользователей получитьнавигационнуюссылку получитьнавигационнуюссылкуинформационнойбазы получитьобновлениеконфигурациибазыданных получитьобновлениепредопределенныхданныхинформационнойбазы получитьобщиймакет получитьобщуюформу получитьокна получитьоперативнуюотметкувремени получитьотключениебезопасногорежима получитьпараметрыфункциональныхопцийинтерфейса получитьполноеимяпредопределенногозначения получитьпредставлениянавигационныхссылок получитьпроверкусложностипаролейпользователей получитьразделительпути получитьразделительпутиклиента получитьразделительпутисервера получитьсеансыинформационнойбазы получитьскоростьклиентскогосоединения получитьсоединенияинформационнойбазы получитьсообщенияпользователю получитьсоответствиеобъектаиформы получитьсоставстандартногоинтерфейсаodata получитьструктурухранениябазыданных получитьтекущийсеансинформационнойбазы получитьфайл получитьфайлы получитьформу получитьфункциональнуюопцию получитьфункциональнуюопциюинтерфейса получитьчасовойпоясинформационнойбазы пользователиос поместитьвовременноехранилище поместитьфайл поместитьфайлы прав праводоступа предопределенноезначение представлениекодалокализации представлениепериода представлениеправа представлениеприложения представлениесобытияжурналарегистрации представлениечасовогопояса предупреждение прекратитьработусистемы привилегированныйрежим продолжитьвызов прочитатьjson прочитатьxml прочитатьдатуjson пустаястрока рабочийкаталогданныхпользователя разблокироватьданныедляредактирования разделитьфайл разорватьсоединениесвнешнимисточникомданных раскодироватьстроку рольдоступна секунда сигнал символ скопироватьжурналрегистрации смещениелетнеговремени смещениестандартноговремени соединитьбуферыдвоичныхданных создатькаталог создатьфабрикуxdto сокрл сокрлп сокрп сообщить состояние сохранитьзначение сохранитьнастройкипользователя сред стрдлина стрзаканчиваетсяна стрзаменить стрнайти стрначинаетсяс строка строкасоединенияинформационнойбазы стрполучитьстроку стрразделить стрсоединить стрсравнить стрчисловхождений стрчислострок стршаблон текущаядата текущаядатасеанса текущаяуниверсальнаядата текущаяуниверсальнаядатавмиллисекундах текущийвариантинтерфейсаклиентскогоприложения текущийвариантосновногошрифтаклиентскогоприложения текущийкодлокализации текущийрежимзапуска текущийязык текущийязыксистемы тип типзнч транзакцияактивна трег удалитьданныеинформационнойбазы удалитьизвременногохранилища удалитьобъекты удалитьфайлы универсальноевремя установитьбезопасныйрежим установитьбезопасныйрежимразделенияданных установитьблокировкусеансов установитьвнешнююкомпоненту установитьвремязавершенияспящегосеанса установитьвремязасыпанияпассивногосеанса установитьвремяожиданияблокировкиданных установитьзаголовокклиентскогоприложения установитьзаголовоксистемы установитьиспользованиежурналарегистрации установитьиспользованиесобытияжурналарегистрации установитькраткийзаголовокприложения установитьминимальнуюдлинупаролейпользователей установитьмонопольныйрежим установитьнастройкиклиенталицензирования установитьобновлениепредопределенныхданныхинформационнойбазы установитьотключениебезопасногорежима установитьпараметрыфункциональныхопцийинтерфейса установитьпривилегированныйрежим установитьпроверкусложностипаролейпользователей установитьрасширениеработыскриптографией установитьрасширениеработысфайлами установитьсоединениесвнешнимисточникомданных установитьсоответствиеобъектаиформы установитьсоставстандартногоинтерфейсаodata установитьчасовойпоясинформационнойбазы установитьчасовойпояссеанса формат цел час часовойпояс часовойпояссеанса число числопрописью этоадресвременногохранилища " + "wsссылки библиотекакартинок библиотекамакетовоформлениякомпоновкиданных библиотекастилей бизнеспроцессы внешниеисточникиданных внешниеобработки внешниеотчеты встроенныепокупки главныйинтерфейс главныйстиль документы доставляемыеуведомления журналыдокументов задачи информацияобинтернетсоединении использованиерабочейдаты историяработыпользователя константы критерииотбора метаданные обработки отображениерекламы отправкадоставляемыхуведомлений отчеты панельзадачос параметрзапуска параметрысеанса перечисления планывидоврасчета планывидовхарактеристик планыобмена планысчетов полнотекстовыйпоиск пользователиинформационнойбазы последовательности проверкавстроенныхпокупок рабочаядата расширенияконфигурации регистрыбухгалтерии регистрынакопления регистрырасчета регистрысведений регламентныезадания сериализаторxdto справочники средствагеопозиционирования средствакриптографии средствамультимедиа средстваотображениярекламы средствапочты средствателефонии фабрикаxdto файловыепотоки фоновыезадания хранилищанастроек хранилищевариантовотчетов хранилищенастроекданныхформ хранилищеобщихнастроек хранилищепользовательскихнастроекдинамическихсписков хранилищепользовательскихнастроекотчетов хранилищесистемныхнастроек ", He = "webцвета windowsцвета windowsшрифты библиотекакартинок рамкистиля символы цветастиля шрифтыстиля " + "автоматическоесохранениеданныхформывнастройках автонумерациявформе автораздвижениесерий анимациядиаграммы вариантвыравниванияэлементовизаголовков вариантуправлениявысотойтаблицы вертикальнаяпрокруткаформы вертикальноеположение вертикальноеположениеэлемента видгруппыформы виддекорацииформы виддополненияэлементаформы видизмененияданных видкнопкиформы видпереключателя видподписейкдиаграмме видполяформы видфлажка влияниеразмеранапузырекдиаграммы горизонтальноеположение горизонтальноеположениеэлемента группировкаколонок группировкаподчиненныхэлементовформы группыиэлементы действиеперетаскивания дополнительныйрежимотображения допустимыедействияперетаскивания интервалмеждуэлементамиформы использованиевывода использованиеполосыпрокрутки используемоезначениеточкибиржевойдиаграммы историявыборапривводе источникзначенийоситочекдиаграммы источникзначенияразмерапузырькадиаграммы категориягруппыкоманд максимумсерий начальноеотображениедерева начальноеотображениесписка обновлениетекстаредактирования ориентациядендрограммы ориентациядиаграммы ориентацияметокдиаграммы ориентацияметоксводнойдиаграммы ориентацияэлементаформы отображениевдиаграмме отображениевлегендедиаграммы отображениегруппыкнопок отображениезаголовкашкалыдиаграммы отображениезначенийсводнойдиаграммы отображениезначенияизмерительнойдиаграммы отображениеинтерваладиаграммыганта отображениекнопки отображениекнопкивыбора отображениеобсужденийформы отображениеобычнойгруппы отображениеотрицательныхзначенийпузырьковойдиаграммы отображениепанелипоиска отображениеподсказки отображениепредупрежденияприредактировании отображениеразметкиполосырегулирования отображениестраницформы отображениетаблицы отображениетекстазначениядиаграммыганта отображениеуправленияобычнойгруппы отображениефигурыкнопки палитрацветовдиаграммы поведениеобычнойгруппы поддержкамасштабадендрограммы поддержкамасштабадиаграммыганта поддержкамасштабасводнойдиаграммы поисквтаблицепривводе положениезаголовкаэлементаформы положениекартинкикнопкиформы положениекартинкиэлементаграфическойсхемы положениекоманднойпанелиформы положениекоманднойпанелиэлементаформы положениеопорнойточкиотрисовки положениеподписейкдиаграмме положениеподписейшкалызначенийизмерительнойдиаграммы положениесостоянияпросмотра положениестрокипоиска положениетекстасоединительнойлинии положениеуправленияпоиском положениешкалывремени порядокотображенияточекгоризонтальнойгистограммы порядоксерийвлегендедиаграммы размеркартинки расположениезаголовкашкалыдиаграммы растягиваниеповертикалидиаграммыганта режимавтоотображениясостояния режимвводастроктаблицы режимвыборанезаполненного режимвыделениядаты режимвыделениястрокитаблицы режимвыделениятаблицы режимизмененияразмера режимизменениясвязанногозначения режимиспользованиядиалогапечати режимиспользованияпараметракоманды режиммасштабированияпросмотра режимосновногоокнаклиентскогоприложения режимоткрытияокнаформы режимотображениявыделения режимотображениягеографическойсхемы режимотображениязначенийсерии режимотрисовкисеткиграфическойсхемы режимполупрозрачностидиаграммы режимпробеловдиаграммы режимразмещениянастранице режимредактированияколонки режимсглаживаниядиаграммы режимсглаживанияиндикатора режимсписказадач сквозноевыравнивание сохранениеданныхформывнастройках способзаполнениятекстазаголовкашкалыдиаграммы способопределенияограничивающегозначениядиаграммы стандартнаягруппакоманд стандартноеоформление статусоповещенияпользователя стильстрелки типаппроксимациилиниитрендадиаграммы типдиаграммы типединицышкалывремени типимпортасерийслоягеографическойсхемы типлиниигеографическойсхемы типлиниидиаграммы типмаркерагеографическойсхемы типмаркерадиаграммы типобластиоформления типорганизацииисточникаданныхгеографическойсхемы типотображениясериислоягеографическойсхемы типотображенияточечногообъектагеографическойсхемы типотображенияшкалыэлементалегендыгеографическойсхемы типпоискаобъектовгеографическойсхемы типпроекциигеографическойсхемы типразмещенияизмерений типразмещенияреквизитовизмерений типрамкиэлементауправления типсводнойдиаграммы типсвязидиаграммыганта типсоединениязначенийпосериямдиаграммы типсоединенияточекдиаграммы типсоединительнойлинии типстороныэлементаграфическойсхемы типформыотчета типшкалырадарнойдиаграммы факторлиниитрендадиаграммы фигуракнопки фигурыграфическойсхемы фиксациявтаблице форматдняшкалывремени форматкартинки ширинаподчиненныхэлементовформы " + "виддвижениябухгалтерии виддвижениянакопления видпериодарегистрарасчета видсчета видточкимаршрутабизнеспроцесса использованиеагрегатарегистранакопления использованиегруппиэлементов использованиережимапроведения использованиесреза периодичностьагрегатарегистранакопления режимавтовремя режимзаписидокумента режимпроведениядокумента " + "авторегистрацияизменений допустимыйномерсообщения отправкаэлементаданных получениеэлементаданных " + "использованиерасшифровкитабличногодокумента ориентациястраницы положениеитоговколоноксводнойтаблицы положениеитоговстроксводнойтаблицы положениетекстаотносительнокартинки расположениезаголовкагруппировкитабличногодокумента способчтениязначенийтабличногодокумента типдвустороннейпечати типзаполненияобластитабличногодокумента типкурсоровтабличногодокумента типлиниирисункатабличногодокумента типлинииячейкитабличногодокумента типнаправленияпереходатабличногодокумента типотображениявыделениятабличногодокумента типотображениялинийсводнойтаблицы типразмещениятекстатабличногодокумента типрисункатабличногодокумента типсмещениятабличногодокумента типузоратабличногодокумента типфайлатабличногодокумента точностьпечати чередованиерасположениястраниц " + "отображениевремениэлементовпланировщика " + "типфайлаформатированногодокумента " + "обходрезультатазапроса типзаписизапроса " + "видзаполнениярасшифровкипостроителяотчета типдобавленияпредставлений типизмеренияпостроителяотчета типразмещенияитогов " + "доступкфайлу режимдиалогавыборафайла режимоткрытияфайла " + "типизмеренияпостроителязапроса " + "видданныханализа методкластеризации типединицыинтервалавременианализаданных типзаполнениятаблицырезультатаанализаданных типиспользованиячисловыхзначенийанализаданных типисточникаданныхпоискаассоциаций типколонкианализаданныхдереворешений типколонкианализаданныхкластеризация типколонкианализаданныхобщаястатистика типколонкианализаданныхпоискассоциаций типколонкианализаданныхпоискпоследовательностей типколонкимоделипрогноза типмерырасстоянияанализаданных типотсеченияправилассоциации типполяанализаданных типстандартизациианализаданных типупорядочиванияправилассоциациианализаданных типупорядочиванияшаблоновпоследовательностейанализаданных типупрощениядереварешений " + "wsнаправлениепараметра вариантxpathxs вариантзаписидатыjson вариантпростоготипаxs видгруппымоделиxs видфасетаxdto действиепостроителяdom завершенностьпростоготипаxs завершенностьсоставноготипаxs завершенностьсхемыxs запрещенныеподстановкиxs исключениягруппподстановкиxs категорияиспользованияатрибутаxs категорияограниченияидентичностиxs категорияограниченияпространствименxs методнаследованияxs модельсодержимогоxs назначениетипаxml недопустимыеподстановкиxs обработкапробельныхсимволовxs обработкасодержимогоxs ограничениезначенияxs параметрыотбораузловdom переносстрокjson позициявдокументеdom пробельныесимволыxml типатрибутаxml типзначенияjson типканоническогоxml типкомпонентыxs типпроверкиxml типрезультатаdomxpath типузлаdom типузлаxml формаxml формапредставленияxs форматдатыjson экранированиесимволовjson " + "видсравнениякомпоновкиданных действиеобработкирасшифровкикомпоновкиданных направлениесортировкикомпоновкиданных расположениевложенныхэлементоврезультатакомпоновкиданных расположениеитоговкомпоновкиданных расположениегруппировкикомпоновкиданных расположениеполейгруппировкикомпоновкиданных расположениеполякомпоновкиданных расположениереквизитовкомпоновкиданных расположениересурсовкомпоновкиданных типбухгалтерскогоостаткакомпоновкиданных типвыводатекстакомпоновкиданных типгруппировкикомпоновкиданных типгруппыэлементовотборакомпоновкиданных типдополненияпериодакомпоновкиданных типзаголовкаполейкомпоновкиданных типмакетагруппировкикомпоновкиданных типмакетаобластикомпоновкиданных типостаткакомпоновкиданных типпериодакомпоновкиданных типразмещениятекстакомпоновкиданных типсвязинаборовданныхкомпоновкиданных типэлементарезультатакомпоновкиданных расположениелегендыдиаграммыкомпоновкиданных типпримененияотборакомпоновкиданных режимотображенияэлементанастройкикомпоновкиданных режимотображениянастроеккомпоновкиданных состояниеэлементанастройкикомпоновкиданных способвосстановлениянастроеккомпоновкиданных режимкомпоновкирезультата использованиепараметракомпоновкиданных автопозицияресурсовкомпоновкиданных вариантиспользованиягруппировкикомпоновкиданных расположениересурсоввдиаграммекомпоновкиданных фиксациякомпоновкиданных использованиеусловногооформлениякомпоновкиданных " + "важностьинтернетпочтовогосообщения обработкатекстаинтернетпочтовогосообщения способкодированияинтернетпочтовоговложения способкодированиянеasciiсимволовинтернетпочтовогосообщения типтекстапочтовогосообщения протоколинтернетпочты статусразборапочтовогосообщения " + "режимтранзакциизаписижурналарегистрации статустранзакциизаписижурналарегистрации уровеньжурналарегистрации " + "расположениехранилищасертификатовкриптографии режимвключениясертификатовкриптографии режимпроверкисертификатакриптографии типхранилищасертификатовкриптографии " + "кодировкаименфайловвzipфайле методсжатияzip методшифрованияzip режимвосстановленияпутейфайловzip режимобработкиподкаталоговzip режимсохраненияпутейzip уровеньсжатияzip " + "звуковоеоповещение направлениепереходакстроке позициявпотоке порядокбайтов режимблокировкиданных режимуправленияблокировкойданных сервисвстроенныхпокупок состояниефоновогозадания типподписчикадоставляемыхуведомлений уровеньиспользованиязащищенногосоединенияftp " + "направлениепорядкасхемызапроса типдополненияпериодамисхемызапроса типконтрольнойточкисхемызапроса типобъединениясхемызапроса типпараметрадоступнойтаблицысхемызапроса типсоединениясхемызапроса " + "httpметод автоиспользованиеобщегореквизита автопрефиксномеразадачи вариантвстроенногоязыка видиерархии видрегистранакопления видтаблицывнешнегоисточникаданных записьдвиженийприпроведении заполнениепоследовательностей индексирование использованиебазыпланавидоврасчета использованиебыстроговыбора использованиеобщегореквизита использованиеподчинения использованиеполнотекстовогопоиска использованиеразделяемыхданныхобщегореквизита использованиереквизита назначениеиспользованияприложения назначениерасширенияконфигурации направлениепередачи обновлениепредопределенныхданных оперативноепроведение основноепредставлениевидарасчета основноепредставлениевидахарактеристики основноепредставлениезадачи основноепредставлениепланаобмена основноепредставлениесправочника основноепредставлениесчета перемещениеграницыприпроведении периодичностьномерабизнеспроцесса периодичностьномерадокумента периодичностьрегистрарасчета периодичностьрегистрасведений повторноеиспользованиевозвращаемыхзначений полнотекстовыйпоискпривводепостроке принадлежностьобъекта проведение разделениеаутентификацииобщегореквизита разделениеданныхобщегореквизита разделениерасширенийконфигурацииобщегореквизита режимавтонумерацииобъектов режимзаписирегистра режимиспользованиямодальности режимиспользованиясинхронныхвызововрасширенийплатформыивнешнихкомпонент режимповторногоиспользованиясеансов режимполученияданныхвыборапривводепостроке режимсовместимости режимсовместимостиинтерфейса режимуправленияблокировкойданныхпоумолчанию сериикодовпланавидовхарактеристик сериикодовпланасчетов сериикодовсправочника созданиепривводе способвыбора способпоискастрокипривводепостроке способредактирования типданныхтаблицывнешнегоисточникаданных типкодапланавидоврасчета типкодасправочника типмакета типномерабизнеспроцесса типномерадокумента типномеразадачи типформы удалениедвижений " + "важностьпроблемыприменениярасширенияконфигурации вариантинтерфейсаклиентскогоприложения вариантмасштабаформклиентскогоприложения вариантосновногошрифтаклиентскогоприложения вариантстандартногопериода вариантстандартнойдатыначала видграницы видкартинки видотображенияполнотекстовогопоиска видрамки видсравнения видцвета видчисловогозначения видшрифта допустимаядлина допустимыйзнак использованиеbyteordermark использованиеметаданныхполнотекстовогопоиска источникрасширенийконфигурации клавиша кодвозвратадиалога кодировкаxbase кодировкатекста направлениепоиска направлениесортировки обновлениепредопределенныхданных обновлениеприизмененииданных отображениепанелиразделов проверказаполнения режимдиалогавопрос режимзапускаклиентскогоприложения режимокругления режимоткрытияформприложения режимполнотекстовогопоиска скоростьклиентскогосоединения состояниевнешнегоисточникаданных состояниеобновленияконфигурациибазыданных способвыборасертификатаwindows способкодированиястроки статуссообщения типвнешнейкомпоненты типплатформы типповеденияклавишиenter типэлементаинформацииовыполненииобновленияконфигурациибазыданных уровеньизоляциитранзакций хешфункция частидаты", Ue = "comобъект ftpсоединение httpзапрос httpсервисответ httpсоединение wsопределения wsпрокси xbase анализданных аннотацияxs блокировкаданных буфердвоичныхданных включениеxs выражениекомпоновкиданных генераторслучайныхчисел географическаясхема географическиекоординаты графическаясхема группамоделиxs данныерасшифровкикомпоновкиданных двоичныеданные дендрограмма диаграмма диаграммаганта диалогвыборафайла диалогвыборацвета диалогвыборашрифта диалограсписаниярегламентногозадания диалогредактированиястандартногопериода диапазон документdom документhtml документацияxs доставляемоеуведомление записьdom записьfastinfoset записьhtml записьjson записьxml записьzipфайла записьданных записьтекста записьузловdom запрос защищенноесоединениеopenssl значенияполейрасшифровкикомпоновкиданных извлечениетекста импортxs интернетпочта интернетпочтовоесообщение интернетпочтовыйпрофиль интернетпрокси интернетсоединение информациядляприложенияxs использованиеатрибутаxs использованиесобытияжурналарегистрации источникдоступныхнастроеккомпоновкиданных итераторузловdom картинка квалификаторыдаты квалификаторыдвоичныхданных квалификаторыстроки квалификаторычисла компоновщикмакетакомпоновкиданных компоновщикнастроеккомпоновкиданных конструктормакетаоформлениякомпоновкиданных конструкторнастроеккомпоновкиданных конструкторформатнойстроки линия макеткомпоновкиданных макетобластикомпоновкиданных макетоформлениякомпоновкиданных маскаxs менеджеркриптографии наборсхемxml настройкикомпоновкиданных настройкисериализацииjson обработкакартинок обработкарасшифровкикомпоновкиданных обходдереваdom объявлениеатрибутаxs объявлениенотацииxs объявлениеэлементаxs описаниеиспользованиясобытиядоступжурналарегистрации описаниеиспользованиясобытияотказвдоступежурналарегистрации описаниеобработкирасшифровкикомпоновкиданных описаниепередаваемогофайла описаниетипов определениегруппыатрибутовxs определениегруппымоделиxs определениеограниченияидентичностиxs определениепростоготипаxs определениесоставноготипаxs определениетипадокументаdom определенияxpathxs отборкомпоновкиданных пакетотображаемыхдокументов параметрвыбора параметркомпоновкиданных параметрызаписиjson параметрызаписиxml параметрычтенияxml переопределениеxs планировщик полеанализаданных полекомпоновкиданных построительdom построительзапроса построительотчета построительотчетаанализаданных построительсхемxml поток потоквпамяти почта почтовоесообщение преобразованиеxsl преобразованиекканоническомуxml процессорвыводарезультатакомпоновкиданныхвколлекциюзначений процессорвыводарезультатакомпоновкиданныхвтабличныйдокумент процессоркомпоновкиданных разыменовательпространствименdom рамка расписаниерегламентногозадания расширенноеимяxml результатчтенияданных своднаядиаграмма связьпараметравыбора связьпотипу связьпотипукомпоновкиданных сериализаторxdto сертификатклиентаwindows сертификатклиентафайл сертификаткриптографии сертификатыудостоверяющихцентровwindows сертификатыудостоверяющихцентровфайл сжатиеданных системнаяинформация сообщениепользователю сочетаниеклавиш сравнениезначений стандартнаядатаначала стандартныйпериод схемаxml схемакомпоновкиданных табличныйдокумент текстовыйдокумент тестируемоеприложение типданныхxml уникальныйидентификатор фабрикаxdto файл файловыйпоток фасетдлиныxs фасетколичестваразрядовдробнойчастиxs фасетмаксимальноговключающегозначенияxs фасетмаксимальногоисключающегозначенияxs фасетмаксимальнойдлиныxs фасетминимальноговключающегозначенияxs фасетминимальногоисключающегозначенияxs фасетминимальнойдлиныxs фасетобразцаxs фасетобщегоколичестваразрядовxs фасетперечисленияxs фасетпробельныхсимволовxs фильтрузловdom форматированнаястрока форматированныйдокумент фрагментxs хешированиеданных хранилищезначения цвет чтениеfastinfoset чтениеhtml чтениеjson чтениеxml чтениеzipфайла чтениеданных чтениетекста чтениеузловdom шрифт элементрезультатакомпоновкиданных " + "comsafearray деревозначений массив соответствие списокзначений структура таблицазначений фиксированнаяструктура фиксированноесоответствие фиксированныймассив ", De = "null истина ложь неопределено", ke = t.inherit(t.NUMBER_MODE), Oe = {
       className: "string",
       begin: '"|\\|',
       end: '"|$',
       contains: [{ begin: '""' }]
-    }, _e = {
+    }, he = {
       begin: "'",
       end: "'",
       excludeBegin: !0,
@@ -52235,20 +52347,20 @@ function DQ() {
           begin: "\\d{4}([\\.\\\\/:-]?\\d{2}){0,5}"
         }
       ]
-    }, ue = {
+    }, pe = {
       match: /[;()+\-:=,]/,
       className: "punctuation",
       relevance: 0
-    }, Se = t.inherit(t.C_LINE_COMMENT_MODE), Ce = {
+    }, xe = t.inherit(t.C_LINE_COMMENT_MODE), ve = {
       className: "meta",
       begin: "#|&",
       end: "$",
       keywords: {
         $pattern: e,
-        keyword: c + h
+        keyword: c + m
       },
-      contains: [Se]
-    }, ve = {
+      contains: [xe]
+    }, Te = {
       className: "symbol",
       begin: "~",
       end: ";|:",
@@ -52284,12 +52396,12 @@ function DQ() {
                 literal: De
               },
               contains: [
-                Te,
+                ke,
                 Oe,
-                _e
+                he
               ]
             },
-            Se
+            xe
           ]
         },
         t.inherit(t.TITLE_MODE, { begin: e })
@@ -52301,20 +52413,20 @@ function DQ() {
       keywords: {
         $pattern: e,
         keyword: c,
-        built_in: S,
-        class: Z,
+        built_in: C,
+        class: He,
         type: Ue,
         literal: De
       },
       contains: [
-        Ce,
-        Pe,
-        Se,
         ve,
+        Pe,
+        xe,
         Te,
+        ke,
         Oe,
-        _e,
-        ue
+        he,
+        pe
       ]
     };
   }
@@ -52348,13 +52460,13 @@ function PQ() {
     }, u = {
       scope: "symbol",
       match: /%d[0-9]+(-[0-9]+|(\.[0-9]+)+)?/
-    }, h = {
-      scope: "symbol",
-      match: /%x[0-9A-F]+(-[0-9A-F]+|(\.[0-9A-F]+)+)?/
     }, m = {
       scope: "symbol",
+      match: /%x[0-9A-F]+(-[0-9A-F]+|(\.[0-9A-F]+)+)?/
+    }, h = {
+      scope: "symbol",
       match: /%[si](?=".*")/
-    }, _ = {
+    }, p = {
       scope: "attribute",
       match: e.concat(a, /(?=\s*=)/)
     };
@@ -52367,12 +52479,12 @@ function PQ() {
           scope: "operator",
           match: /=\/?/
         },
-        _,
+        p,
         c,
         d,
         u,
-        h,
         m,
+        h,
         t.QUOTE_STRING_MODE,
         t.NUMBER_MODE
       ]
@@ -52609,7 +52721,7 @@ function UQ() {
   if (_l) return on;
   _l = 1;
   function r(t) {
-    const e = "\\d(_|\\d)*", a = "[eE][-+]?" + e, s = e + "(\\." + e + ")?(" + a + ")?", c = "\\w+", u = "\\b(" + (e + "#" + c + "(\\." + c + ")?#(" + a + ")?") + "|" + s + ")", h = "[A-Za-z](_?[A-Za-z0-9.])*", m = `[]\\{\\}%#'"`, _ = t.COMMENT("--", "$"), g = {
+    const e = "\\d(_|\\d)*", a = "[eE][-+]?" + e, s = e + "(\\." + e + ")?(" + a + ")?", c = "\\w+", u = "\\b(" + (e + "#" + c + "(\\." + c + ")?#(" + a + ")?") + "|" + s + ")", m = "[A-Za-z](_?[A-Za-z0-9.])*", h = `[]\\{\\}%#'"`, p = t.COMMENT("--", "$"), g = {
       // TODO: These spaces are not required by the Ada syntax
       // however, I have yet to see handwritten Ada code where
       // someone does not put spaces around :
@@ -52617,7 +52729,7 @@ function UQ() {
       end: "\\s*(:=|;|\\)|=>|$)",
       // endsWithParent: true,
       // returnBegin: true,
-      illegal: m,
+      illegal: h,
       contains: [
         {
           // workaround to avoid highlighting
@@ -52632,7 +52744,7 @@ function UQ() {
         },
         {
           className: "type",
-          begin: h,
+          begin: m,
           endsParent: !0,
           relevance: 0
         }
@@ -52721,7 +52833,7 @@ function UQ() {
         ]
       },
       contains: [
-        _,
+        p,
         // strings "foobar"
         {
           className: "string",
@@ -52749,7 +52861,7 @@ function UQ() {
         {
           // Attributes
           className: "symbol",
-          begin: "'" + h
+          begin: "'" + m
         },
         {
           // package definition, maybe inside generic
@@ -52759,7 +52871,7 @@ function UQ() {
           keywords: "package body",
           excludeBegin: !0,
           excludeEnd: !0,
-          illegal: m
+          illegal: h
         },
         {
           // function/procedure declaration/definition
@@ -52771,7 +52883,7 @@ function UQ() {
           // the title mode below matches only exactly once
           returnBegin: !0,
           contains: [
-            _,
+            p,
             {
               // name of the function/procedure
               className: "title",
@@ -52779,7 +52891,7 @@ function UQ() {
               end: "(\\(|\\s+|$)",
               excludeBegin: !0,
               excludeEnd: !0,
-              illegal: m
+              illegal: h
             },
             // 'self'
             // // parameter types
@@ -52794,7 +52906,7 @@ function UQ() {
               excludeEnd: !0,
               // we are done with functions
               endsParent: !0,
-              illegal: m
+              illegal: h
             }
           ]
         },
@@ -52806,7 +52918,7 @@ function UQ() {
           end: "\\s+",
           keywords: "type",
           excludeBegin: !0,
-          illegal: m
+          illegal: h
         },
         // see comment above the definition
         g
@@ -53109,7 +53221,7 @@ function GQ() {
       c,
       d,
       t.HASH_COMMENT_MODE
-    ], h = [
+    ], m = [
       /apart from/,
       /aside from/,
       /instead of/,
@@ -53124,7 +53236,7 @@ function GQ() {
       /POSIX (file|path)/,
       /(date|time) string/,
       /quoted form/
-    ], m = [
+    ], h = [
       /clipboard info/,
       /the clipboard/,
       /info for/,
@@ -53163,7 +53275,7 @@ function GQ() {
           className: "built_in",
           begin: e.concat(
             /\b/,
-            e.either(...m),
+            e.either(...h),
             /\b/
           )
         },
@@ -53179,7 +53291,7 @@ function GQ() {
           className: "keyword",
           begin: e.concat(
             /\b/,
-            e.either(...h),
+            e.either(...m),
             /\b/
           )
         },
@@ -53498,30 +53610,30 @@ function VQ() {
         { begin: t.C_NUMBER_RE }
       ],
       relevance: 0
-    }, h = {
+    }, m = {
       className: "subst",
       begin: "\\$\\{",
       end: "\\}",
       keywords: s,
       contains: []
       // defined later
-    }, m = {
+    }, h = {
       className: "string",
       begin: "`",
       end: "`",
       contains: [
         t.BACKSLASH_ESCAPE,
-        h
+        m
       ]
     };
-    h.contains = [
+    m.contains = [
       t.APOS_STRING_MODE,
       t.QUOTE_STRING_MODE,
-      m,
+      h,
       u,
       t.REGEXP_MODE
     ];
-    const _ = h.contains.concat([
+    const p = m.contains.concat([
       t.C_BLOCK_COMMENT_MODE,
       t.C_LINE_COMMENT_MODE
     ]);
@@ -53532,7 +53644,7 @@ function VQ() {
       contains: [
         t.APOS_STRING_MODE,
         t.QUOTE_STRING_MODE,
-        m,
+        h,
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
         d,
@@ -53581,7 +53693,7 @@ function VQ() {
                       excludeBegin: !0,
                       excludeEnd: !0,
                       keywords: s,
-                      contains: _
+                      contains: p
                     }
                   ]
                 }
@@ -53605,7 +53717,7 @@ function VQ() {
               end: /\)/,
               excludeBegin: !0,
               excludeEnd: !0,
-              contains: _
+              contains: p
             }
           ],
           illegal: /\[|%/
@@ -53622,7 +53734,7 @@ function $Q() {
   if (fl) return dn;
   fl = 1;
   function r(e) {
-    const a = e.regex, s = e.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), c = "decltype\\(auto\\)", d = "[a-zA-Z_]\\w*::", h = "(?!struct)(" + c + "|" + a.optional(d) + "[a-zA-Z_]\\w*" + a.optional("<[^<>]+>") + ")", m = {
+    const a = e.regex, s = e.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), c = "decltype\\(auto\\)", d = "[a-zA-Z_]\\w*::", m = "(?!struct)(" + c + "|" + a.optional(d) + "[a-zA-Z_]\\w*" + a.optional("<[^<>]+>") + ")", h = {
       className: "type",
       begin: "\\b[a-z\\d_]*_t\\b"
     }, g = {
@@ -53659,7 +53771,7 @@ function $Q() {
         }
       ],
       relevance: 0
-    }, S = {
+    }, C = {
       className: "meta",
       begin: /#\s*[a-z]+\b/,
       end: /$/,
@@ -53677,11 +53789,11 @@ function $Q() {
         s,
         e.C_BLOCK_COMMENT_MODE
       ]
-    }, p = {
+    }, _ = {
       className: "title",
       begin: a.optional(d) + e.IDENT_RE,
       relevance: 0
-    }, C = a.optional(d) + e.IDENT_RE + "\\s*\\(", f = [
+    }, S = a.optional(d) + e.IDENT_RE + "\\s*\\(", f = [
       "alignas",
       "alignof",
       "and",
@@ -53844,7 +53956,7 @@ function $Q() {
       "weak_ptr",
       "wstring",
       "wstring_view"
-    ], A = [
+    ], N = [
       "abort",
       "abs",
       "acos",
@@ -53957,12 +54069,12 @@ function $Q() {
       ],
       built_in: ["_Pragma"],
       _type_hints: T
-    }, P = {
+    }, D = {
       className: "function.dispatch",
       relevance: 0,
       keywords: {
         // Only for relevance, not highlighting.
-        _hint: A
+        _hint: N
       },
       begin: a.concat(
         /\b/,
@@ -53974,15 +54086,15 @@ function $Q() {
         e.IDENT_RE,
         a.lookahead(/(<[^<>]+>|)\s*\(/)
       )
-    }, H = [
-      P,
-      S,
-      m,
+    }, U = [
+      D,
+      C,
+      h,
       s,
       e.C_BLOCK_COMMENT_MODE,
       w,
       g
-    ], K = {
+    ], W = {
       // This mode covers expression context where we can't expect a function
       // definition and shouldn't highlight anything that looks like one:
       // `return some()`, `else if()`, `(x*sum(1, 2))`
@@ -54001,19 +54113,19 @@ function $Q() {
         }
       ],
       keywords: b,
-      contains: H.concat([
+      contains: U.concat([
         {
           begin: /\(/,
           end: /\)/,
           keywords: b,
-          contains: H.concat(["self"]),
+          contains: U.concat(["self"]),
           relevance: 0
         }
       ]),
       relevance: 0
-    }, ie = {
+    }, le = {
       className: "function",
-      begin: "(" + h + "[\\*&\\s]+)+" + C,
+      begin: "(" + m + "[\\*&\\s]+)+" + S,
       returnBegin: !0,
       end: /[{;=]/,
       excludeEnd: !0,
@@ -54027,9 +54139,9 @@ function $Q() {
           relevance: 0
         },
         {
-          begin: C,
+          begin: S,
           returnBegin: !0,
-          contains: [p],
+          contains: [_],
           relevance: 0
         },
         // needed because we do not have look-behind on the below rule
@@ -54064,7 +54176,7 @@ function $Q() {
             e.C_BLOCK_COMMENT_MODE,
             g,
             w,
-            m,
+            h,
             // Count matching parentheses.
             {
               begin: /\(/,
@@ -54077,15 +54189,15 @@ function $Q() {
                 e.C_BLOCK_COMMENT_MODE,
                 g,
                 w,
-                m
+                h
               ]
             }
           ]
         },
-        m,
+        h,
         s,
         e.C_BLOCK_COMMENT_MODE,
-        S
+        C
       ]
     };
     return {
@@ -54103,12 +54215,12 @@ function $Q() {
       illegal: "</",
       classNameAliases: { "function.dispatch": "built_in" },
       contains: [].concat(
-        K,
-        ie,
-        P,
-        H,
+        W,
+        le,
+        D,
+        U,
         [
-          S,
+          C,
           {
             // containers: ie, `vector <int> rooms (9);`
             begin: "\\b(deque|list|queue|priority_queue|pair|stack|vector|map|set|bitset|multiset|multimap|unordered_map|unordered_set|unordered_multiset|unordered_multimap|array|tuple|optional|variant|function|flat_map|flat_set)\\s*<(?!<)",
@@ -54116,7 +54228,7 @@ function $Q() {
             keywords: b,
             contains: [
               "self",
-              m
+              h
             ]
           },
           {
@@ -54634,7 +54746,7 @@ function qQ() {
     }, u = t.inherit(d, {
       begin: /\(/,
       end: /\)/
-    }), h = t.inherit(t.APOS_STRING_MODE, { className: "string" }), m = t.inherit(t.QUOTE_STRING_MODE, { className: "string" }), _ = {
+    }), m = t.inherit(t.APOS_STRING_MODE, { className: "string" }), h = t.inherit(t.QUOTE_STRING_MODE, { className: "string" }), p = {
       endsWithParent: !0,
       illegal: /</,
       relevance: 0,
@@ -54693,8 +54805,8 @@ function qQ() {
           relevance: 10,
           contains: [
             d,
-            m,
             h,
+            m,
             u,
             {
               begin: /\[/,
@@ -54707,8 +54819,8 @@ function qQ() {
                   contains: [
                     d,
                     u,
-                    m,
-                    h
+                    h,
+                    m
                   ]
                 }
               ]
@@ -54735,7 +54847,7 @@ function qQ() {
               begin: /<\?xml/,
               relevance: 10,
               contains: [
-                m
+                h
               ]
             },
             {
@@ -54753,7 +54865,7 @@ function qQ() {
           begin: /<style(?=\s|>)/,
           end: />/,
           keywords: { name: "style" },
-          contains: [_],
+          contains: [p],
           starts: {
             end: /<\/style>/,
             returnEnd: !0,
@@ -54769,7 +54881,7 @@ function qQ() {
           begin: /<script(?=\s|>)/,
           end: />/,
           keywords: { name: "script" },
-          contains: [_],
+          contains: [p],
           starts: {
             end: /<\/script>/,
             returnEnd: !0,
@@ -54804,7 +54916,7 @@ function qQ() {
               className: "name",
               begin: a,
               relevance: 0,
-              starts: _
+              starts: p
             }
           ]
         },
@@ -54933,7 +55045,7 @@ function WQ() {
       className: "symbol",
       begin: "^(NOTE|TIP|IMPORTANT|WARNING|CAUTION):\\s+",
       relevance: 10
-    }, h = {
+    }, m = {
       className: "bullet",
       begin: "^(\\*+|-+|\\.+|[^\\n]+?::)\\s+"
     };
@@ -55018,7 +55130,7 @@ function WQ() {
           ],
           relevance: 10
         },
-        h,
+        m,
         u,
         ...s,
         ...c,
@@ -55399,7 +55511,7 @@ function QQ() {
       t.COMMENT(";", "$", { relevance: 0 }),
       t.COMMENT("#cs", "#ce"),
       t.COMMENT("#comments-start", "#comments-end")
-    ] }, u = { begin: "\\$[A-z0-9_]+" }, h = {
+    ] }, u = { begin: "\\$[A-z0-9_]+" }, m = {
       className: "string",
       variants: [
         {
@@ -55423,10 +55535,10 @@ function QQ() {
           ]
         }
       ]
-    }, m = { variants: [
+    }, h = { variants: [
       t.BINARY_NUMBER_MODE,
       t.C_NUMBER_MODE
-    ] }, _ = {
+    ] }, p = {
       className: "meta",
       begin: "#",
       end: "$",
@@ -55441,7 +55553,7 @@ function QQ() {
           keywords: { keyword: "include" },
           end: "$",
           contains: [
-            h,
+            m,
             {
               className: "string",
               variants: [
@@ -55473,7 +55585,7 @@ function QQ() {
             }
           ]
         },
-        h,
+        m,
         d
       ]
     }, g = {
@@ -55495,8 +55607,8 @@ function QQ() {
           end: "\\)",
           contains: [
             u,
-            h,
-            m
+            m,
+            h
           ]
         }
       ]
@@ -55513,9 +55625,9 @@ function QQ() {
       contains: [
         d,
         u,
-        h,
         m,
-        _,
+        h,
+        p,
         g,
         w
       ]
@@ -55873,7 +55985,7 @@ function eX() {
           className: "string"
         })
       ] }
-    }, h = {
+    }, m = {
       className: "string",
       begin: /"/,
       end: /"/,
@@ -55883,10 +55995,10 @@ function eX() {
         c
       ]
     };
-    c.contains.push(h);
-    const m = {
+    c.contains.push(m);
+    const h = {
       match: /\\"/
-    }, _ = {
+    }, p = {
       className: "string",
       begin: /'/,
       end: /'/
@@ -55903,7 +56015,7 @@ function eX() {
         t.NUMBER_MODE,
         a
       ]
-    }, S = [
+    }, C = [
       "fish",
       "bash",
       "zsh",
@@ -55913,10 +56025,10 @@ function eX() {
       "tcsh",
       "dash",
       "scsh"
-    ], p = t.SHEBANG({
-      binary: `(${S.join("|")})`,
+    ], _ = t.SHEBANG({
+      binary: `(${C.join("|")})`,
       relevance: 10
-    }), C = {
+    }), S = {
       className: "function",
       begin: /\w[\w\d_]*\s*\(\s*\)\s*\{/,
       returnBegin: !0,
@@ -55943,7 +56055,7 @@ function eX() {
     ], R = [
       "true",
       "false"
-    ], T = { match: /(\/[a-z._-]+)+/ }, A = [
+    ], T = { match: /(\/[a-z._-]+)+/ }, N = [
       "break",
       "cd",
       "continue",
@@ -55962,7 +56074,7 @@ function eX() {
       "trap",
       "umask",
       "unset"
-    ], L = [
+    ], I = [
       "alias",
       "bind",
       "builtin",
@@ -56170,8 +56282,8 @@ function eX() {
         keyword: f,
         literal: R,
         built_in: [
-          ...A,
-          ...L,
+          ...N,
+          ...I,
           // Shell modifiers
           "set",
           "shopt",
@@ -56180,18 +56292,18 @@ function eX() {
         ]
       },
       contains: [
-        p,
+        _,
         // to catch known shells and boost relevancy
         t.SHEBANG(),
         // to catch unknown shells but still highlight the shebang
-        C,
+        S,
         w,
         d,
         u,
         T,
-        h,
         m,
-        _,
+        h,
+        p,
         g,
         a
       ]
@@ -56519,13 +56631,13 @@ function oX() {
   if (yl) return kn;
   yl = 1;
   function r(t) {
-    const e = t.regex, a = t.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), s = "decltype\\(auto\\)", c = "[a-zA-Z_]\\w*::", u = "(" + s + "|" + e.optional(c) + "[a-zA-Z_]\\w*" + e.optional("<[^<>]+>") + ")", h = {
+    const e = t.regex, a = t.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), s = "decltype\\(auto\\)", c = "[a-zA-Z_]\\w*::", u = "(" + s + "|" + e.optional(c) + "[a-zA-Z_]\\w*" + e.optional("<[^<>]+>") + ")", m = {
       className: "type",
       variants: [
         { begin: "\\b[a-z\\d_]*_t\\b" },
         { match: /\batomic_[a-z]{3,6}\b/ }
       ]
-    }, _ = {
+    }, p = {
       className: "string",
       variants: [
         {
@@ -56563,7 +56675,7 @@ function oX() {
           begin: /\\\n/,
           relevance: 0
         },
-        t.inherit(_, { className: "string" }),
+        t.inherit(p, { className: "string" }),
         {
           className: "string",
           begin: /<.*?>/
@@ -56571,11 +56683,11 @@ function oX() {
         a,
         t.C_BLOCK_COMMENT_MODE
       ]
-    }, S = {
+    }, C = {
       className: "title",
       begin: e.optional(c) + t.IDENT_RE,
       relevance: 0
-    }, p = e.optional(c) + t.IDENT_RE + "\\s*\\(", R = {
+    }, _ = e.optional(c) + t.IDENT_RE + "\\s*\\(", R = {
       keyword: [
         "asm",
         "auto",
@@ -56661,12 +56773,12 @@ function oX() {
       built_in: "std string wstring cin cout cerr clog stdin stdout stderr stringstream istringstream ostringstream auto_ptr deque list queue stack vector map set pair bitset multiset multimap unordered_set unordered_map unordered_multiset unordered_multimap priority_queue make_pair array shared_ptr abort terminate abs acos asin atan2 atan calloc ceil cosh cos exit exp fabs floor fmod fprintf fputs free frexp fscanf future isalnum isalpha iscntrl isdigit isgraph islower isprint ispunct isspace isupper isxdigit tolower toupper labs ldexp log10 log malloc realloc memchr memcmp memcpy memset modf pow printf putchar puts scanf sinh sin snprintf sprintf sqrt sscanf strcat strchr strcmp strcpy strcspn strlen strncat strncmp strncpy strpbrk strrchr strspn strstr tanh tan vfprintf vprintf vsprintf endl initializer_list unique_ptr"
     }, T = [
       w,
-      h,
+      m,
       a,
       t.C_BLOCK_COMMENT_MODE,
       g,
-      _
-    ], A = {
+      p
+    ], N = {
       // This mode covers expression context where we can't expect a function
       // definition and shouldn't highlight anything that looks like one:
       // `return some()`, `else if()`, `(x*sum(1, 2))`
@@ -56695,8 +56807,8 @@ function oX() {
         }
       ]),
       relevance: 0
-    }, L = {
-      begin: "(" + u + "[\\*&\\s]+)+" + p,
+    }, I = {
+      begin: "(" + u + "[\\*&\\s]+)+" + _,
       returnBegin: !0,
       end: /[{;=]/,
       excludeEnd: !0,
@@ -56710,9 +56822,9 @@ function oX() {
           relevance: 0
         },
         {
-          begin: p,
+          begin: _,
           returnBegin: !0,
-          contains: [t.inherit(S, { className: "title.function" })],
+          contains: [t.inherit(C, { className: "title.function" })],
           relevance: 0
         },
         // allow for multiple declarations, e.g.:
@@ -56730,9 +56842,9 @@ function oX() {
           contains: [
             a,
             t.C_BLOCK_COMMENT_MODE,
-            _,
+            p,
             g,
-            h,
+            m,
             // Count matching parentheses.
             {
               begin: /\(/,
@@ -56743,14 +56855,14 @@ function oX() {
                 "self",
                 a,
                 t.C_BLOCK_COMMENT_MODE,
-                _,
+                p,
                 g,
-                h
+                m
               ]
             }
           ]
         },
-        h,
+        m,
         a,
         t.C_BLOCK_COMMENT_MODE,
         w
@@ -56765,8 +56877,8 @@ function oX() {
       disableAutodetect: !0,
       illegal: "</",
       contains: [].concat(
-        A,
-        L,
+        N,
+        I,
         T,
         [
           w,
@@ -56787,7 +56899,7 @@ function oX() {
       ),
       exports: {
         preprocessor: w,
-        strings: _,
+        strings: p,
         keywords: R
       }
     };
@@ -56846,16 +56958,16 @@ function iX() {
     }, u = {
       className: "string",
       begin: /(#\d+)+/
-    }, h = {
+    }, m = {
       className: "number",
       begin: "\\b\\d+(\\.\\d+)?(DT|D|T)",
       relevance: 0
-    }, m = {
+    }, h = {
       className: "string",
       // not a string technically but makes sense to be highlighted in the same style
       begin: '"',
       end: '"'
-    }, _ = {
+    }, p = {
       match: [
         /procedure/,
         /\s+/,
@@ -56925,11 +57037,11 @@ function iX() {
         },
         d,
         u,
-        h,
         m,
+        h,
         t.NUMBER_MODE,
         w,
-        _
+        p
       ]
     };
   }
@@ -57246,7 +57358,7 @@ function cX() {
         { match: /[-+]?([1-9][0-9]*|0)N?/ }
         // int (don't match leading 0) // 42 42N
       ]
-    }, h = {
+    }, m = {
       scope: "character",
       variants: [
         { match: /\\o[0-3]?[0-7]{1,2}/ },
@@ -57261,12 +57373,12 @@ function cX() {
         }
         // any non-whitespace char
       ]
-    }, m = {
+    }, h = {
       scope: "regex",
       begin: /#"/,
       end: /"/,
       contains: [t.BACKSLASH_ESCAPE]
-    }, _ = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), g = {
+    }, p = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), g = {
       scope: "punctuation",
       match: /,/,
       relevance: 0
@@ -57274,14 +57386,14 @@ function cX() {
       ";",
       "$",
       { relevance: 0 }
-    ), S = {
+    ), C = {
       className: "literal",
       begin: /\b(true|false|nil)\b/
-    }, p = {
+    }, _ = {
       begin: "\\[|(#::?" + a + ")?\\{",
       end: "[\\]\\}]",
       relevance: 0
-    }, C = {
+    }, S = {
       className: "symbol",
       begin: "[:]{1,2}" + a
     }, f = {
@@ -57296,19 +57408,19 @@ function cX() {
       begin: a,
       relevance: 0,
       starts: R
-    }, A = [
+    }, N = [
       g,
       f,
-      h,
       m,
-      _,
-      w,
-      C,
+      h,
       p,
-      u,
+      w,
       S,
+      _,
+      u,
+      C,
       d
-    ], L = {
+    ], I = {
       beginKeywords: s,
       keywords: {
         $pattern: a,
@@ -57324,13 +57436,13 @@ function cX() {
           // we can only have a single title
           endsParent: !0
         }
-      ].concat(A)
+      ].concat(N)
     };
     return f.contains = [
-      L,
+      I,
       T,
       R
-    ], R.contains = A, p.contains = A, {
+    ], R.contains = N, _.contains = N, {
       name: "Clojure",
       aliases: [
         "clj",
@@ -57340,14 +57452,14 @@ function cX() {
       contains: [
         g,
         f,
-        h,
         m,
-        _,
-        w,
-        C,
+        h,
         p,
+        w,
+        S,
+        _,
         u,
-        S
+        C
       ]
     };
   }
@@ -57541,15 +57653,15 @@ function pX() {
     a
   );
   function d(u) {
-    const h = [
+    const m = [
       "npm",
       "print"
-    ], m = [
+    ], h = [
       "yes",
       "no",
       "on",
       "off"
-    ], _ = [
+    ], p = [
       "then",
       "unless",
       "until",
@@ -57567,15 +57679,15 @@ function pX() {
       "let",
       "function",
       "static"
-    ], w = (y) => (b) => !y.includes(b), S = {
-      keyword: r.concat(_).filter(w(g)),
-      literal: t.concat(m),
-      built_in: c.concat(h)
-    }, p = "[A-Za-z$_][0-9A-Za-z$_]*", C = {
+    ], w = (y) => (b) => !y.includes(b), C = {
+      keyword: r.concat(p).filter(w(g)),
+      literal: t.concat(h),
+      built_in: c.concat(m)
+    }, _ = "[A-Za-z$_][0-9A-Za-z$_]*", S = {
       className: "subst",
       begin: /#\{/,
       end: /\}/,
-      keywords: S
+      keywords: C
     }, f = [
       u.BINARY_NUMBER_MODE,
       u.inherit(u.C_NUMBER_MODE, { starts: {
@@ -57601,7 +57713,7 @@ function pX() {
             end: /"""/,
             contains: [
               u.BACKSLASH_ESCAPE,
-              C
+              S
             ]
           },
           {
@@ -57609,7 +57721,7 @@ function pX() {
             end: /"/,
             contains: [
               u.BACKSLASH_ESCAPE,
-              C
+              S
             ]
           }
         ]
@@ -57621,7 +57733,7 @@ function pX() {
             begin: "///",
             end: "///",
             contains: [
-              C,
+              S,
               u.HASH_COMMENT_MODE
             ]
           },
@@ -57637,7 +57749,7 @@ function pX() {
         ]
       },
       {
-        begin: "@" + p
+        begin: "@" + _
         // relevance booster
       },
       {
@@ -57656,8 +57768,8 @@ function pX() {
         ]
       }
     ];
-    C.contains = f;
-    const R = u.inherit(u.TITLE_MODE, { begin: p }), T = "(\\(.*\\)\\s*)?\\B[-=]>", A = {
+    S.contains = f;
+    const R = u.inherit(u.TITLE_MODE, { begin: _ }), T = "(\\(.*\\)\\s*)?\\B[-=]>", N = {
       className: "params",
       begin: "\\([^\\(]",
       returnBegin: !0,
@@ -57667,28 +57779,28 @@ function pX() {
         {
           begin: /\(/,
           end: /\)/,
-          keywords: S,
+          keywords: C,
           contains: ["self"].concat(f)
         }
       ]
-    }, L = {
+    }, I = {
       variants: [
         { match: [
           /class\s+/,
-          p,
+          _,
           /\s+extends\s+/,
-          p
+          _
         ] },
         { match: [
           /class\s+/,
-          p
+          _
         ] }
       ],
       scope: {
         2: "title.class",
         4: "title.class.inherited"
       },
-      keywords: S
+      keywords: C
     };
     return {
       name: "CoffeeScript",
@@ -57697,7 +57809,7 @@ function pX() {
         "cson",
         "iced"
       ],
-      keywords: S,
+      keywords: C,
       illegal: /\/\*/,
       contains: [
         ...f,
@@ -57705,12 +57817,12 @@ function pX() {
         u.HASH_COMMENT_MODE,
         {
           className: "function",
-          begin: "^\\s*" + p + "\\s*=\\s*" + T,
+          begin: "^\\s*" + _ + "\\s*=\\s*" + T,
           end: "[-=]>",
           returnBegin: !0,
           contains: [
             R,
-            A
+            N
           ]
         },
         {
@@ -57723,13 +57835,13 @@ function pX() {
               begin: T,
               end: "[-=]>",
               returnBegin: !0,
-              contains: [A]
+              contains: [N]
             }
           ]
         },
-        L,
+        I,
         {
-          begin: p + ":",
+          begin: _ + ":",
           end: ":",
           returnBegin: !0,
           returnEnd: !0,
@@ -58278,10 +58390,10 @@ function hX() {
   if (Vl) return Dn;
   Vl = 1;
   function r(t) {
-    const e = t.regex, a = t.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), s = "decltype\\(auto\\)", c = "[a-zA-Z_]\\w*::", u = "(?!struct)(" + s + "|" + e.optional(c) + "[a-zA-Z_]\\w*" + e.optional("<[^<>]+>") + ")", h = {
+    const e = t.regex, a = t.COMMENT("//", "$", { contains: [{ begin: /\\\n/ }] }), s = "decltype\\(auto\\)", c = "[a-zA-Z_]\\w*::", u = "(?!struct)(" + s + "|" + e.optional(c) + "[a-zA-Z_]\\w*" + e.optional("<[^<>]+>") + ")", m = {
       className: "type",
       begin: "\\b[a-z\\d_]*_t\\b"
-    }, _ = {
+    }, p = {
       className: "string",
       variants: [
         {
@@ -58325,7 +58437,7 @@ function hX() {
           begin: /\\\n/,
           relevance: 0
         },
-        t.inherit(_, { className: "string" }),
+        t.inherit(p, { className: "string" }),
         {
           className: "string",
           begin: /<.*?>/
@@ -58333,11 +58445,11 @@ function hX() {
         a,
         t.C_BLOCK_COMMENT_MODE
       ]
-    }, S = {
+    }, C = {
       className: "title",
       begin: e.optional(c) + t.IDENT_RE,
       relevance: 0
-    }, p = e.optional(c) + t.IDENT_RE + "\\s*\\(", C = [
+    }, _ = e.optional(c) + t.IDENT_RE + "\\s*\\(", S = [
       "alignas",
       "alignof",
       "and",
@@ -58603,7 +58715,7 @@ function hX() {
       "vsprintf"
     ], y = {
       type: f,
-      keyword: C,
+      keyword: S,
       literal: [
         "NULL",
         "false",
@@ -58630,15 +58742,15 @@ function hX() {
         t.IDENT_RE,
         e.lookahead(/(<[^<>]+>|)\s*\(/)
       )
-    }, P = [
+    }, D = [
       b,
       w,
-      h,
+      m,
       a,
       t.C_BLOCK_COMMENT_MODE,
       g,
-      _
-    ], H = {
+      p
+    ], U = {
       // This mode covers expression context where we can't expect a function
       // definition and shouldn't highlight anything that looks like one:
       // `return some()`, `else if()`, `(x*sum(1, 2))`
@@ -58657,19 +58769,19 @@ function hX() {
         }
       ],
       keywords: y,
-      contains: P.concat([
+      contains: D.concat([
         {
           begin: /\(/,
           end: /\)/,
           keywords: y,
-          contains: P.concat(["self"]),
+          contains: D.concat(["self"]),
           relevance: 0
         }
       ]),
       relevance: 0
-    }, K = {
+    }, W = {
       className: "function",
-      begin: "(" + u + "[\\*&\\s]+)+" + p,
+      begin: "(" + u + "[\\*&\\s]+)+" + _,
       returnBegin: !0,
       end: /[{;=]/,
       excludeEnd: !0,
@@ -58683,9 +58795,9 @@ function hX() {
           relevance: 0
         },
         {
-          begin: p,
+          begin: _,
           returnBegin: !0,
-          contains: [S],
+          contains: [C],
           relevance: 0
         },
         // needed because we do not have look-behind on the below rule
@@ -58699,7 +58811,7 @@ function hX() {
           begin: /:/,
           endsWithParent: !0,
           contains: [
-            _,
+            p,
             g
           ]
         },
@@ -58718,9 +58830,9 @@ function hX() {
           contains: [
             a,
             t.C_BLOCK_COMMENT_MODE,
-            _,
+            p,
             g,
-            h,
+            m,
             // Count matching parentheses.
             {
               begin: /\(/,
@@ -58731,14 +58843,14 @@ function hX() {
                 "self",
                 a,
                 t.C_BLOCK_COMMENT_MODE,
-                _,
+                p,
                 g,
-                h
+                m
               ]
             }
           ]
         },
-        h,
+        m,
         a,
         t.C_BLOCK_COMMENT_MODE,
         w
@@ -58759,10 +58871,10 @@ function hX() {
       illegal: "</",
       classNameAliases: { "function.dispatch": "built_in" },
       contains: [].concat(
-        H,
-        K,
+        U,
+        W,
         b,
-        P,
+        D,
         [
           w,
           {
@@ -58772,7 +58884,7 @@ function hX() {
             keywords: y,
             contains: [
               "self",
-              h
+              m
             ]
           },
           {
@@ -58890,17 +59002,17 @@ function wX() {
       $pattern: s,
       keyword: "abstract alias annotation as as? asm begin break case class def do else elsif end ensure enum extend for fun if include instance_sizeof is_a? lib macro module next nil? of out pointerof private protected rescue responds_to? return require select self sizeof struct super then type typeof union uninitialized unless until verbatim when while with yield __DIR__ __END_LINE__ __FILE__ __LINE__",
       literal: "false nil true"
-    }, h = {
+    }, m = {
       className: "subst",
       begin: /#\{/,
       end: /\}/,
       keywords: u
-    }, m = {
+    }, h = {
       // negative-look forward attemps to prevent false matches like:
       // @ident@ or $ident$ that might indicate this is not ruby at all
       className: "variable",
       begin: "(\\$\\W)|((\\$|@@?)(\\w+))(?=[^@$?])(?![A-Za-z])(?![@$?'])"
-    }, _ = {
+    }, p = {
       className: "template-variable",
       variants: [
         {
@@ -58914,20 +59026,20 @@ function wX() {
       ],
       keywords: u
     };
-    function g(T, A) {
-      const L = [
+    function g(T, N) {
+      const I = [
         {
           begin: T,
-          end: A
+          end: N
         }
       ];
-      return L[0].contains = L, L;
+      return I[0].contains = I, I;
     }
     const w = {
       className: "string",
       contains: [
         t.BACKSLASH_ESCAPE,
-        h
+        m
       ],
       variants: [
         {
@@ -58972,7 +59084,7 @@ function wX() {
         }
       ],
       relevance: 0
-    }, S = {
+    }, C = {
       className: "string",
       variants: [
         {
@@ -59005,7 +59117,7 @@ function wX() {
         }
       ],
       relevance: 0
-    }, p = {
+    }, _ = {
       begin: "(?!%\\})(" + t.RE_STARTERS_RE + "|\\n|\\b(case|if|select|unless|until|when|while)\\b)\\s*",
       keywords: "case if select unless until when while",
       contains: [
@@ -59013,7 +59125,7 @@ function wX() {
           className: "regexp",
           contains: [
             t.BACKSLASH_ESCAPE,
-            h
+            m
           ],
           variants: [
             {
@@ -59028,11 +59140,11 @@ function wX() {
         }
       ],
       relevance: 0
-    }, C = {
+    }, S = {
       className: "regexp",
       contains: [
         t.BACKSLASH_ESCAPE,
-        h
+        m
       ],
       variants: [
         {
@@ -59067,13 +59179,13 @@ function wX() {
       end: "\\]",
       contains: [t.inherit(t.QUOTE_STRING_MODE, { className: "string" })]
     }, R = [
-      _,
-      w,
-      S,
-      C,
       p,
+      w,
+      C,
+      S,
+      _,
       f,
-      m,
+      h,
       t.HASH_COMMENT_MODE,
       {
         className: "class",
@@ -59158,7 +59270,7 @@ function wX() {
         relevance: 0
       }
     ];
-    return h.contains = R, _.contains = R.slice(1), {
+    return m.contains = R, p.contains = R.slice(1), {
       name: "Crystal",
       aliases: ["cr"],
       keywords: u,
@@ -59317,7 +59429,7 @@ function fX() {
       keyword: c.concat(d),
       built_in: e,
       literal: s
-    }, h = t.inherit(t.TITLE_MODE, { begin: "[a-zA-Z](\\.?\\w)*" }), m = {
+    }, m = t.inherit(t.TITLE_MODE, { begin: "[a-zA-Z](\\.?\\w)*" }), h = {
       className: "number",
       variants: [
         { begin: "\\b(0b[01']+)" },
@@ -59325,7 +59437,7 @@ function fX() {
         { begin: "(-?)(\\b0[xX][a-fA-F0-9']+|(\\b[\\d']+(\\.[\\d']*)?|\\.[\\d']+)([eE][-+]?[\\d']+)?)" }
       ],
       relevance: 0
-    }, _ = {
+    }, p = {
       className: "string",
       begin: /"""("*)(?!")(.|\n)*?"""\1/,
       relevance: 1
@@ -59334,12 +59446,12 @@ function fX() {
       begin: '@"',
       end: '"',
       contains: [{ begin: '""' }]
-    }, w = t.inherit(g, { illegal: /\n/ }), S = {
+    }, w = t.inherit(g, { illegal: /\n/ }), C = {
       className: "subst",
       begin: /\{/,
       end: /\}/,
       keywords: u
-    }, p = t.inherit(S, { illegal: /\n/ }), C = {
+    }, _ = t.inherit(C, { illegal: /\n/ }), S = {
       className: "string",
       begin: /\$"/,
       end: '"',
@@ -59348,7 +59460,7 @@ function fX() {
         { begin: /\{\{/ },
         { begin: /\}\}/ },
         t.BACKSLASH_ESCAPE,
-        p
+        _
       ]
     }, f = {
       className: "string",
@@ -59358,7 +59470,7 @@ function fX() {
         { begin: /\{\{/ },
         { begin: /\}\}/ },
         { begin: '""' },
-        S
+        C
       ]
     }, R = t.inherit(f, {
       illegal: /\n/,
@@ -59366,41 +59478,41 @@ function fX() {
         { begin: /\{\{/ },
         { begin: /\}\}/ },
         { begin: '""' },
-        p
+        _
       ]
     });
-    S.contains = [
+    C.contains = [
       f,
-      C,
+      S,
       g,
       t.APOS_STRING_MODE,
       t.QUOTE_STRING_MODE,
-      m,
+      h,
       t.C_BLOCK_COMMENT_MODE
-    ], p.contains = [
+    ], _.contains = [
       R,
-      C,
+      S,
       w,
       t.APOS_STRING_MODE,
       t.QUOTE_STRING_MODE,
-      m,
+      h,
       t.inherit(t.C_BLOCK_COMMENT_MODE, { illegal: /\n/ })
     ];
     const T = { variants: [
-      _,
+      p,
       f,
-      C,
+      S,
       g,
       t.APOS_STRING_MODE,
       t.QUOTE_STRING_MODE
-    ] }, A = {
+    ] }, N = {
       begin: "<",
       end: ">",
       contains: [
         { beginKeywords: "in out" },
-        h
+        m
       ]
-    }, L = t.IDENT_RE + "(<" + t.IDENT_RE + "(\\s*,\\s*" + t.IDENT_RE + ")*>)?(\\[\\])?", y = {
+    }, I = t.IDENT_RE + "(<" + t.IDENT_RE + "(\\s*,\\s*" + t.IDENT_RE + ")*>)?(\\[\\])?", y = {
       // prevents expressions like `@class` from incorrect flagging
       // `class` as a keyword
       begin: "@" + t.IDENT_RE,
@@ -59447,7 +59559,7 @@ function fX() {
           keywords: { keyword: "if else elif endif define undef warning error line region endregion pragma checksum" }
         },
         T,
-        m,
+        h,
         {
           beginKeywords: "class interface",
           relevance: 0,
@@ -59455,8 +59567,8 @@ function fX() {
           illegal: /[^\s:,]/,
           contains: [
             { beginKeywords: "where class" },
-            h,
-            A,
+            m,
+            N,
             t.C_LINE_COMMENT_MODE,
             t.C_BLOCK_COMMENT_MODE
           ]
@@ -59467,7 +59579,7 @@ function fX() {
           end: /[{;=]/,
           illegal: /[^\s:]/,
           contains: [
-            h,
+            m,
             t.C_LINE_COMMENT_MODE,
             t.C_BLOCK_COMMENT_MODE
           ]
@@ -59478,8 +59590,8 @@ function fX() {
           end: /[{;=]/,
           illegal: /[^\s:]/,
           contains: [
-            h,
-            A,
+            m,
+            N,
             t.C_LINE_COMMENT_MODE,
             t.C_BLOCK_COMMENT_MODE
           ]
@@ -59507,7 +59619,7 @@ function fX() {
         },
         {
           className: "function",
-          begin: "(" + L + "\\s+)+" + t.IDENT_RE + "\\s*(<[^=]+>\\s*)?\\(",
+          begin: "(" + I + "\\s+)+" + t.IDENT_RE + "\\s*(<[^=]+>\\s*)?\\(",
           returnBegin: !0,
           end: /\s*[{;=]/,
           excludeEnd: !0,
@@ -59523,7 +59635,7 @@ function fX() {
               returnBegin: !0,
               contains: [
                 t.TITLE_MODE,
-                A
+                N
               ],
               relevance: 0
             },
@@ -59538,7 +59650,7 @@ function fX() {
               relevance: 0,
               contains: [
                 T,
-                m,
+                h,
                 t.C_BLOCK_COMMENT_MODE
               ]
             },
@@ -59606,12 +59718,12 @@ var Fn, Kl;
 function SX() {
   if (Kl) return Fn;
   Kl = 1;
-  const r = (m) => ({
+  const r = (h) => ({
     IMPORTANT: {
       scope: "meta",
       begin: "!important"
     },
-    BLOCK_COMMENT: m.C_BLOCK_COMMENT_MODE,
+    BLOCK_COMMENT: h.C_BLOCK_COMMENT_MODE,
     HEXCOLOR: {
       scope: "number",
       begin: /#(([0-9a-fA-F]{3,4})|(([0-9a-fA-F]{2}){3,4}))\b/
@@ -59626,13 +59738,13 @@ function SX() {
       end: /\]/,
       illegal: "$",
       contains: [
-        m.APOS_STRING_MODE,
-        m.QUOTE_STRING_MODE
+        h.APOS_STRING_MODE,
+        h.QUOTE_STRING_MODE
       ]
     },
     CSS_NUMBER_MODE: {
       scope: "number",
-      begin: m.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
+      begin: h.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
       relevance: 0
     },
     CSS_VARIABLE: {
@@ -60403,10 +60515,10 @@ function SX() {
     "z-index",
     "zoom"
   ].sort().reverse();
-  function h(m) {
-    const _ = m.regex, g = r(m), w = { begin: /-(webkit|moz|ms|o)-(?=[a-z])/ }, S = "and or not only", p = /@-?\w[\w]*(-\w+)*/, C = "[a-zA-Z-][a-zA-Z0-9_-]*", f = [
-      m.APOS_STRING_MODE,
-      m.QUOTE_STRING_MODE
+  function m(h) {
+    const p = h.regex, g = r(h), w = { begin: /-(webkit|moz|ms|o)-(?=[a-z])/ }, C = "and or not only", _ = /@-?\w[\w]*(-\w+)*/, S = "[a-zA-Z-][a-zA-Z0-9_-]*", f = [
+      h.APOS_STRING_MODE,
+      h.QUOTE_STRING_MODE
     ];
     return {
       name: "CSS",
@@ -60431,7 +60543,7 @@ function SX() {
         },
         {
           className: "selector-class",
-          begin: "\\." + C,
+          begin: "\\." + S,
           relevance: 0
         },
         g.ATTRIBUTE_SELECTOR_MODE,
@@ -60488,7 +60600,7 @@ function SX() {
           ]
         },
         {
-          begin: _.lookahead(/@/),
+          begin: p.lookahead(/@/),
           end: "[{;]",
           relevance: 0,
           illegal: /:/,
@@ -60496,7 +60608,7 @@ function SX() {
           contains: [
             {
               className: "keyword",
-              begin: p
+              begin: _
             },
             {
               begin: /\s/,
@@ -60505,7 +60617,7 @@ function SX() {
               relevance: 0,
               keywords: {
                 $pattern: /[a-z-]+/,
-                keyword: S,
+                keyword: C,
                 attribute: s.join(" ")
               },
               contains: [
@@ -60526,7 +60638,7 @@ function SX() {
       ]
     };
   }
-  return Fn = h, Fn;
+  return Fn = m, Fn;
 }
 var Hn, jl;
 function CX() {
@@ -60538,33 +60650,33 @@ function CX() {
       keyword: "abstract alias align asm assert auto body break byte case cast catch class const continue debug default delete deprecated do else enum export extern final finally for foreach foreach_reverse|10 goto if immutable import in inout int interface invariant is lazy macro mixin module new nothrow out override package pragma private protected public pure ref return scope shared static struct super switch synchronized template this throw try typedef typeid typeof union unittest version void volatile while with __FILE__ __LINE__ __gshared|10 __thread __traits __DATE__ __EOF__ __TIME__ __TIMESTAMP__ __VENDOR__ __VERSION__",
       built_in: "bool cdouble cent cfloat char creal dchar delegate double dstring float function idouble ifloat ireal long real short string ubyte ucent uint ulong ushort wchar wstring",
       literal: "false null true"
-    }, a = "(0|[1-9][\\d_]*)", s = "(0|[1-9][\\d_]*|\\d[\\d_]*|[\\d_]+?\\d)", c = "0[bB][01_]+", d = "([\\da-fA-F][\\da-fA-F_]*|_[\\da-fA-F][\\da-fA-F_]*)", u = "0[xX]" + d, h = "([eE][+-]?" + s + ")", m = "(" + s + "(\\.\\d*|" + h + ")|\\d+\\." + s + "|\\." + a + h + "?)", _ = "(0[xX](" + d + "\\." + d + "|\\.?" + d + ")[pP][+-]?" + s + ")", g = "(" + a + "|" + c + "|" + u + ")", w = "(" + _ + "|" + m + ")", S = `\\\\(['"\\?\\\\abfnrtv]|u[\\dA-Fa-f]{4}|[0-7]{1,3}|x[\\dA-Fa-f]{2}|U[\\dA-Fa-f]{8})|&[a-zA-Z\\d]{2,};`, p = {
+    }, a = "(0|[1-9][\\d_]*)", s = "(0|[1-9][\\d_]*|\\d[\\d_]*|[\\d_]+?\\d)", c = "0[bB][01_]+", d = "([\\da-fA-F][\\da-fA-F_]*|_[\\da-fA-F][\\da-fA-F_]*)", u = "0[xX]" + d, m = "([eE][+-]?" + s + ")", h = "(" + s + "(\\.\\d*|" + m + ")|\\d+\\." + s + "|\\." + a + m + "?)", p = "(0[xX](" + d + "\\." + d + "|\\.?" + d + ")[pP][+-]?" + s + ")", g = "(" + a + "|" + c + "|" + u + ")", w = "(" + p + "|" + h + ")", C = `\\\\(['"\\?\\\\abfnrtv]|u[\\dA-Fa-f]{4}|[0-7]{1,3}|x[\\dA-Fa-f]{2}|U[\\dA-Fa-f]{8})|&[a-zA-Z\\d]{2,};`, _ = {
       className: "number",
       begin: "\\b" + g + "(L|u|U|Lu|LU|uL|UL)?",
       relevance: 0
-    }, C = {
+    }, S = {
       className: "number",
       begin: "\\b(" + w + "([fF]|L|i|[fF]i|Li)?|" + g + "(i|[fF]i|Li))",
       relevance: 0
     }, f = {
       className: "string",
-      begin: "'(" + S + "|.)",
+      begin: "'(" + C + "|.)",
       end: "'",
       illegal: "."
     }, T = {
       className: "string",
       begin: '"',
       contains: [{
-        begin: S,
+        begin: C,
         relevance: 0
       }],
       end: '"[cwd]?'
-    }, A = {
+    }, N = {
       className: "string",
       begin: '[rq]"',
       end: '"[cwd]?',
       relevance: 5
-    }, L = {
+    }, I = {
       className: "string",
       begin: "`",
       end: "`[cwd]?"
@@ -60576,20 +60688,20 @@ function CX() {
       className: "string",
       begin: 'q"\\{',
       end: '\\}"'
-    }, P = {
+    }, D = {
       className: "meta",
       begin: "^#!",
       end: "$",
       relevance: 5
-    }, H = {
+    }, U = {
       className: "meta",
       begin: "#(line)",
       end: "$",
       relevance: 5
-    }, K = {
+    }, W = {
       className: "keyword",
       begin: "@[a-zA-Z_][a-zA-Z_\\d]*"
-    }, ie = t.COMMENT(
+    }, le = t.COMMENT(
       "\\/\\+",
       "\\+\\/",
       {
@@ -60603,18 +60715,18 @@ function CX() {
       contains: [
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
-        ie,
+        le,
         y,
         T,
-        A,
-        L,
+        N,
+        I,
         b,
-        C,
-        p,
+        S,
+        _,
         f,
-        P,
-        H,
-        K
+        D,
+        U,
+        W
       ]
     };
   }
@@ -60685,7 +60797,7 @@ function xX() {
           excludeBegin: !0
         }
       ]
-    }, h = /[A-Za-z][A-Za-z0-9+.-]*/, m = {
+    }, m = /[A-Za-z][A-Za-z0-9+.-]*/, h = {
       variants: [
         // too much like nested array access in so many languages
         // to have any real relevance
@@ -60699,7 +60811,7 @@ function xX() {
           relevance: 2
         },
         {
-          begin: e.concat(/\[.+?\]\(/, h, /:\/\/.*?\)/),
+          begin: e.concat(/\[.+?\]\(/, m, /:\/\/.*?\)/),
           relevance: 2
         },
         // relative urls
@@ -60744,7 +60856,7 @@ function xX() {
           excludeEnd: !0
         }
       ]
-    }, _ = {
+    }, p = {
       className: "strong",
       contains: [],
       // defined later
@@ -60773,20 +60885,20 @@ function xX() {
           relevance: 0
         }
       ]
-    }, w = t.inherit(_, { contains: [] }), S = t.inherit(g, { contains: [] });
-    _.contains.push(S), g.contains.push(w);
-    let p = [
+    }, w = t.inherit(p, { contains: [] }), C = t.inherit(g, { contains: [] });
+    p.contains.push(C), g.contains.push(w);
+    let _ = [
       a,
-      m
+      h
     ];
     return [
-      _,
+      p,
       g,
       w,
-      S
+      C
     ].forEach((T) => {
-      T.contains = T.contains.concat(p);
-    }), p = p.concat(_, g), {
+      T.contains = T.contains.concat(_);
+    }), _ = _.concat(p, g), {
       name: "Markdown",
       aliases: [
         "md",
@@ -60800,7 +60912,7 @@ function xX() {
             {
               begin: "^#{1,6}",
               end: "$",
-              contains: p
+              contains: _
             },
             {
               begin: "(?=^.+?\\n[=-]{2,}$)",
@@ -60809,7 +60921,7 @@ function xX() {
                 {
                   begin: "^",
                   end: "\\n",
-                  contains: p
+                  contains: _
                 }
               ]
             }
@@ -60817,17 +60929,17 @@ function xX() {
         },
         a,
         d,
-        _,
+        p,
         g,
         {
           className: "quote",
           begin: "^>\\s+",
-          contains: p,
+          contains: _,
           end: "$"
         },
         c,
         s,
-        m,
+        h,
         u,
         {
           //https://spec.commonmark.org/0.31.2/#entity-references
@@ -60957,7 +61069,7 @@ function vX() {
       // dart:html
       "Element",
       "ElementList"
-    ], u = d.map((_) => `${_}?`);
+    ], u = d.map((p) => `${p}?`);
     return {
       name: "Dart",
       keywords: {
@@ -61285,11 +61397,11 @@ function kX() {
         { match: /#&[0-7][0-7_]*/ },
         { match: /#%[01][01_]*/ }
       ]
-    }, h = {
+    }, m = {
       begin: t.IDENT_RE + "\\s*=\\s*class\\s*\\(",
       returnBegin: !0,
       contains: [t.TITLE_MODE]
-    }, m = {
+    }, h = {
       className: "function",
       beginKeywords: "function constructor destructor procedure",
       end: /[:;]/,
@@ -61325,8 +61437,8 @@ function kX() {
         c,
         u,
         d,
-        h,
         m,
+        h,
         s
       ].concat(a)
     };
@@ -61829,7 +61941,7 @@ function NX() {
     }, u = {
       className: "symbol",
       begin: "^\\s*[a-zA-Z_][a-zA-Z\\d_]*:"
-    }, h = {
+    }, m = {
       className: "params",
       relevance: 0,
       begin: "<",
@@ -61838,11 +61950,11 @@ function NX() {
         a,
         c
       ]
-    }, m = {
+    }, h = {
       className: "title.class",
       begin: /[a-zA-Z_][a-zA-Z\d_@-]*(?=\s\{)/,
       relevance: 0.2
-    }, _ = {
+    }, p = {
       className: "title.class",
       begin: /^\/(?=\s*\{)/,
       relevance: 10
@@ -61861,7 +61973,7 @@ function NX() {
         1: "attr",
         3: "operator"
       }
-    }, S = {
+    }, C = {
       scope: "punctuation",
       relevance: 0,
       // `};` combined is just to avoid tons of useless punctuation nodes
@@ -61870,20 +61982,20 @@ function NX() {
     return {
       name: "Device Tree",
       contains: [
-        _,
+        p,
         c,
         d,
         u,
-        m,
+        h,
         w,
         g,
-        h,
+        m,
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
         a,
         e,
         s,
-        S,
+        C,
         {
           begin: t.IDENT_RE + "::",
           keywords: ""
@@ -62021,12 +62133,12 @@ function LX() {
         "nil",
         "true"
       ]
-    }, h = {
+    }, m = {
       className: "subst",
       begin: /#\{/,
       end: /\}/,
       keywords: u
-    }, m = {
+    }, h = {
       className: "number",
       begin: "(\\b0o[0-7_]+)|(\\b0b[01_]+)|(\\b0x[0-9a-fA-F_]+)|(-?\\b[0-9][0-9_]*(\\.[0-9_]+([eE][-+]?[0-9]+)?)?)",
       relevance: 0
@@ -62034,7 +62146,7 @@ function LX() {
       match: /\\[\s\S]/,
       scope: "char.escape",
       relevance: 0
-    }, w = `[/|([{<"']`, S = [
+    }, w = `[/|([{<"']`, C = [
       {
         begin: /"/,
         end: /"/
@@ -62067,53 +62179,53 @@ function LX() {
         begin: /</,
         end: />/
       }
-    ], p = (b) => ({
+    ], _ = (b) => ({
       scope: "char.escape",
       begin: e.concat(/\\/, b),
       relevance: 0
-    }), C = {
+    }), S = {
       className: "string",
       begin: "~[a-z](?=" + w + ")",
-      contains: S.map((b) => t.inherit(
+      contains: C.map((b) => t.inherit(
         b,
         { contains: [
-          p(b.end),
+          _(b.end),
           g,
-          h
+          m
         ] }
       ))
     }, f = {
       className: "string",
       begin: "~[A-Z](?=" + w + ")",
-      contains: S.map((b) => t.inherit(
+      contains: C.map((b) => t.inherit(
         b,
-        { contains: [p(b.end)] }
+        { contains: [_(b.end)] }
       ))
     }, R = {
       className: "regex",
       variants: [
         {
           begin: "~r(?=" + w + ")",
-          contains: S.map((b) => t.inherit(
+          contains: C.map((b) => t.inherit(
             b,
             {
               end: e.concat(b.end, /[uismxfU]{0,7}/),
               contains: [
-                p(b.end),
+                _(b.end),
                 g,
-                h
+                m
               ]
             }
           ))
         },
         {
           begin: "~R(?=" + w + ")",
-          contains: S.map(
+          contains: C.map(
             (b) => t.inherit(
               b,
               {
                 end: e.concat(b.end, /[uismxfU]{0,7}/),
-                contains: [p(b.end)]
+                contains: [_(b.end)]
               }
             )
           )
@@ -62123,7 +62235,7 @@ function LX() {
       className: "string",
       contains: [
         t.BACKSLASH_ESCAPE,
-        h
+        m
       ],
       variants: [
         {
@@ -62167,7 +62279,7 @@ function LX() {
           end: /"/
         }
       ]
-    }, A = {
+    }, N = {
       className: "function",
       beginKeywords: "def defp defmacro defmacrop",
       end: /\B\b/,
@@ -62178,7 +62290,7 @@ function LX() {
           endsParent: !0
         })
       ]
-    }, L = t.inherit(A, {
+    }, I = t.inherit(N, {
       className: "class",
       beginKeywords: "defimpl defmodule defprotocol defrecord",
       end: /\bdo\b|$|;/
@@ -62186,10 +62298,10 @@ function LX() {
       T,
       R,
       f,
-      C,
+      S,
       t.HASH_COMMENT_MODE,
-      L,
-      A,
+      I,
+      N,
       { begin: "::" },
       {
         className: "symbol",
@@ -62211,14 +62323,14 @@ function LX() {
         begin: /(\b[A-Z][a-zA-Z0-9_]+)/,
         relevance: 0
       },
-      m,
+      h,
       {
         className: "variable",
         begin: "(\\$\\W)|((\\$|@@?)(\\w+))"
       }
       // -> has been removed, capnproto always uses this grammar construct
     ];
-    return h.contains = y, {
+    return m.contains = y, {
       name: "Elixir",
       aliases: [
         "ex",
@@ -62436,23 +62548,23 @@ function PX() {
         "false",
         "nil"
       ]
-    }, h = {
+    }, m = {
       className: "doctag",
       begin: "@[A-Za-z]+"
-    }, m = {
+    }, h = {
       begin: "#<",
       end: ">"
-    }, _ = [
+    }, p = [
       t.COMMENT(
         "#",
         "$",
-        { contains: [h] }
+        { contains: [m] }
       ),
       t.COMMENT(
         "^=begin",
         "^=end",
         {
-          contains: [h],
+          contains: [m],
           relevance: 10
         }
       ),
@@ -62541,12 +62653,12 @@ function PX() {
           ]
         }
       ]
-    }, S = "[1-9](_?[0-9])*|0", p = "[0-9](_?[0-9])*", C = {
+    }, C = "[1-9](_?[0-9])*|0", _ = "[0-9](_?[0-9])*", S = {
       className: "number",
       relevance: 0,
       variants: [
         // decimal integer/float, optionally exponential or rational, optionally imaginary
-        { begin: `\\b(${S})(\\.(${p}))?([eE][+-]?(${p})|r)?i?\\b` },
+        { begin: `\\b(${C})(\\.(${_}))?([eE][+-]?(${_})|r)?i?\\b` },
         // explicit decimal/binary/octal/hexadecimal integer,
         // optionally rational and/or imaginary
         { begin: "\\b0[dD][0-9](_?[0-9])*r?i?\\b" },
@@ -62570,7 +62682,7 @@ function PX() {
           keywords: u
         }
       ]
-    }, P = [
+    }, D = [
       w,
       {
         variants: [
@@ -62657,7 +62769,7 @@ function PX() {
         ],
         relevance: 0
       },
-      C,
+      S,
       {
         // negative-look forward attempts to prevent false matches like:
         // @ident@ or $ident$ that might indicate this is not ruby at all
@@ -62709,17 +62821,17 @@ function PX() {
               }
             ]
           }
-        ].concat(m, _),
+        ].concat(h, p),
         relevance: 0
       }
-    ].concat(m, _);
-    g.contains = P, f.contains = P;
-    const q = [
+    ].concat(h, p);
+    g.contains = D, f.contains = D;
+    const Y = [
       {
         begin: /^\s*=>/,
         starts: {
           end: "$",
-          contains: P
+          contains: D
         }
       },
       {
@@ -62728,11 +62840,11 @@ function PX() {
         starts: {
           end: "$",
           keywords: u,
-          contains: P
+          contains: D
         }
       }
     ];
-    return _.unshift(m), {
+    return p.unshift(h), {
       name: "Ruby",
       aliases: [
         "rb",
@@ -62743,7 +62855,7 @@ function PX() {
       ],
       keywords: u,
       illegal: /\/\*/,
-      contains: [t.SHEBANG({ binary: "ruby" })].concat(q).concat(_).concat(P)
+      contains: [t.SHEBANG({ binary: "ruby" })].concat(Y).concat(p).concat(D)
     };
   }
   return nr = r, nr;
@@ -62831,7 +62943,7 @@ function UX() {
       className: "number",
       begin: "\\b(\\d+(_\\d+)*#[a-fA-F0-9]+(_[a-fA-F0-9]+)*|\\d+(_\\d+)*(\\.\\d+(_\\d+)*)?([eE][-+]?\\d+)?)",
       relevance: 0
-    }, u = { begin: "fun\\s+" + e + "/\\d+" }, h = {
+    }, u = { begin: "fun\\s+" + e + "/\\d+" }, m = {
       begin: a + "\\(",
       end: "\\)",
       returnBegin: !0,
@@ -62850,12 +62962,12 @@ function UX() {
           // "contains" defined later
         }
       ]
-    }, m = {
+    }, h = {
       begin: /\{/,
       end: /\}/,
       relevance: 0
       // "contains" defined later
-    }, _ = {
+    }, p = {
       begin: "\\b_([A-Z][A-Za-z0-9_]*)?",
       relevance: 0
     }, g = {
@@ -62877,13 +62989,13 @@ function UX() {
           // "contains" defined later
         }
       ]
-    }, S = {
+    }, C = {
       scope: "string",
       match: /\$(\\([^0-9]|[0-9]{1,3}|)|.)/
-    }, p = {
+    }, _ = {
       scope: "string",
       match: /"""("*)(?!")[\s\S]*?"""\1/
-    }, C = {
+    }, S = {
       scope: "string",
       contains: [t.BACKSLASH_ESCAPE],
       variants: [
@@ -62909,33 +63021,33 @@ function UX() {
       u,
       t.inherit(t.APOS_STRING_MODE, { className: "" }),
       f,
-      h,
-      C,
-      p,
+      m,
+      S,
+      _,
       t.QUOTE_STRING_MODE,
       d,
-      m,
-      _,
+      h,
+      p,
       g,
       w,
-      S
+      C
     ];
     const R = [
       c,
       u,
       f,
-      h,
-      C,
-      p,
+      m,
+      S,
+      _,
       t.QUOTE_STRING_MODE,
       d,
-      m,
-      _,
+      h,
+      p,
       g,
       w,
-      S
+      C
     ];
-    h.contains[1].contains = R, m.contains = R, w.contains[1].contains = R;
+    m.contains[1].contains = R, h.contains = R, w.contains[1].contains = R;
     const T = [
       "-module",
       "-record",
@@ -62961,7 +63073,7 @@ function UX() {
       "-spec",
       "-on_load",
       "-nifs"
-    ], A = {
+    ], N = {
       className: "params",
       begin: "\\(",
       end: "\\)",
@@ -62980,7 +63092,7 @@ function UX() {
           returnBegin: !0,
           illegal: "\\(|#|//|/\\*|\\\\|:|;",
           contains: [
-            A,
+            N,
             t.inherit(t.TITLE_MODE, { begin: e })
           ],
           starts: {
@@ -62998,24 +63110,24 @@ function UX() {
           returnBegin: !0,
           keywords: {
             $pattern: "-" + t.IDENT_RE,
-            keyword: T.map((L) => `${L}|1.5`).join(" ")
+            keyword: T.map((I) => `${I}|1.5`).join(" ")
           },
           contains: [
-            A,
-            C,
-            p,
+            N,
+            S,
+            _,
             t.QUOTE_STRING_MODE
           ]
         },
         d,
-        C,
-        p,
+        S,
+        _,
         t.QUOTE_STRING_MODE,
         w,
-        _,
+        p,
         g,
-        m,
-        S,
+        h,
+        C,
         { begin: /\.$/ }
         // relevance booster
       ]
@@ -63727,7 +63839,7 @@ function VX() {
         { begin: e.concat(/\.\d+/, d, c) }
       ],
       relevance: 0
-    }, h = {
+    }, m = {
       className: "function",
       beginKeywords: "subroutine function program",
       illegal: "[${=\\n]",
@@ -63735,7 +63847,7 @@ function VX() {
         t.UNDERSCORE_TITLE_MODE,
         a
       ]
-    }, m = {
+    }, h = {
       className: "string",
       relevance: 0,
       variants: [
@@ -64244,8 +64356,8 @@ function VX() {
       },
       illegal: /\/\*/,
       contains: [
-        m,
         h,
+        m,
         // allow `C = value` for assignments so they aren't misdetected
         // as Fortran 77 style comments
         {
@@ -64273,17 +64385,17 @@ function $X() {
     return a("(?=", u, ")");
   }
   function a(...u) {
-    return u.map((m) => t(m)).join("");
+    return u.map((h) => t(h)).join("");
   }
   function s(u) {
-    const h = u[u.length - 1];
-    return typeof h == "object" && h.constructor === Object ? (u.splice(u.length - 1, 1), h) : {};
+    const m = u[u.length - 1];
+    return typeof m == "object" && m.constructor === Object ? (u.splice(u.length - 1, 1), m) : {};
   }
   function c(...u) {
-    return "(" + (s(u).capture ? "" : "?:") + u.map((_) => t(_)).join("|") + ")";
+    return "(" + (s(u).capture ? "" : "?:") + u.map((p) => t(p)).join("|") + ")";
   }
   function d(u) {
-    const h = [
+    const m = [
       "abstract",
       "and",
       "as",
@@ -64348,11 +64460,11 @@ function $X() {
       "while",
       "with",
       "yield"
-    ], m = {
+    ], h = {
       // monad builder keywords (matches before non-bang keywords)
       scope: "keyword",
       match: /\b(yield|return|let|do|match|use)!/
-    }, _ = [
+    }, p = [
       "if",
       "else",
       "endif",
@@ -64382,7 +64494,7 @@ function $X() {
       "__LINE__",
       "__SOURCE_DIRECTORY__",
       "__SOURCE_FILE__"
-    ], S = [
+    ], C = [
       // basic types
       "bool",
       "byte",
@@ -64423,8 +64535,8 @@ function $X() {
       "voidptr",
       // other important FSharp types
       "Result"
-    ], C = {
-      keyword: h,
+    ], S = {
+      keyword: m,
       literal: g,
       built_in: [
         // Somewhat arbitrary list of builtin functions and values.
@@ -64474,33 +64586,33 @@ function $X() {
         }),
         u.C_LINE_COMMENT_MODE
       ]
-    }, T = /[a-zA-Z_](\w|')*/, A = {
+    }, T = /[a-zA-Z_](\w|')*/, N = {
       scope: "variable",
       begin: /``/,
       end: /``/
-    }, L = /\B('|\^)/, y = {
+    }, I = /\B('|\^)/, y = {
       scope: "symbol",
       variants: [
         // the type name is a quoted identifier:
-        { match: a(L, /``.*?``/) },
+        { match: a(I, /``.*?``/) },
         // the type name is a normal identifier (we don't use IDENTIFIER_RE because there cannot be another apostrophe here):
-        { match: a(L, u.UNDERSCORE_IDENT_RE) }
+        { match: a(I, u.UNDERSCORE_IDENT_RE) }
       ],
       relevance: 0
-    }, b = function({ includeEqual: Te }) {
+    }, b = function({ includeEqual: ke }) {
       let Oe;
-      Te ? Oe = "!%&*+-/<=>@^|~?" : Oe = "!%&*+-/<>@^|~?";
-      const _e = Array.from(Oe), ue = a("[", ..._e.map(r), "]"), Se = c(ue, /\./), Ce = a(Se, e(Se)), ve = c(
-        a(Ce, Se, "*"),
+      ke ? Oe = "!%&*+-/<=>@^|~?" : Oe = "!%&*+-/<>@^|~?";
+      const he = Array.from(Oe), pe = a("[", ...he.map(r), "]"), xe = c(pe, /\./), ve = a(xe, e(xe)), Te = c(
+        a(ve, xe, "*"),
         // Matches at least 2 chars operators
-        a(ue, "+")
+        a(pe, "+")
         // Matches at least one char operators
       );
       return {
         scope: "operator",
         match: c(
           // symbolic operators:
-          ve,
+          Te,
           // other symbolic keywords:
           // Type casting and conversion operators:
           /:\?>/,
@@ -64515,11 +64627,11 @@ function $X() {
         // A single $ can be used as an operator
         relevance: 0
       };
-    }, P = b({ includeEqual: !0 }), H = b({ includeEqual: !1 }), K = function(Te, Oe) {
+    }, D = b({ includeEqual: !0 }), U = b({ includeEqual: !1 }), W = function(ke, Oe) {
       return {
         begin: a(
           // a type annotation is a
-          Te,
+          ke,
           // should be a colon or the 'of' keyword
           e(
             // that has to be followed by
@@ -64560,16 +64672,16 @@ function $X() {
         ),
         relevance: 0,
         // we need the known types, and we need the type constraint keywords and literals. e.g.: when 'a : null
-        keywords: u.inherit(C, { type: S }),
+        keywords: u.inherit(S, { type: C }),
         contains: [
           R,
           y,
-          u.inherit(A, { scope: null }),
+          u.inherit(N, { scope: null }),
           // match to avoid strange patterns inside that may break the parsing
-          H
+          U
         ]
       };
-    }, ie = K(/:/, "operator"), q = K(/\bof\b/, "keyword"), ae = {
+    }, le = W(/:/, "operator"), Y = W(/\bof\b/, "keyword"), se = {
       begin: [
         /(^|\s+)/,
         // prevents matching the following: `match s.stype with`
@@ -64582,11 +64694,11 @@ function $X() {
         4: "title.class"
       },
       end: e(/\(|=|$/),
-      keywords: C,
+      keywords: S,
       // match keywords in type constraints. e.g.: when 'a : null
       contains: [
         R,
-        u.inherit(A, { scope: null }),
+        u.inherit(N, { scope: null }),
         // match to avoid strange patterns inside that may break the parsing
         y,
         {
@@ -64594,36 +64706,36 @@ function $X() {
           scope: "operator",
           match: /<|>/
         },
-        ie
+        le
         // generic types can have constraints, which are type annotations. e.g. type MyType<'T when 'T : delegate<obj * string>> =
       ]
-    }, we = {
+    }, Ee = {
       // computation expressions:
       scope: "computation-expression",
       // BUG: might conflict with record deconstruction. e.g. let f { Name = name } = name // will highlight f
       match: /\b[_a-z]\w*(?=\s*\{)/
-    }, le = {
+    }, ae = {
       // preprocessor directives and fsi commands:
       begin: [
         /^\s*/,
-        a(/#/, c(..._)),
+        a(/#/, c(...p)),
         /\b/
       ],
       beginScope: { 2: "meta" },
       end: e(/\s|$/)
-    }, ce = {
+    }, de = {
       variants: [
         u.BINARY_NUMBER_MODE,
         u.C_NUMBER_MODE
       ]
-    }, de = {
+    }, ue = {
       scope: "string",
       begin: /"/,
       end: /"/,
       contains: [
         u.BACKSLASH_ESCAPE
       ]
-    }, ge = {
+    }, me = {
       scope: "string",
       begin: /@"/,
       end: /"/,
@@ -64634,7 +64746,7 @@ function $X() {
         },
         u.BACKSLASH_ESCAPE
       ]
-    }, xe = {
+    }, Se = {
       scope: "string",
       begin: /"""/,
       end: /"""/,
@@ -64643,8 +64755,8 @@ function $X() {
       scope: "subst",
       begin: /\{/,
       end: /\}/,
-      keywords: C
-    }, Z = {
+      keywords: S
+    }, He = {
       scope: "string",
       begin: /\$"/,
       end: /"/,
@@ -64679,7 +64791,7 @@ function $X() {
         u.BACKSLASH_ESCAPE,
         Be
       ]
-    }, Fe = {
+    }, X = {
       scope: "string",
       begin: /\$"""/,
       end: /"""/,
@@ -64710,46 +64822,46 @@ function $X() {
     };
     return Be.contains = [
       ze,
-      Z,
-      ge,
-      de,
+      He,
+      me,
+      ue,
       Ue,
-      m,
+      h,
       R,
-      A,
-      ie,
-      we,
+      N,
       le,
-      ce,
+      Ee,
+      ae,
+      de,
       y,
-      P
+      D
     ], {
       name: "F#",
       aliases: [
         "fs",
         "f#"
       ],
-      keywords: C,
+      keywords: S,
       illegal: /\/\*/,
       classNameAliases: {
         "computation-expression": "keyword"
       },
       contains: [
-        m,
+        h,
         {
           variants: [
-            Fe,
+            X,
             ze,
-            Z,
-            xe,
-            ge,
-            de,
+            He,
+            Se,
+            me,
+            ue,
             Ue
           ]
         },
         R,
-        A,
-        ae,
+        N,
+        se,
         {
           // e.g. [<Attributes("")>] or [<``module``: MyCustomAttributeThatWorksOnModules>]
           // or [<Sealed; NoEquality; NoComparison; CompiledName("FSharpAsync`1")>]
@@ -64758,22 +64870,22 @@ function $X() {
           end: />\]/,
           relevance: 2,
           contains: [
-            A,
+            N,
             // can contain any constant value
-            xe,
-            ge,
-            de,
+            Se,
+            me,
+            ue,
             Ue,
-            ce
+            de
           ]
         },
-        q,
-        ie,
-        we,
+        Y,
         le,
-        ce,
+        Ee,
+        ae,
+        de,
         y,
-        P
+        D
       ]
     };
   }
@@ -64827,7 +64939,7 @@ function YX() {
         t.APOS_STRING_MODE,
         t.C_NUMBER_MODE
       ]
-    }, h = /[a-z0-9&#*=?@\\><:,()$[\]_.{}!+%^-]+/, m = {
+    }, m = /[a-z0-9&#*=?@\\><:,()$[\]_.{}!+%^-]+/, h = {
       // Parameter/set/variable description text
       begin: /[a-z][a-z0-9_]*(\([a-z0-9_, ]*\))?[ \t]+/,
       excludeBegin: !0,
@@ -64840,9 +64952,9 @@ function YX() {
           className: "comment",
           // one comment word, then possibly more
           begin: e.concat(
-            h,
+            m,
             // [ ] because \s would be too broad (matching newlines)
-            e.anyNumberOfTimes(e.concat(/[ ]+/, h))
+            e.anyNumberOfTimes(e.concat(/[ ]+/, m))
           ),
           relevance: 0
         }
@@ -64883,7 +64995,7 @@ function YX() {
             t.QUOTE_STRING_MODE,
             t.APOS_STRING_MODE,
             u,
-            m
+            h
           ]
         },
         {
@@ -64896,7 +65008,7 @@ function YX() {
               // table header row
               beginKeywords: "table",
               end: "$",
-              contains: [m]
+              contains: [h]
             },
             t.COMMENT("^\\*", "$"),
             t.C_LINE_COMMENT_MODE,
@@ -65001,23 +65113,23 @@ function qX() {
       className: "title",
       begin: t.UNDERSCORE_IDENT_RE,
       relevance: 0
-    }, h = function(S, p, C) {
+    }, m = function(C, _, S) {
       const f = t.inherit(
         {
           className: "function",
-          beginKeywords: S,
-          end: p,
+          beginKeywords: C,
+          end: _,
           excludeEnd: !0,
           contains: [].concat(d)
         },
         {}
       );
       return f.contains.push(u), f.contains.push(t.C_NUMBER_MODE), f.contains.push(t.C_BLOCK_COMMENT_MODE), f.contains.push(a), f;
-    }, m = {
+    }, h = {
       // these are explicitly named internal function calls
       className: "built_in",
       begin: "\\b(" + e.built_in.split(" ").join("|") + ")\\b"
-    }, _ = {
+    }, p = {
       className: "string",
       begin: '"',
       end: '"',
@@ -65031,7 +65143,7 @@ function qX() {
       relevance: 0,
       contains: [
         { beginKeywords: e.keyword },
-        m,
+        h,
         {
           // ambiguously named function calls get a relevance of 0
           className: "built_in",
@@ -65052,9 +65164,9 @@ function qX() {
         t.C_NUMBER_MODE,
         t.C_BLOCK_COMMENT_MODE,
         a,
-        m,
+        h,
         g,
-        _,
+        p,
         "self"
       ]
     };
@@ -65070,14 +65182,14 @@ function qX() {
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
         a,
-        _,
+        p,
         s,
         {
           className: "keyword",
           begin: /\bexternal (matrix|string|array|sparse matrix|struct|proc|keyword|fn)/
         },
-        h("proc keyword", ";"),
-        h("fn", "="),
+        m("proc keyword", ";"),
+        m("fn", "="),
         {
           beginKeywords: "for threadfor",
           end: /;/,
@@ -65158,13 +65270,13 @@ function WX() {
         "EXISTS"
       ]
     }, s = /\b/;
-    function c(p, C) {
-      if (p.index === 0)
+    function c(_, S) {
+      if (_.index === 0)
         return;
-      const f = p.input[p.index - 1];
-      f >= "0" && f <= "9" || f !== "_" && C.ignoreMatch();
+      const f = _.input[_.index - 1];
+      f >= "0" && f <= "9" || f !== "_" && S.ignoreMatch();
     }
-    const d = /[+-]?((\.\d+)|(\d+)(\.\d*)?)/, u = /[GM]\s*\d+(\.\d+)?/, h = /T\s*\d+/, m = /O\s*\d+/, _ = /O<.+>/, g = /[ABCUVWXYZ]\s*/, w = /[FHIJKPQRS]\s*/, S = [
+    const d = /[+-]?((\.\d+)|(\d+)(\.\d*)?)/, u = /[GM]\s*\d+(\.\d+)?/, m = /T\s*\d+/, h = /O\s*\d+/, p = /O<.+>/, g = /[ABCUVWXYZ]\s*/, w = /[FHIJKPQRS]\s*/, C = [
       // comments
       t.COMMENT(/\(/, /\)/),
       t.COMMENT(/;/, /$/),
@@ -65183,9 +65295,9 @@ function WX() {
             "on:begin": c
           },
           // T Tools
-          { match: e.concat(s, h) },
+          { match: e.concat(s, m) },
           {
-            begin: h,
+            begin: m,
             "on:begin": c
           }
         ]
@@ -65194,15 +65306,15 @@ function WX() {
         scope: "symbol",
         variants: [
           // O Subroutine ID: O100, O110, …
-          { match: e.concat(s, m) },
+          { match: e.concat(s, h) },
           {
-            begin: m,
+            begin: h,
             "on:begin": c
           },
           // O Subroutine name: O<some>, …
-          { match: e.concat(s, _) },
+          { match: e.concat(s, p) },
           {
-            begin: _,
+            begin: p,
             "on:begin": c
           },
           // Checksum at end of line: *71, *199, …
@@ -65250,7 +65362,7 @@ function WX() {
       // TODO: post v12 with the use of look-behind this can be enabled
       disableAutodetect: !0,
       keywords: a,
-      contains: S
+      contains: C
     };
   }
   return _r = r, _r;
@@ -68980,7 +69092,7 @@ function tZ() {
     }, u = r([
       e.BINARY_NUMBER_MODE,
       e.C_NUMBER_MODE
-    ]), h = r(
+    ]), m = r(
       [
         {
           begin: /"""/,
@@ -68999,7 +69111,7 @@ function tZ() {
         e.QUOTE_STRING_MODE
       ],
       { className: "string" }
-    ), m = {
+    ), h = {
       match: [
         /(class|interface|trait|enum|record|extends|implements)/,
         /\s+/,
@@ -69076,10 +69188,10 @@ function tZ() {
           relevance: 10
         }),
         c,
-        h,
+        m,
         d,
         u,
-        m,
+        h,
         {
           className: "meta",
           begin: "@[A-Za-z]+",
@@ -69099,7 +69211,7 @@ function tZ() {
           relevance: 0,
           contains: [
             c,
-            h,
+            m,
             d,
             u,
             "self"
@@ -69273,26 +69385,26 @@ function rZ() {
         "undefined",
         "null"
       ]
-    }, c = /""|"[^"]+"/, d = /''|'[^']+'/, u = /\[\]|\[[^\]]+\]/, h = /[^\s!"#%&'()*+,.\/;<=>@\[\\\]^`{|}~]+/, m = /(\.|\/)/, _ = e.either(
+    }, c = /""|"[^"]+"/, d = /''|'[^']+'/, u = /\[\]|\[[^\]]+\]/, m = /[^\s!"#%&'()*+,.\/;<=>@\[\\\]^`{|}~]+/, h = /(\.|\/)/, p = e.either(
       c,
       d,
       u,
-      h
+      m
     ), g = e.concat(
       e.optional(/\.|\.\/|\//),
       // relative or absolute path
-      _,
+      p,
       e.anyNumberOfTimes(e.concat(
-        m,
-        _
+        h,
+        p
       ))
     ), w = e.concat(
       "(",
       u,
       "|",
-      h,
+      m,
       ")(?==)"
-    ), S = { begin: g }, p = t.inherit(S, { keywords: s }), C = {
+    ), C = { begin: g }, _ = t.inherit(C, { keywords: s }), S = {
       begin: /\(/,
       end: /\)/
       // the "contains" is added below when all necessary sub-modes are defined
@@ -69308,8 +69420,8 @@ function rZ() {
           t.NUMBER_MODE,
           t.QUOTE_STRING_MODE,
           t.APOS_STRING_MODE,
-          p,
-          C
+          _,
+          S
         ] }
       }
     }, R = {
@@ -69330,27 +69442,27 @@ function rZ() {
         t.APOS_STRING_MODE,
         R,
         f,
-        p,
-        C
+        _,
+        S
       ],
       returnEnd: !0
       // the property "end" is defined through inheritance when the mode is used. If depends
       // on the surrounding mode, but "endsWithParent" does not work here (i.e. it includes the
       // end-token of the surrounding mode)
-    }, A = t.inherit(S, {
+    }, N = t.inherit(C, {
       className: "name",
       keywords: a,
       starts: t.inherit(T, { end: /\)/ })
     });
-    C.contains = [A];
-    const L = t.inherit(S, {
+    S.contains = [N];
+    const I = t.inherit(C, {
       keywords: a,
       className: "name",
       starts: t.inherit(T, { end: /\}\}/ })
-    }), y = t.inherit(S, {
+    }), y = t.inherit(C, {
       keywords: a,
       className: "name"
-    }), b = t.inherit(S, {
+    }), b = t.inherit(C, {
       className: "name",
       keywords: a,
       starts: t.inherit(T, { end: /\}\}/ })
@@ -69381,7 +69493,7 @@ function rZ() {
           className: "template-tag",
           begin: /\{\{\{\{(?!\/)/,
           end: /\}\}\}\}/,
-          contains: [L],
+          contains: [I],
           starts: {
             end: /\{\{\{\{\//,
             returnEnd: !0,
@@ -69400,7 +69512,7 @@ function rZ() {
           className: "template-tag",
           begin: /\{\{#/,
           end: /\}\}/,
-          contains: [L]
+          contains: [I]
         },
         {
           className: "template-tag",
@@ -69445,7 +69557,7 @@ function oZ() {
   if (ya) return kr;
   ya = 1;
   function r(t) {
-    const e = "([0-9]_*)+", a = "([0-9a-fA-F]_*)+", s = "([01]_*)+", c = "([0-7]_*)+", m = "([!#$%&*+.\\/<=>?@\\\\^~-]|(?!([(),;\\[\\]`|{}]|[_:\"']))(\\p{S}|\\p{P}))", _ = { variants: [
+    const e = "([0-9]_*)+", a = "([0-9a-fA-F]_*)+", s = "([01]_*)+", c = "([0-7]_*)+", h = "([!#$%&*+.\\/<=>?@\\\\^~-]|(?!([(),;\\[\\]`|{}]|[_:\"']))(\\p{S}|\\p{P}))", p = { variants: [
       // Double dash forms a valid comment only if it's not part of legal lexeme.
       // See: Haskell 98 report: https://www.haskell.org/onlinereport/lexemes.html
       //
@@ -69468,12 +69580,12 @@ function oZ() {
       className: "meta",
       begin: "^#",
       end: "$"
-    }, S = {
+    }, C = {
       className: "type",
       begin: "\\b[A-Z][\\w']*",
       // TODO: other constructors (build-in, infix).
       relevance: 0
-    }, p = {
+    }, _ = {
       begin: "\\(",
       end: "\\)",
       illegal: '"',
@@ -69485,12 +69597,12 @@ function oZ() {
           begin: "\\b[A-Z][\\w]*(\\((\\.\\.|,|\\w+)\\))?"
         },
         t.inherit(t.TITLE_MODE, { begin: "[_a-z][\\w']*" }),
-        _
+        p
       ]
-    }, C = {
+    }, S = {
       begin: /\{/,
       end: /\}/,
-      contains: p.contains
+      contains: _.contains
     }, f = {
       className: "number",
       relevance: 0,
@@ -69517,8 +69629,8 @@ function oZ() {
           end: "where",
           keywords: "module where",
           contains: [
-            p,
-            _
+            _,
+            p
           ],
           illegal: "\\W\\.|;"
         },
@@ -69527,8 +69639,8 @@ function oZ() {
           end: "$",
           keywords: "import qualified as hiding",
           contains: [
-            p,
-            _
+            _,
+            p
           ],
           illegal: "\\W\\.|;"
         },
@@ -69538,9 +69650,9 @@ function oZ() {
           end: "where",
           keywords: "class family instance where",
           contains: [
-            S,
-            p,
-            _
+            C,
+            _,
+            p
           ]
         },
         {
@@ -69550,19 +69662,19 @@ function oZ() {
           keywords: "data family type newtype deriving",
           contains: [
             g,
-            S,
-            p,
             C,
-            _
+            _,
+            S,
+            p
           ]
         },
         {
           beginKeywords: "default",
           end: "$",
           contains: [
-            S,
-            p,
-            _
+            C,
+            _,
+            p
           ]
         },
         {
@@ -69570,7 +69682,7 @@ function oZ() {
           end: "$",
           contains: [
             t.C_NUMBER_MODE,
-            _
+            p
           ]
         },
         {
@@ -69578,9 +69690,9 @@ function oZ() {
           end: "$",
           keywords: "foreign import export ccall stdcall cplusplus jvm dotnet safe unsafe",
           contains: [
-            S,
+            C,
             t.QUOTE_STRING_MODE,
-            _
+            p
           ]
         },
         {
@@ -69606,11 +69718,11 @@ function oZ() {
         },
         t.QUOTE_STRING_MODE,
         f,
-        S,
+        C,
         t.inherit(t.TITLE_MODE, { begin: "^[_a-z][\\w']*" }),
         // No markup, prevents infix operators from being recognized as comments.
-        { begin: `(?!-)${m}--+|--+(?!-)${m}` },
-        _,
+        { begin: `(?!-)${h}--+|--+(?!-)${h}` },
+        p,
         {
           // No markup, relevance booster
           begin: "->|<-"
@@ -69939,11 +70051,11 @@ function sZ() {
       className: "number",
       begin: c,
       relevance: 0
-    }, h = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), m = t.COMMENT(
+    }, m = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), h = t.COMMENT(
       ";",
       "$",
       { relevance: 0 }
-    ), _ = {
+    ), p = {
       className: "literal",
       begin: /\b([Tt]rue|[Ff]alse|nil|None)\b/
     }, g = {
@@ -69953,10 +70065,10 @@ function sZ() {
     }, w = {
       className: "comment",
       begin: "\\^" + a
-    }, S = t.COMMENT("\\^\\{", "\\}"), p = {
+    }, C = t.COMMENT("\\^\\{", "\\}"), _ = {
       className: "symbol",
       begin: "[:]{1,2}" + a
-    }, C = {
+    }, S = {
       begin: "\\(",
       end: "\\)"
     }, f = {
@@ -69969,18 +70081,18 @@ function sZ() {
       begin: a,
       starts: f
     }, T = [
-      C,
-      h,
-      w,
       S,
       m,
-      p,
+      w,
+      C,
+      h,
+      _,
       g,
       u,
-      _,
+      p,
       d
     ];
-    return C.contains = [
+    return S.contains = [
       t.COMMENT("comment", ""),
       R,
       f
@@ -69990,15 +70102,15 @@ function sZ() {
       illegal: /\S/,
       contains: [
         t.SHEBANG(),
-        C,
-        h,
-        w,
         S,
         m,
-        p,
+        w,
+        C,
+        h,
+        _,
         g,
         u,
-        _
+        p
       ]
     };
   }
@@ -70118,7 +70230,7 @@ function dZ() {
           end: "'"
         }
       ]
-    }, h = {
+    }, m = {
       begin: /\[/,
       end: /\]/,
       contains: [
@@ -70130,11 +70242,11 @@ function dZ() {
         "self"
       ],
       relevance: 0
-    }, m = /[A-Za-z0-9_-]+/, _ = /"(\\"|[^"])*"/, g = /'[^']*'/, w = e.either(
-      m,
-      _,
+    }, h = /[A-Za-z0-9_-]+/, p = /"(\\"|[^"])*"/, g = /'[^']*'/, w = e.either(
+      h,
+      p,
       g
-    ), S = e.concat(
+    ), C = e.concat(
       w,
       "(\\s*\\.\\s*",
       w,
@@ -70154,13 +70266,13 @@ function dZ() {
           end: /\]+/
         },
         {
-          begin: S,
+          begin: C,
           className: "attr",
           starts: {
             end: /$/,
             contains: [
               s,
-              h,
+              m,
               d,
               c,
               u,
@@ -70231,11 +70343,11 @@ function pZ() {
   if (Fa) return yr;
   Fa = 1;
   function r(t) {
-    const e = "[A-Za-zА-Яа-яёЁ_!][A-Za-zА-Яа-яёЁ_0-9]*", a = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]*", s = "and и else иначе endexcept endfinally endforeach конецвсе endif конецесли endwhile конецпока except exitfor finally foreach все if если in в not не or или try while пока ", Te = "SYSRES_CONST_ACCES_RIGHT_TYPE_EDIT SYSRES_CONST_ACCES_RIGHT_TYPE_FULL SYSRES_CONST_ACCES_RIGHT_TYPE_VIEW SYSRES_CONST_ACCESS_MODE_REQUISITE_CODE SYSRES_CONST_ACCESS_NO_ACCESS_VIEW SYSRES_CONST_ACCESS_NO_ACCESS_VIEW_CODE SYSRES_CONST_ACCESS_RIGHTS_ADD_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_ADD_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_CHANGE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_CHANGE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_DELETE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_DELETE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_EXECUTE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_EXECUTE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_NO_ACCESS_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_NO_ACCESS_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_RATIFY_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_RATIFY_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW SYSRES_CONST_ACCESS_RIGHTS_VIEW_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_TYPE_CHANGE SYSRES_CONST_ACCESS_TYPE_CHANGE_CODE SYSRES_CONST_ACCESS_TYPE_EXISTS SYSRES_CONST_ACCESS_TYPE_EXISTS_CODE SYSRES_CONST_ACCESS_TYPE_FULL SYSRES_CONST_ACCESS_TYPE_FULL_CODE SYSRES_CONST_ACCESS_TYPE_VIEW SYSRES_CONST_ACCESS_TYPE_VIEW_CODE SYSRES_CONST_ACTION_TYPE_ABORT SYSRES_CONST_ACTION_TYPE_ACCEPT SYSRES_CONST_ACTION_TYPE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ADD_ATTACHMENT SYSRES_CONST_ACTION_TYPE_CHANGE_CARD SYSRES_CONST_ACTION_TYPE_CHANGE_KIND SYSRES_CONST_ACTION_TYPE_CHANGE_STORAGE SYSRES_CONST_ACTION_TYPE_CONTINUE SYSRES_CONST_ACTION_TYPE_COPY SYSRES_CONST_ACTION_TYPE_CREATE SYSRES_CONST_ACTION_TYPE_CREATE_VERSION SYSRES_CONST_ACTION_TYPE_DELETE SYSRES_CONST_ACTION_TYPE_DELETE_ATTACHMENT SYSRES_CONST_ACTION_TYPE_DELETE_VERSION SYSRES_CONST_ACTION_TYPE_DISABLE_DELEGATE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ENABLE_DELEGATE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_CERTIFICATE SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_CERTIFICATE_AND_PASSWORD SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_PASSWORD SYSRES_CONST_ACTION_TYPE_EXPORT_WITH_LOCK SYSRES_CONST_ACTION_TYPE_EXPORT_WITHOUT_LOCK SYSRES_CONST_ACTION_TYPE_IMPORT_WITH_UNLOCK SYSRES_CONST_ACTION_TYPE_IMPORT_WITHOUT_UNLOCK SYSRES_CONST_ACTION_TYPE_LIFE_CYCLE_STAGE SYSRES_CONST_ACTION_TYPE_LOCK SYSRES_CONST_ACTION_TYPE_LOCK_FOR_SERVER SYSRES_CONST_ACTION_TYPE_LOCK_MODIFY SYSRES_CONST_ACTION_TYPE_MARK_AS_READED SYSRES_CONST_ACTION_TYPE_MARK_AS_UNREADED SYSRES_CONST_ACTION_TYPE_MODIFY SYSRES_CONST_ACTION_TYPE_MODIFY_CARD SYSRES_CONST_ACTION_TYPE_MOVE_TO_ARCHIVE SYSRES_CONST_ACTION_TYPE_OFF_ENCRYPTION SYSRES_CONST_ACTION_TYPE_PASSWORD_CHANGE SYSRES_CONST_ACTION_TYPE_PERFORM SYSRES_CONST_ACTION_TYPE_RECOVER_FROM_LOCAL_COPY SYSRES_CONST_ACTION_TYPE_RESTART SYSRES_CONST_ACTION_TYPE_RESTORE_FROM_ARCHIVE SYSRES_CONST_ACTION_TYPE_REVISION SYSRES_CONST_ACTION_TYPE_SEND_BY_MAIL SYSRES_CONST_ACTION_TYPE_SIGN SYSRES_CONST_ACTION_TYPE_START SYSRES_CONST_ACTION_TYPE_UNLOCK SYSRES_CONST_ACTION_TYPE_UNLOCK_FROM_SERVER SYSRES_CONST_ACTION_TYPE_VERSION_STATE SYSRES_CONST_ACTION_TYPE_VERSION_VISIBILITY SYSRES_CONST_ACTION_TYPE_VIEW SYSRES_CONST_ACTION_TYPE_VIEW_SHADOW_COPY SYSRES_CONST_ACTION_TYPE_WORKFLOW_DESCRIPTION_MODIFY SYSRES_CONST_ACTION_TYPE_WRITE_HISTORY SYSRES_CONST_ACTIVE_VERSION_STATE_PICK_VALUE SYSRES_CONST_ADD_REFERENCE_MODE_NAME SYSRES_CONST_ADDITION_REQUISITE_CODE SYSRES_CONST_ADDITIONAL_PARAMS_REQUISITE_CODE SYSRES_CONST_ADITIONAL_JOB_END_DATE_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_READ_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_START_DATE_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_STATE_REQUISITE_NAME SYSRES_CONST_ADMINISTRATION_HISTORY_ADDING_USER_TO_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_ADDING_USER_TO_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_COMP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_COMP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_USER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_USER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_CREATION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_CREATION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_DELETION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_DELETION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_COMP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_COMP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_FROM_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_FROM_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_RESTRICTION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_RESTRICTION_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_PRIVILEGE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_PRIVILEGE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_RIGHTS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_RIGHTS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_IS_MAIN_SERVER_CHANGED_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_IS_MAIN_SERVER_CHANGED_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_IS_PUBLIC_CHANGED_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_IS_PUBLIC_CHANGED_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_RESTRICTION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_RESTRICTION_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_PRIVILEGE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_PRIVILEGE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_RIGHTS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_RIGHTS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_CREATION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_CREATION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_DELETION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_DELETION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_CATEGORY_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_CATEGORY_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_COMP_TITLE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_COMP_TITLE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_FULL_NAME_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_FULL_NAME_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_PARENT_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_PARENT_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_AUTH_TYPE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_AUTH_TYPE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_LOGIN_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_LOGIN_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_STATUS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_STATUS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_USER_PASSWORD_CHANGE SYSRES_CONST_ADMINISTRATION_HISTORY_USER_PASSWORD_CHANGE_ACTION SYSRES_CONST_ALL_ACCEPT_CONDITION_RUS SYSRES_CONST_ALL_USERS_GROUP SYSRES_CONST_ALL_USERS_GROUP_NAME SYSRES_CONST_ALL_USERS_SERVER_GROUP_NAME SYSRES_CONST_ALLOWED_ACCESS_TYPE_CODE SYSRES_CONST_ALLOWED_ACCESS_TYPE_NAME SYSRES_CONST_APP_VIEWER_TYPE_REQUISITE_CODE SYSRES_CONST_APPROVING_SIGNATURE_NAME SYSRES_CONST_APPROVING_SIGNATURE_REQUISITE_CODE SYSRES_CONST_ASSISTANT_SUBSTITUE_TYPE SYSRES_CONST_ASSISTANT_SUBSTITUE_TYPE_CODE SYSRES_CONST_ATTACH_TYPE_COMPONENT_TOKEN SYSRES_CONST_ATTACH_TYPE_DOC SYSRES_CONST_ATTACH_TYPE_EDOC SYSRES_CONST_ATTACH_TYPE_FOLDER SYSRES_CONST_ATTACH_TYPE_JOB SYSRES_CONST_ATTACH_TYPE_REFERENCE SYSRES_CONST_ATTACH_TYPE_TASK SYSRES_CONST_AUTH_ENCODED_PASSWORD SYSRES_CONST_AUTH_ENCODED_PASSWORD_CODE SYSRES_CONST_AUTH_NOVELL SYSRES_CONST_AUTH_PASSWORD SYSRES_CONST_AUTH_PASSWORD_CODE SYSRES_CONST_AUTH_WINDOWS SYSRES_CONST_AUTHENTICATING_SIGNATURE_NAME SYSRES_CONST_AUTHENTICATING_SIGNATURE_REQUISITE_CODE SYSRES_CONST_AUTO_ENUM_METHOD_FLAG SYSRES_CONST_AUTO_NUMERATION_CODE SYSRES_CONST_AUTO_STRONG_ENUM_METHOD_FLAG SYSRES_CONST_AUTOTEXT_NAME_REQUISITE_CODE SYSRES_CONST_AUTOTEXT_TEXT_REQUISITE_CODE SYSRES_CONST_AUTOTEXT_USAGE_ALL SYSRES_CONST_AUTOTEXT_USAGE_ALL_CODE SYSRES_CONST_AUTOTEXT_USAGE_SIGN SYSRES_CONST_AUTOTEXT_USAGE_SIGN_CODE SYSRES_CONST_AUTOTEXT_USAGE_WORK SYSRES_CONST_AUTOTEXT_USAGE_WORK_CODE SYSRES_CONST_AUTOTEXT_USE_ANYWHERE_CODE SYSRES_CONST_AUTOTEXT_USE_ON_SIGNING_CODE SYSRES_CONST_AUTOTEXT_USE_ON_WORK_CODE SYSRES_CONST_BEGIN_DATE_REQUISITE_CODE SYSRES_CONST_BLACK_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_BLUE_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_BTN_PART SYSRES_CONST_CALCULATED_ROLE_TYPE_CODE SYSRES_CONST_CALL_TYPE_VARIABLE_BUTTON_VALUE SYSRES_CONST_CALL_TYPE_VARIABLE_PROGRAM_VALUE SYSRES_CONST_CANCEL_MESSAGE_FUNCTION_RESULT SYSRES_CONST_CARD_PART SYSRES_CONST_CARD_REFERENCE_MODE_NAME SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_ENCRYPT_VALUE SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_SIGN_AND_ENCRYPT_VALUE SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_SIGN_VALUE SYSRES_CONST_CHECK_PARAM_VALUE_DATE_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_FLOAT_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_INTEGER_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_PICK_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_REEFRENCE_PARAM_TYPE SYSRES_CONST_CLOSED_RECORD_FLAG_VALUE_FEMININE SYSRES_CONST_CLOSED_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_CODE_COMPONENT_TYPE_ADMIN SYSRES_CONST_CODE_COMPONENT_TYPE_DEVELOPER SYSRES_CONST_CODE_COMPONENT_TYPE_DOCS SYSRES_CONST_CODE_COMPONENT_TYPE_EDOC_CARDS SYSRES_CONST_CODE_COMPONENT_TYPE_EXTERNAL_EXECUTABLE SYSRES_CONST_CODE_COMPONENT_TYPE_OTHER SYSRES_CONST_CODE_COMPONENT_TYPE_REFERENCE SYSRES_CONST_CODE_COMPONENT_TYPE_REPORT SYSRES_CONST_CODE_COMPONENT_TYPE_SCRIPT SYSRES_CONST_CODE_COMPONENT_TYPE_URL SYSRES_CONST_CODE_REQUISITE_ACCESS SYSRES_CONST_CODE_REQUISITE_CODE SYSRES_CONST_CODE_REQUISITE_COMPONENT SYSRES_CONST_CODE_REQUISITE_DESCRIPTION SYSRES_CONST_CODE_REQUISITE_EXCLUDE_COMPONENT SYSRES_CONST_CODE_REQUISITE_RECORD SYSRES_CONST_COMMENT_REQ_CODE SYSRES_CONST_COMMON_SETTINGS_REQUISITE_CODE SYSRES_CONST_COMP_CODE_GRD SYSRES_CONST_COMPONENT_GROUP_TYPE_REQUISITE_CODE SYSRES_CONST_COMPONENT_TYPE_ADMIN_COMPONENTS SYSRES_CONST_COMPONENT_TYPE_DEVELOPER_COMPONENTS SYSRES_CONST_COMPONENT_TYPE_DOCS SYSRES_CONST_COMPONENT_TYPE_EDOC_CARDS SYSRES_CONST_COMPONENT_TYPE_EDOCS SYSRES_CONST_COMPONENT_TYPE_EXTERNAL_EXECUTABLE SYSRES_CONST_COMPONENT_TYPE_OTHER SYSRES_CONST_COMPONENT_TYPE_REFERENCE_TYPES SYSRES_CONST_COMPONENT_TYPE_REFERENCES SYSRES_CONST_COMPONENT_TYPE_REPORTS SYSRES_CONST_COMPONENT_TYPE_SCRIPTS SYSRES_CONST_COMPONENT_TYPE_URL SYSRES_CONST_COMPONENTS_REMOTE_SERVERS_VIEW_CODE SYSRES_CONST_CONDITION_BLOCK_DESCRIPTION SYSRES_CONST_CONST_FIRM_STATUS_COMMON SYSRES_CONST_CONST_FIRM_STATUS_INDIVIDUAL SYSRES_CONST_CONST_NEGATIVE_VALUE SYSRES_CONST_CONST_POSITIVE_VALUE SYSRES_CONST_CONST_SERVER_STATUS_DONT_REPLICATE SYSRES_CONST_CONST_SERVER_STATUS_REPLICATE SYSRES_CONST_CONTENTS_REQUISITE_CODE SYSRES_CONST_DATA_TYPE_BOOLEAN SYSRES_CONST_DATA_TYPE_DATE SYSRES_CONST_DATA_TYPE_FLOAT SYSRES_CONST_DATA_TYPE_INTEGER SYSRES_CONST_DATA_TYPE_PICK SYSRES_CONST_DATA_TYPE_REFERENCE SYSRES_CONST_DATA_TYPE_STRING SYSRES_CONST_DATA_TYPE_TEXT SYSRES_CONST_DATA_TYPE_VARIANT SYSRES_CONST_DATE_CLOSE_REQ_CODE SYSRES_CONST_DATE_FORMAT_DATE_ONLY_CHAR SYSRES_CONST_DATE_OPEN_REQ_CODE SYSRES_CONST_DATE_REQUISITE SYSRES_CONST_DATE_REQUISITE_CODE SYSRES_CONST_DATE_REQUISITE_NAME SYSRES_CONST_DATE_REQUISITE_TYPE SYSRES_CONST_DATE_TYPE_CHAR SYSRES_CONST_DATETIME_FORMAT_VALUE SYSRES_CONST_DEA_ACCESS_RIGHTS_ACTION_CODE SYSRES_CONST_DESCRIPTION_LOCALIZE_ID_REQUISITE_CODE SYSRES_CONST_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_DET1_PART SYSRES_CONST_DET2_PART SYSRES_CONST_DET3_PART SYSRES_CONST_DET4_PART SYSRES_CONST_DET5_PART SYSRES_CONST_DET6_PART SYSRES_CONST_DETAIL_DATASET_KEY_REQUISITE_CODE SYSRES_CONST_DETAIL_PICK_REQUISITE_CODE SYSRES_CONST_DETAIL_REQ_CODE SYSRES_CONST_DO_NOT_USE_ACCESS_TYPE_CODE SYSRES_CONST_DO_NOT_USE_ACCESS_TYPE_NAME SYSRES_CONST_DO_NOT_USE_ON_VIEW_ACCESS_TYPE_CODE SYSRES_CONST_DO_NOT_USE_ON_VIEW_ACCESS_TYPE_NAME SYSRES_CONST_DOCUMENT_STORAGES_CODE SYSRES_CONST_DOCUMENT_TEMPLATES_TYPE_NAME SYSRES_CONST_DOUBLE_REQUISITE_CODE SYSRES_CONST_EDITOR_CLOSE_FILE_OBSERV_TYPE_CODE SYSRES_CONST_EDITOR_CLOSE_PROCESS_OBSERV_TYPE_CODE SYSRES_CONST_EDITOR_TYPE_REQUISITE_CODE SYSRES_CONST_EDITORS_APPLICATION_NAME_REQUISITE_CODE SYSRES_CONST_EDITORS_CREATE_SEVERAL_PROCESSES_REQUISITE_CODE SYSRES_CONST_EDITORS_EXTENSION_REQUISITE_CODE SYSRES_CONST_EDITORS_OBSERVER_BY_PROCESS_TYPE SYSRES_CONST_EDITORS_REFERENCE_CODE SYSRES_CONST_EDITORS_REPLACE_SPEC_CHARS_REQUISITE_CODE SYSRES_CONST_EDITORS_USE_PLUGINS_REQUISITE_CODE SYSRES_CONST_EDITORS_VIEW_DOCUMENT_OPENED_TO_EDIT_CODE SYSRES_CONST_EDOC_CARD_TYPE_REQUISITE_CODE SYSRES_CONST_EDOC_CARD_TYPES_LINK_REQUISITE_CODE SYSRES_CONST_EDOC_CERTIFICATE_AND_PASSWORD_ENCODE_CODE SYSRES_CONST_EDOC_CERTIFICATE_ENCODE_CODE SYSRES_CONST_EDOC_DATE_REQUISITE_CODE SYSRES_CONST_EDOC_KIND_REFERENCE_CODE SYSRES_CONST_EDOC_KINDS_BY_TEMPLATE_ACTION_CODE SYSRES_CONST_EDOC_MANAGE_ACCESS_CODE SYSRES_CONST_EDOC_NONE_ENCODE_CODE SYSRES_CONST_EDOC_NUMBER_REQUISITE_CODE SYSRES_CONST_EDOC_PASSWORD_ENCODE_CODE SYSRES_CONST_EDOC_READONLY_ACCESS_CODE SYSRES_CONST_EDOC_SHELL_LIFE_TYPE_VIEW_VALUE SYSRES_CONST_EDOC_SIZE_RESTRICTION_PRIORITY_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_CHECK_ACCESS_RIGHTS_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_COMPUTER_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_DATABASE_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_EDIT_IN_STORAGE_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_LOCAL_PATH_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_SHARED_SOURCE_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_TEMPLATE_REQUISITE_CODE SYSRES_CONST_EDOC_TYPES_REFERENCE_CODE SYSRES_CONST_EDOC_VERSION_ACTIVE_STAGE_CODE SYSRES_CONST_EDOC_VERSION_DESIGN_STAGE_CODE SYSRES_CONST_EDOC_VERSION_OBSOLETE_STAGE_CODE SYSRES_CONST_EDOC_WRITE_ACCES_CODE SYSRES_CONST_EDOCUMENT_CARD_REQUISITES_REFERENCE_CODE_SELECTED_REQUISITE SYSRES_CONST_ENCODE_CERTIFICATE_TYPE_CODE SYSRES_CONST_END_DATE_REQUISITE_CODE SYSRES_CONST_ENUMERATION_TYPE_REQUISITE_CODE SYSRES_CONST_EXECUTE_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_EXECUTIVE_FILE_STORAGE_TYPE SYSRES_CONST_EXIST_CONST SYSRES_CONST_EXIST_VALUE SYSRES_CONST_EXPORT_LOCK_TYPE_ASK SYSRES_CONST_EXPORT_LOCK_TYPE_WITH_LOCK SYSRES_CONST_EXPORT_LOCK_TYPE_WITHOUT_LOCK SYSRES_CONST_EXPORT_VERSION_TYPE_ASK SYSRES_CONST_EXPORT_VERSION_TYPE_LAST SYSRES_CONST_EXPORT_VERSION_TYPE_LAST_ACTIVE SYSRES_CONST_EXTENSION_REQUISITE_CODE SYSRES_CONST_FILTER_NAME_REQUISITE_CODE SYSRES_CONST_FILTER_REQUISITE_CODE SYSRES_CONST_FILTER_TYPE_COMMON_CODE SYSRES_CONST_FILTER_TYPE_COMMON_NAME SYSRES_CONST_FILTER_TYPE_USER_CODE SYSRES_CONST_FILTER_TYPE_USER_NAME SYSRES_CONST_FILTER_VALUE_REQUISITE_NAME SYSRES_CONST_FLOAT_NUMBER_FORMAT_CHAR SYSRES_CONST_FLOAT_REQUISITE_TYPE SYSRES_CONST_FOLDER_AUTHOR_VALUE SYSRES_CONST_FOLDER_KIND_ANY_OBJECTS SYSRES_CONST_FOLDER_KIND_COMPONENTS SYSRES_CONST_FOLDER_KIND_EDOCS SYSRES_CONST_FOLDER_KIND_JOBS SYSRES_CONST_FOLDER_KIND_TASKS SYSRES_CONST_FOLDER_TYPE_COMMON SYSRES_CONST_FOLDER_TYPE_COMPONENT SYSRES_CONST_FOLDER_TYPE_FAVORITES SYSRES_CONST_FOLDER_TYPE_INBOX SYSRES_CONST_FOLDER_TYPE_OUTBOX SYSRES_CONST_FOLDER_TYPE_QUICK_LAUNCH SYSRES_CONST_FOLDER_TYPE_SEARCH SYSRES_CONST_FOLDER_TYPE_SHORTCUTS SYSRES_CONST_FOLDER_TYPE_USER SYSRES_CONST_FROM_DICTIONARY_ENUM_METHOD_FLAG SYSRES_CONST_FULL_SUBSTITUTE_TYPE SYSRES_CONST_FULL_SUBSTITUTE_TYPE_CODE SYSRES_CONST_FUNCTION_CANCEL_RESULT SYSRES_CONST_FUNCTION_CATEGORY_SYSTEM SYSRES_CONST_FUNCTION_CATEGORY_USER SYSRES_CONST_FUNCTION_FAILURE_RESULT SYSRES_CONST_FUNCTION_SAVE_RESULT SYSRES_CONST_GENERATED_REQUISITE SYSRES_CONST_GREEN_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_GROUP_ACCOUNT_TYPE_VALUE_CODE SYSRES_CONST_GROUP_CATEGORY_NORMAL_CODE SYSRES_CONST_GROUP_CATEGORY_NORMAL_NAME SYSRES_CONST_GROUP_CATEGORY_SERVICE_CODE SYSRES_CONST_GROUP_CATEGORY_SERVICE_NAME SYSRES_CONST_GROUP_COMMON_CATEGORY_FIELD_VALUE SYSRES_CONST_GROUP_FULL_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_RIGHTS_T_REQUISITE_CODE SYSRES_CONST_GROUP_SERVER_CODES_REQUISITE_CODE SYSRES_CONST_GROUP_SERVER_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_SERVICE_CATEGORY_FIELD_VALUE SYSRES_CONST_GROUP_USER_REQUISITE_CODE SYSRES_CONST_GROUPS_REFERENCE_CODE SYSRES_CONST_GROUPS_REQUISITE_CODE SYSRES_CONST_HIDDEN_MODE_NAME SYSRES_CONST_HIGH_LVL_REQUISITE_CODE SYSRES_CONST_HISTORY_ACTION_CREATE_CODE SYSRES_CONST_HISTORY_ACTION_DELETE_CODE SYSRES_CONST_HISTORY_ACTION_EDIT_CODE SYSRES_CONST_HOUR_CHAR SYSRES_CONST_ID_REQUISITE_CODE SYSRES_CONST_IDSPS_REQUISITE_CODE SYSRES_CONST_IMAGE_MODE_COLOR SYSRES_CONST_IMAGE_MODE_GREYSCALE SYSRES_CONST_IMAGE_MODE_MONOCHROME SYSRES_CONST_IMPORTANCE_HIGH SYSRES_CONST_IMPORTANCE_LOW SYSRES_CONST_IMPORTANCE_NORMAL SYSRES_CONST_IN_DESIGN_VERSION_STATE_PICK_VALUE SYSRES_CONST_INCOMING_WORK_RULE_TYPE_CODE SYSRES_CONST_INT_REQUISITE SYSRES_CONST_INT_REQUISITE_TYPE SYSRES_CONST_INTEGER_NUMBER_FORMAT_CHAR SYSRES_CONST_INTEGER_TYPE_CHAR SYSRES_CONST_IS_GENERATED_REQUISITE_NEGATIVE_VALUE SYSRES_CONST_IS_PUBLIC_ROLE_REQUISITE_CODE SYSRES_CONST_IS_REMOTE_USER_NEGATIVE_VALUE SYSRES_CONST_IS_REMOTE_USER_POSITIVE_VALUE SYSRES_CONST_IS_STORED_REQUISITE_NEGATIVE_VALUE SYSRES_CONST_IS_STORED_REQUISITE_STORED_VALUE SYSRES_CONST_ITALIC_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_JOB_BLOCK_DESCRIPTION SYSRES_CONST_JOB_KIND_CONTROL_JOB SYSRES_CONST_JOB_KIND_JOB SYSRES_CONST_JOB_KIND_NOTICE SYSRES_CONST_JOB_STATE_ABORTED SYSRES_CONST_JOB_STATE_COMPLETE SYSRES_CONST_JOB_STATE_WORKING SYSRES_CONST_KIND_REQUISITE_CODE SYSRES_CONST_KIND_REQUISITE_NAME SYSRES_CONST_KINDS_CREATE_SHADOW_COPIES_REQUISITE_CODE SYSRES_CONST_KINDS_DEFAULT_EDOC_LIFE_STAGE_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALL_TEPLATES_ALLOWED_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALLOW_LIFE_CYCLE_STAGE_CHANGING_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALLOW_MULTIPLE_ACTIVE_VERSIONS_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_SHARE_ACCES_RIGHTS_BY_DEFAULT_CODE SYSRES_CONST_KINDS_EDOC_TEMPLATE_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_TYPE_REQUISITE_CODE SYSRES_CONST_KINDS_SIGNERS_REQUISITES_CODE SYSRES_CONST_KOD_INPUT_TYPE SYSRES_CONST_LAST_UPDATE_DATE_REQUISITE_CODE SYSRES_CONST_LIFE_CYCLE_START_STAGE_REQUISITE_CODE SYSRES_CONST_LILAC_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_LINK_OBJECT_KIND_COMPONENT SYSRES_CONST_LINK_OBJECT_KIND_DOCUMENT SYSRES_CONST_LINK_OBJECT_KIND_EDOC SYSRES_CONST_LINK_OBJECT_KIND_FOLDER SYSRES_CONST_LINK_OBJECT_KIND_JOB SYSRES_CONST_LINK_OBJECT_KIND_REFERENCE SYSRES_CONST_LINK_OBJECT_KIND_TASK SYSRES_CONST_LINK_REF_TYPE_REQUISITE_CODE SYSRES_CONST_LIST_REFERENCE_MODE_NAME SYSRES_CONST_LOCALIZATION_DICTIONARY_MAIN_VIEW_CODE SYSRES_CONST_MAIN_VIEW_CODE SYSRES_CONST_MANUAL_ENUM_METHOD_FLAG SYSRES_CONST_MASTER_COMP_TYPE_REQUISITE_CODE SYSRES_CONST_MASTER_TABLE_REC_ID_REQUISITE_CODE SYSRES_CONST_MAXIMIZED_MODE_NAME SYSRES_CONST_ME_VALUE SYSRES_CONST_MESSAGE_ATTENTION_CAPTION SYSRES_CONST_MESSAGE_CONFIRMATION_CAPTION SYSRES_CONST_MESSAGE_ERROR_CAPTION SYSRES_CONST_MESSAGE_INFORMATION_CAPTION SYSRES_CONST_MINIMIZED_MODE_NAME SYSRES_CONST_MINUTE_CHAR SYSRES_CONST_MODULE_REQUISITE_CODE SYSRES_CONST_MONITORING_BLOCK_DESCRIPTION SYSRES_CONST_MONTH_FORMAT_VALUE SYSRES_CONST_NAME_LOCALIZE_ID_REQUISITE_CODE SYSRES_CONST_NAME_REQUISITE_CODE SYSRES_CONST_NAME_SINGULAR_REQUISITE_CODE SYSRES_CONST_NAMEAN_INPUT_TYPE SYSRES_CONST_NEGATIVE_PICK_VALUE SYSRES_CONST_NEGATIVE_VALUE SYSRES_CONST_NO SYSRES_CONST_NO_PICK_VALUE SYSRES_CONST_NO_SIGNATURE_REQUISITE_CODE SYSRES_CONST_NO_VALUE SYSRES_CONST_NONE_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_NONOPERATING_RECORD_FLAG_VALUE SYSRES_CONST_NONOPERATING_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_NORMAL_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_NORMAL_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_NORMAL_MODE_NAME SYSRES_CONST_NOT_ALLOWED_ACCESS_TYPE_CODE SYSRES_CONST_NOT_ALLOWED_ACCESS_TYPE_NAME SYSRES_CONST_NOTE_REQUISITE_CODE SYSRES_CONST_NOTICE_BLOCK_DESCRIPTION SYSRES_CONST_NUM_REQUISITE SYSRES_CONST_NUM_STR_REQUISITE_CODE SYSRES_CONST_NUMERATION_AUTO_NOT_STRONG SYSRES_CONST_NUMERATION_AUTO_STRONG SYSRES_CONST_NUMERATION_FROM_DICTONARY SYSRES_CONST_NUMERATION_MANUAL SYSRES_CONST_NUMERIC_TYPE_CHAR SYSRES_CONST_NUMREQ_REQUISITE_CODE SYSRES_CONST_OBSOLETE_VERSION_STATE_PICK_VALUE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_CODE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_FEMININE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_OPTIONAL_FORM_COMP_REQCODE_PREFIX SYSRES_CONST_ORANGE_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_ORIGINALREF_REQUISITE_CODE SYSRES_CONST_OURFIRM_REF_CODE SYSRES_CONST_OURFIRM_REQUISITE_CODE SYSRES_CONST_OURFIRM_VAR SYSRES_CONST_OUTGOING_WORK_RULE_TYPE_CODE SYSRES_CONST_PICK_NEGATIVE_RESULT SYSRES_CONST_PICK_POSITIVE_RESULT SYSRES_CONST_PICK_REQUISITE SYSRES_CONST_PICK_REQUISITE_TYPE SYSRES_CONST_PICK_TYPE_CHAR SYSRES_CONST_PLAN_STATUS_REQUISITE_CODE SYSRES_CONST_PLATFORM_VERSION_COMMENT SYSRES_CONST_PLUGINS_SETTINGS_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_POSITIVE_PICK_VALUE SYSRES_CONST_POWER_TO_CREATE_ACTION_CODE SYSRES_CONST_POWER_TO_SIGN_ACTION_CODE SYSRES_CONST_PRIORITY_REQUISITE_CODE SYSRES_CONST_QUALIFIED_TASK_TYPE SYSRES_CONST_QUALIFIED_TASK_TYPE_CODE SYSRES_CONST_RECSTAT_REQUISITE_CODE SYSRES_CONST_RED_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_REF_ID_T_REF_TYPE_REQUISITE_CODE SYSRES_CONST_REF_REQUISITE SYSRES_CONST_REF_REQUISITE_TYPE SYSRES_CONST_REF_REQUISITES_REFERENCE_CODE_SELECTED_REQUISITE SYSRES_CONST_REFERENCE_RECORD_HISTORY_CREATE_ACTION_CODE SYSRES_CONST_REFERENCE_RECORD_HISTORY_DELETE_ACTION_CODE SYSRES_CONST_REFERENCE_RECORD_HISTORY_MODIFY_ACTION_CODE SYSRES_CONST_REFERENCE_TYPE_CHAR SYSRES_CONST_REFERENCE_TYPE_REQUISITE_NAME SYSRES_CONST_REFERENCES_ADD_PARAMS_REQUISITE_CODE SYSRES_CONST_REFERENCES_DISPLAY_REQUISITE_REQUISITE_CODE SYSRES_CONST_REMOTE_SERVER_STATUS_WORKING SYSRES_CONST_REMOTE_SERVER_TYPE_MAIN SYSRES_CONST_REMOTE_SERVER_TYPE_SECONDARY SYSRES_CONST_REMOTE_USER_FLAG_VALUE_CODE SYSRES_CONST_REPORT_APP_EDITOR_INTERNAL SYSRES_CONST_REPORT_BASE_REPORT_ID_REQUISITE_CODE SYSRES_CONST_REPORT_BASE_REPORT_REQUISITE_CODE SYSRES_CONST_REPORT_SCRIPT_REQUISITE_CODE SYSRES_CONST_REPORT_TEMPLATE_REQUISITE_CODE SYSRES_CONST_REPORT_VIEWER_CODE_REQUISITE_CODE SYSRES_CONST_REQ_ALLOW_COMPONENT_DEFAULT_VALUE SYSRES_CONST_REQ_ALLOW_RECORD_DEFAULT_VALUE SYSRES_CONST_REQ_ALLOW_SERVER_COMPONENT_DEFAULT_VALUE SYSRES_CONST_REQ_MODE_AVAILABLE_CODE SYSRES_CONST_REQ_MODE_EDIT_CODE SYSRES_CONST_REQ_MODE_HIDDEN_CODE SYSRES_CONST_REQ_MODE_NOT_AVAILABLE_CODE SYSRES_CONST_REQ_MODE_VIEW_CODE SYSRES_CONST_REQ_NUMBER_REQUISITE_CODE SYSRES_CONST_REQ_SECTION_VALUE SYSRES_CONST_REQ_TYPE_VALUE SYSRES_CONST_REQUISITE_FORMAT_BY_UNIT SYSRES_CONST_REQUISITE_FORMAT_DATE_FULL SYSRES_CONST_REQUISITE_FORMAT_DATE_TIME SYSRES_CONST_REQUISITE_FORMAT_LEFT SYSRES_CONST_REQUISITE_FORMAT_RIGHT SYSRES_CONST_REQUISITE_FORMAT_WITHOUT_UNIT SYSRES_CONST_REQUISITE_NUMBER_REQUISITE_CODE SYSRES_CONST_REQUISITE_SECTION_ACTIONS SYSRES_CONST_REQUISITE_SECTION_BUTTON SYSRES_CONST_REQUISITE_SECTION_BUTTONS SYSRES_CONST_REQUISITE_SECTION_CARD SYSRES_CONST_REQUISITE_SECTION_TABLE SYSRES_CONST_REQUISITE_SECTION_TABLE10 SYSRES_CONST_REQUISITE_SECTION_TABLE11 SYSRES_CONST_REQUISITE_SECTION_TABLE12 SYSRES_CONST_REQUISITE_SECTION_TABLE13 SYSRES_CONST_REQUISITE_SECTION_TABLE14 SYSRES_CONST_REQUISITE_SECTION_TABLE15 SYSRES_CONST_REQUISITE_SECTION_TABLE16 SYSRES_CONST_REQUISITE_SECTION_TABLE17 SYSRES_CONST_REQUISITE_SECTION_TABLE18 SYSRES_CONST_REQUISITE_SECTION_TABLE19 SYSRES_CONST_REQUISITE_SECTION_TABLE2 SYSRES_CONST_REQUISITE_SECTION_TABLE20 SYSRES_CONST_REQUISITE_SECTION_TABLE21 SYSRES_CONST_REQUISITE_SECTION_TABLE22 SYSRES_CONST_REQUISITE_SECTION_TABLE23 SYSRES_CONST_REQUISITE_SECTION_TABLE24 SYSRES_CONST_REQUISITE_SECTION_TABLE3 SYSRES_CONST_REQUISITE_SECTION_TABLE4 SYSRES_CONST_REQUISITE_SECTION_TABLE5 SYSRES_CONST_REQUISITE_SECTION_TABLE6 SYSRES_CONST_REQUISITE_SECTION_TABLE7 SYSRES_CONST_REQUISITE_SECTION_TABLE8 SYSRES_CONST_REQUISITE_SECTION_TABLE9 SYSRES_CONST_REQUISITES_PSEUDOREFERENCE_REQUISITE_NUMBER_REQUISITE_CODE SYSRES_CONST_RIGHT_ALIGNMENT_CODE SYSRES_CONST_ROLES_REFERENCE_CODE SYSRES_CONST_ROUTE_STEP_AFTER_RUS SYSRES_CONST_ROUTE_STEP_AND_CONDITION_RUS SYSRES_CONST_ROUTE_STEP_OR_CONDITION_RUS SYSRES_CONST_ROUTE_TYPE_COMPLEX SYSRES_CONST_ROUTE_TYPE_PARALLEL SYSRES_CONST_ROUTE_TYPE_SERIAL SYSRES_CONST_SBDATASETDESC_NEGATIVE_VALUE SYSRES_CONST_SBDATASETDESC_POSITIVE_VALUE SYSRES_CONST_SBVIEWSDESC_POSITIVE_VALUE SYSRES_CONST_SCRIPT_BLOCK_DESCRIPTION SYSRES_CONST_SEARCH_BY_TEXT_REQUISITE_CODE SYSRES_CONST_SEARCHES_COMPONENT_CONTENT SYSRES_CONST_SEARCHES_CRITERIA_ACTION_NAME SYSRES_CONST_SEARCHES_EDOC_CONTENT SYSRES_CONST_SEARCHES_FOLDER_CONTENT SYSRES_CONST_SEARCHES_JOB_CONTENT SYSRES_CONST_SEARCHES_REFERENCE_CODE SYSRES_CONST_SEARCHES_TASK_CONTENT SYSRES_CONST_SECOND_CHAR SYSRES_CONST_SECTION_REQUISITE_ACTIONS_VALUE SYSRES_CONST_SECTION_REQUISITE_CARD_VALUE SYSRES_CONST_SECTION_REQUISITE_CODE SYSRES_CONST_SECTION_REQUISITE_DETAIL_1_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_2_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_3_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_4_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_5_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_6_VALUE SYSRES_CONST_SELECT_REFERENCE_MODE_NAME SYSRES_CONST_SELECT_TYPE_SELECTABLE SYSRES_CONST_SELECT_TYPE_SELECTABLE_ONLY_CHILD SYSRES_CONST_SELECT_TYPE_SELECTABLE_WITH_CHILD SYSRES_CONST_SELECT_TYPE_UNSLECTABLE SYSRES_CONST_SERVER_TYPE_MAIN SYSRES_CONST_SERVICE_USER_CATEGORY_FIELD_VALUE SYSRES_CONST_SETTINGS_USER_REQUISITE_CODE SYSRES_CONST_SIGNATURE_AND_ENCODE_CERTIFICATE_TYPE_CODE SYSRES_CONST_SIGNATURE_CERTIFICATE_TYPE_CODE SYSRES_CONST_SINGULAR_TITLE_REQUISITE_CODE SYSRES_CONST_SQL_SERVER_AUTHENTIFICATION_FLAG_VALUE_CODE SYSRES_CONST_SQL_SERVER_ENCODE_AUTHENTIFICATION_FLAG_VALUE_CODE SYSRES_CONST_STANDART_ROUTE_REFERENCE_CODE SYSRES_CONST_STANDART_ROUTE_REFERENCE_COMMENT_REQUISITE_CODE SYSRES_CONST_STANDART_ROUTES_GROUPS_REFERENCE_CODE SYSRES_CONST_STATE_REQ_NAME SYSRES_CONST_STATE_REQUISITE_ACTIVE_VALUE SYSRES_CONST_STATE_REQUISITE_CLOSED_VALUE SYSRES_CONST_STATE_REQUISITE_CODE SYSRES_CONST_STATIC_ROLE_TYPE_CODE SYSRES_CONST_STATUS_PLAN_DEFAULT_VALUE SYSRES_CONST_STATUS_VALUE_AUTOCLEANING SYSRES_CONST_STATUS_VALUE_BLUE_SQUARE SYSRES_CONST_STATUS_VALUE_COMPLETE SYSRES_CONST_STATUS_VALUE_GREEN_SQUARE SYSRES_CONST_STATUS_VALUE_ORANGE_SQUARE SYSRES_CONST_STATUS_VALUE_PURPLE_SQUARE SYSRES_CONST_STATUS_VALUE_RED_SQUARE SYSRES_CONST_STATUS_VALUE_SUSPEND SYSRES_CONST_STATUS_VALUE_YELLOW_SQUARE SYSRES_CONST_STDROUTE_SHOW_TO_USERS_REQUISITE_CODE SYSRES_CONST_STORAGE_TYPE_FILE SYSRES_CONST_STORAGE_TYPE_SQL_SERVER SYSRES_CONST_STR_REQUISITE SYSRES_CONST_STRIKEOUT_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_STRING_FORMAT_LEFT_ALIGN_CHAR SYSRES_CONST_STRING_FORMAT_RIGHT_ALIGN_CHAR SYSRES_CONST_STRING_REQUISITE_CODE SYSRES_CONST_STRING_REQUISITE_TYPE SYSRES_CONST_STRING_TYPE_CHAR SYSRES_CONST_SUBSTITUTES_PSEUDOREFERENCE_CODE SYSRES_CONST_SUBTASK_BLOCK_DESCRIPTION SYSRES_CONST_SYSTEM_SETTING_CURRENT_USER_PARAM_VALUE SYSRES_CONST_SYSTEM_SETTING_EMPTY_VALUE_PARAM_VALUE SYSRES_CONST_SYSTEM_VERSION_COMMENT SYSRES_CONST_TASK_ACCESS_TYPE_ALL SYSRES_CONST_TASK_ACCESS_TYPE_ALL_MEMBERS SYSRES_CONST_TASK_ACCESS_TYPE_MANUAL SYSRES_CONST_TASK_ENCODE_TYPE_CERTIFICATION SYSRES_CONST_TASK_ENCODE_TYPE_CERTIFICATION_AND_PASSWORD SYSRES_CONST_TASK_ENCODE_TYPE_NONE SYSRES_CONST_TASK_ENCODE_TYPE_PASSWORD SYSRES_CONST_TASK_ROUTE_ALL_CONDITION SYSRES_CONST_TASK_ROUTE_AND_CONDITION SYSRES_CONST_TASK_ROUTE_OR_CONDITION SYSRES_CONST_TASK_STATE_ABORTED SYSRES_CONST_TASK_STATE_COMPLETE SYSRES_CONST_TASK_STATE_CONTINUED SYSRES_CONST_TASK_STATE_CONTROL SYSRES_CONST_TASK_STATE_INIT SYSRES_CONST_TASK_STATE_WORKING SYSRES_CONST_TASK_TITLE SYSRES_CONST_TASK_TYPES_GROUPS_REFERENCE_CODE SYSRES_CONST_TASK_TYPES_REFERENCE_CODE SYSRES_CONST_TEMPLATES_REFERENCE_CODE SYSRES_CONST_TEST_DATE_REQUISITE_NAME SYSRES_CONST_TEST_DEV_DATABASE_NAME SYSRES_CONST_TEST_DEV_SYSTEM_CODE SYSRES_CONST_TEST_EDMS_DATABASE_NAME SYSRES_CONST_TEST_EDMS_MAIN_CODE SYSRES_CONST_TEST_EDMS_MAIN_DB_NAME SYSRES_CONST_TEST_EDMS_SECOND_CODE SYSRES_CONST_TEST_EDMS_SECOND_DB_NAME SYSRES_CONST_TEST_EDMS_SYSTEM_CODE SYSRES_CONST_TEST_NUMERIC_REQUISITE_NAME SYSRES_CONST_TEXT_REQUISITE SYSRES_CONST_TEXT_REQUISITE_CODE SYSRES_CONST_TEXT_REQUISITE_TYPE SYSRES_CONST_TEXT_TYPE_CHAR SYSRES_CONST_TYPE_CODE_REQUISITE_CODE SYSRES_CONST_TYPE_REQUISITE_CODE SYSRES_CONST_UNDEFINED_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_UNITS_SECTION_ID_REQUISITE_CODE SYSRES_CONST_UNITS_SECTION_REQUISITE_CODE SYSRES_CONST_UNOPERATING_RECORD_FLAG_VALUE_CODE SYSRES_CONST_UNSTORED_DATA_REQUISITE_CODE SYSRES_CONST_UNSTORED_DATA_REQUISITE_NAME SYSRES_CONST_USE_ACCESS_TYPE_CODE SYSRES_CONST_USE_ACCESS_TYPE_NAME SYSRES_CONST_USER_ACCOUNT_TYPE_VALUE_CODE SYSRES_CONST_USER_ADDITIONAL_INFORMATION_REQUISITE_CODE SYSRES_CONST_USER_AND_GROUP_ID_FROM_PSEUDOREFERENCE_REQUISITE_CODE SYSRES_CONST_USER_CATEGORY_NORMAL SYSRES_CONST_USER_CERTIFICATE_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_STATE_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_SUBJECT_NAME_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_THUMBPRINT_REQUISITE_CODE SYSRES_CONST_USER_COMMON_CATEGORY SYSRES_CONST_USER_COMMON_CATEGORY_CODE SYSRES_CONST_USER_FULL_NAME_REQUISITE_CODE SYSRES_CONST_USER_GROUP_TYPE_REQUISITE_CODE SYSRES_CONST_USER_LOGIN_REQUISITE_CODE SYSRES_CONST_USER_REMOTE_CONTROLLER_REQUISITE_CODE SYSRES_CONST_USER_REMOTE_SYSTEM_REQUISITE_CODE SYSRES_CONST_USER_RIGHTS_T_REQUISITE_CODE SYSRES_CONST_USER_SERVER_NAME_REQUISITE_CODE SYSRES_CONST_USER_SERVICE_CATEGORY SYSRES_CONST_USER_SERVICE_CATEGORY_CODE SYSRES_CONST_USER_STATUS_ADMINISTRATOR_CODE SYSRES_CONST_USER_STATUS_ADMINISTRATOR_NAME SYSRES_CONST_USER_STATUS_DEVELOPER_CODE SYSRES_CONST_USER_STATUS_DEVELOPER_NAME SYSRES_CONST_USER_STATUS_DISABLED_CODE SYSRES_CONST_USER_STATUS_DISABLED_NAME SYSRES_CONST_USER_STATUS_SYSTEM_DEVELOPER_CODE SYSRES_CONST_USER_STATUS_USER_CODE SYSRES_CONST_USER_STATUS_USER_NAME SYSRES_CONST_USER_STATUS_USER_NAME_DEPRECATED SYSRES_CONST_USER_TYPE_FIELD_VALUE_USER SYSRES_CONST_USER_TYPE_REQUISITE_CODE SYSRES_CONST_USERS_CONTROLLER_REQUISITE_CODE SYSRES_CONST_USERS_IS_MAIN_SERVER_REQUISITE_CODE SYSRES_CONST_USERS_REFERENCE_CODE SYSRES_CONST_USERS_REGISTRATION_CERTIFICATES_ACTION_NAME SYSRES_CONST_USERS_REQUISITE_CODE SYSRES_CONST_USERS_SYSTEM_REQUISITE_CODE SYSRES_CONST_USERS_USER_ACCESS_RIGHTS_TYPR_REQUISITE_CODE SYSRES_CONST_USERS_USER_AUTHENTICATION_REQUISITE_CODE SYSRES_CONST_USERS_USER_COMPONENT_REQUISITE_CODE SYSRES_CONST_USERS_USER_GROUP_REQUISITE_CODE SYSRES_CONST_USERS_VIEW_CERTIFICATES_ACTION_NAME SYSRES_CONST_VIEW_DEFAULT_CODE SYSRES_CONST_VIEW_DEFAULT_NAME SYSRES_CONST_VIEWER_REQUISITE_CODE SYSRES_CONST_WAITING_BLOCK_DESCRIPTION SYSRES_CONST_WIZARD_FORM_LABEL_TEST_STRING  SYSRES_CONST_WIZARD_QUERY_PARAM_HEIGHT_ETALON_STRING SYSRES_CONST_WIZARD_REFERENCE_COMMENT_REQUISITE_CODE SYSRES_CONST_WORK_RULES_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_WORK_TIME_CALENDAR_REFERENCE_CODE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE_CODE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE_CODE_RUS SYSRES_CONST_WORK_WORKFLOW_SOFT_ROUTE_TYPE_VALUE_CODE_RUS SYSRES_CONST_WORKFLOW_ROUTE_TYPR_HARD SYSRES_CONST_WORKFLOW_ROUTE_TYPR_SOFT SYSRES_CONST_XML_ENCODING SYSRES_CONST_XREC_STAT_REQUISITE_CODE SYSRES_CONST_XRECID_FIELD_NAME SYSRES_CONST_YES SYSRES_CONST_YES_NO_2_REQUISITE_CODE SYSRES_CONST_YES_NO_REQUISITE_CODE SYSRES_CONST_YES_NO_T_REF_TYPE_REQUISITE_CODE SYSRES_CONST_YES_PICK_VALUE SYSRES_CONST_YES_VALUE " + "CR FALSE nil NO_VALUE NULL TAB TRUE YES_VALUE " + "ADMINISTRATORS_GROUP_NAME CUSTOMIZERS_GROUP_NAME DEVELOPERS_GROUP_NAME SERVICE_USERS_GROUP_NAME " + "DECISION_BLOCK_FIRST_OPERAND_PROPERTY DECISION_BLOCK_NAME_PROPERTY DECISION_BLOCK_OPERATION_PROPERTY DECISION_BLOCK_RESULT_TYPE_PROPERTY DECISION_BLOCK_SECOND_OPERAND_PROPERTY " + "ANY_FILE_EXTENTION COMPRESSED_DOCUMENT_EXTENSION EXTENDED_DOCUMENT_EXTENSION SHORT_COMPRESSED_DOCUMENT_EXTENSION SHORT_EXTENDED_DOCUMENT_EXTENSION " + "JOB_BLOCK_ABORT_DEADLINE_PROPERTY JOB_BLOCK_AFTER_FINISH_EVENT JOB_BLOCK_AFTER_QUERY_PARAMETERS_EVENT JOB_BLOCK_ATTACHMENT_PROPERTY JOB_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY JOB_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY JOB_BLOCK_BEFORE_QUERY_PARAMETERS_EVENT JOB_BLOCK_BEFORE_START_EVENT JOB_BLOCK_CREATED_JOBS_PROPERTY JOB_BLOCK_DEADLINE_PROPERTY JOB_BLOCK_EXECUTION_RESULTS_PROPERTY JOB_BLOCK_IS_PARALLEL_PROPERTY JOB_BLOCK_IS_RELATIVE_ABORT_DEADLINE_PROPERTY JOB_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY JOB_BLOCK_JOB_TEXT_PROPERTY JOB_BLOCK_NAME_PROPERTY JOB_BLOCK_NEED_SIGN_ON_PERFORM_PROPERTY JOB_BLOCK_PERFORMER_PROPERTY JOB_BLOCK_RELATIVE_ABORT_DEADLINE_TYPE_PROPERTY JOB_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY JOB_BLOCK_SUBJECT_PROPERTY " + "ENGLISH_LANGUAGE_CODE RUSSIAN_LANGUAGE_CODE " + "smHidden smMaximized smMinimized smNormal wmNo wmYes " + "COMPONENT_TOKEN_LINK_KIND DOCUMENT_LINK_KIND EDOCUMENT_LINK_KIND FOLDER_LINK_KIND JOB_LINK_KIND REFERENCE_LINK_KIND TASK_LINK_KIND " + "COMPONENT_TOKEN_LOCK_TYPE EDOCUMENT_VERSION_LOCK_TYPE " + "MONITOR_BLOCK_AFTER_FINISH_EVENT MONITOR_BLOCK_BEFORE_START_EVENT MONITOR_BLOCK_DEADLINE_PROPERTY MONITOR_BLOCK_INTERVAL_PROPERTY MONITOR_BLOCK_INTERVAL_TYPE_PROPERTY MONITOR_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY MONITOR_BLOCK_NAME_PROPERTY MONITOR_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY MONITOR_BLOCK_SEARCH_SCRIPT_PROPERTY " + "NOTICE_BLOCK_AFTER_FINISH_EVENT NOTICE_BLOCK_ATTACHMENT_PROPERTY NOTICE_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY NOTICE_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY NOTICE_BLOCK_BEFORE_START_EVENT NOTICE_BLOCK_CREATED_NOTICES_PROPERTY NOTICE_BLOCK_DEADLINE_PROPERTY NOTICE_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY NOTICE_BLOCK_NAME_PROPERTY NOTICE_BLOCK_NOTICE_TEXT_PROPERTY NOTICE_BLOCK_PERFORMER_PROPERTY NOTICE_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY NOTICE_BLOCK_SUBJECT_PROPERTY " + "dseAfterCancel dseAfterClose dseAfterDelete dseAfterDeleteOutOfTransaction dseAfterInsert dseAfterOpen dseAfterScroll dseAfterUpdate dseAfterUpdateOutOfTransaction dseBeforeCancel dseBeforeClose dseBeforeDelete dseBeforeDetailUpdate dseBeforeInsert dseBeforeOpen dseBeforeUpdate dseOnAnyRequisiteChange dseOnCloseRecord dseOnDeleteError dseOnOpenRecord dseOnPrepareUpdate dseOnUpdateError dseOnUpdateRatifiedRecord dseOnValidDelete dseOnValidUpdate reOnChange reOnChangeValues SELECTION_BEGIN_ROUTE_EVENT SELECTION_END_ROUTE_EVENT " + "CURRENT_PERIOD_IS_REQUIRED PREVIOUS_CARD_TYPE_NAME SHOW_RECORD_PROPERTIES_FORM " + "ACCESS_RIGHTS_SETTING_DIALOG_CODE ADMINISTRATOR_USER_CODE ANALYTIC_REPORT_TYPE asrtHideLocal asrtHideRemote CALCULATED_ROLE_TYPE_CODE COMPONENTS_REFERENCE_DEVELOPER_VIEW_CODE DCTS_TEST_PROTOCOLS_FOLDER_PATH E_EDOC_VERSION_ALREADY_APPROVINGLY_SIGNED E_EDOC_VERSION_ALREADY_APPROVINGLY_SIGNED_BY_USER E_EDOC_VERSION_ALREDY_SIGNED E_EDOC_VERSION_ALREDY_SIGNED_BY_USER EDOC_TYPES_CODE_REQUISITE_FIELD_NAME EDOCUMENTS_ALIAS_NAME FILES_FOLDER_PATH FILTER_OPERANDS_DELIMITER FILTER_OPERATIONS_DELIMITER FORMCARD_NAME FORMLIST_NAME GET_EXTENDED_DOCUMENT_EXTENSION_CREATION_MODE GET_EXTENDED_DOCUMENT_EXTENSION_IMPORT_MODE INTEGRATED_REPORT_TYPE IS_BUILDER_APPLICATION_ROLE IS_BUILDER_APPLICATION_ROLE2 IS_BUILDER_USERS ISBSYSDEV LOG_FOLDER_PATH mbCancel mbNo mbNoToAll mbOK mbYes mbYesToAll MEMORY_DATASET_DESRIPTIONS_FILENAME mrNo mrNoToAll mrYes mrYesToAll MULTIPLE_SELECT_DIALOG_CODE NONOPERATING_RECORD_FLAG_FEMININE NONOPERATING_RECORD_FLAG_MASCULINE OPERATING_RECORD_FLAG_FEMININE OPERATING_RECORD_FLAG_MASCULINE PROFILING_SETTINGS_COMMON_SETTINGS_CODE_VALUE PROGRAM_INITIATED_LOOKUP_ACTION ratDelete ratEdit ratInsert REPORT_TYPE REQUIRED_PICK_VALUES_VARIABLE rmCard rmList SBRTE_PROGID_DEV SBRTE_PROGID_RELEASE STATIC_ROLE_TYPE_CODE SUPPRESS_EMPTY_TEMPLATE_CREATION SYSTEM_USER_CODE UPDATE_DIALOG_DATASET USED_IN_OBJECT_HINT_PARAM USER_INITIATED_LOOKUP_ACTION USER_NAME_FORMAT USER_SELECTION_RESTRICTIONS WORKFLOW_TEST_PROTOCOLS_FOLDER_PATH ELS_SUBTYPE_CONTROL_NAME ELS_FOLDER_KIND_CONTROL_NAME REPEAT_PROCESS_CURRENT_OBJECT_EXCEPTION_NAME " + "PRIVILEGE_COMPONENT_FULL_ACCESS PRIVILEGE_DEVELOPMENT_EXPORT PRIVILEGE_DEVELOPMENT_IMPORT PRIVILEGE_DOCUMENT_DELETE PRIVILEGE_ESD PRIVILEGE_FOLDER_DELETE PRIVILEGE_MANAGE_ACCESS_RIGHTS PRIVILEGE_MANAGE_REPLICATION PRIVILEGE_MANAGE_SESSION_SERVER PRIVILEGE_OBJECT_FULL_ACCESS PRIVILEGE_OBJECT_VIEW PRIVILEGE_RESERVE_LICENSE PRIVILEGE_SYSTEM_CUSTOMIZE PRIVILEGE_SYSTEM_DEVELOP PRIVILEGE_SYSTEM_INSTALL PRIVILEGE_TASK_DELETE PRIVILEGE_USER_PLUGIN_SETTINGS_CUSTOMIZE PRIVILEGES_PSEUDOREFERENCE_CODE " + "ACCESS_TYPES_PSEUDOREFERENCE_CODE ALL_AVAILABLE_COMPONENTS_PSEUDOREFERENCE_CODE ALL_AVAILABLE_PRIVILEGES_PSEUDOREFERENCE_CODE ALL_REPLICATE_COMPONENTS_PSEUDOREFERENCE_CODE AVAILABLE_DEVELOPERS_COMPONENTS_PSEUDOREFERENCE_CODE COMPONENTS_PSEUDOREFERENCE_CODE FILTRATER_SETTINGS_CONFLICTS_PSEUDOREFERENCE_CODE GROUPS_PSEUDOREFERENCE_CODE RECEIVE_PROTOCOL_PSEUDOREFERENCE_CODE REFERENCE_REQUISITE_PSEUDOREFERENCE_CODE REFERENCE_REQUISITES_PSEUDOREFERENCE_CODE REFTYPES_PSEUDOREFERENCE_CODE REPLICATION_SEANCES_DIARY_PSEUDOREFERENCE_CODE SEND_PROTOCOL_PSEUDOREFERENCE_CODE SUBSTITUTES_PSEUDOREFERENCE_CODE SYSTEM_SETTINGS_PSEUDOREFERENCE_CODE UNITS_PSEUDOREFERENCE_CODE USERS_PSEUDOREFERENCE_CODE VIEWERS_PSEUDOREFERENCE_CODE " + "CERTIFICATE_TYPE_ENCRYPT CERTIFICATE_TYPE_SIGN CERTIFICATE_TYPE_SIGN_AND_ENCRYPT " + "STORAGE_TYPE_FILE STORAGE_TYPE_NAS_CIFS STORAGE_TYPE_SAPERION STORAGE_TYPE_SQL_SERVER " + "COMPTYPE2_REQUISITE_DOCUMENTS_VALUE COMPTYPE2_REQUISITE_TASKS_VALUE COMPTYPE2_REQUISITE_FOLDERS_VALUE COMPTYPE2_REQUISITE_REFERENCES_VALUE " + "SYSREQ_CODE SYSREQ_COMPTYPE2 SYSREQ_CONST_AVAILABLE_FOR_WEB SYSREQ_CONST_COMMON_CODE SYSREQ_CONST_COMMON_VALUE SYSREQ_CONST_FIRM_CODE SYSREQ_CONST_FIRM_STATUS SYSREQ_CONST_FIRM_VALUE SYSREQ_CONST_SERVER_STATUS SYSREQ_CONTENTS SYSREQ_DATE_OPEN SYSREQ_DATE_CLOSE SYSREQ_DESCRIPTION SYSREQ_DESCRIPTION_LOCALIZE_ID SYSREQ_DOUBLE SYSREQ_EDOC_ACCESS_TYPE SYSREQ_EDOC_AUTHOR SYSREQ_EDOC_CREATED SYSREQ_EDOC_DELEGATE_RIGHTS_REQUISITE_CODE SYSREQ_EDOC_EDITOR SYSREQ_EDOC_ENCODE_TYPE SYSREQ_EDOC_ENCRYPTION_PLUGIN_NAME SYSREQ_EDOC_ENCRYPTION_PLUGIN_VERSION SYSREQ_EDOC_EXPORT_DATE SYSREQ_EDOC_EXPORTER SYSREQ_EDOC_KIND SYSREQ_EDOC_LIFE_STAGE_NAME SYSREQ_EDOC_LOCKED_FOR_SERVER_CODE SYSREQ_EDOC_MODIFIED SYSREQ_EDOC_NAME SYSREQ_EDOC_NOTE SYSREQ_EDOC_QUALIFIED_ID SYSREQ_EDOC_SESSION_KEY SYSREQ_EDOC_SESSION_KEY_ENCRYPTION_PLUGIN_NAME SYSREQ_EDOC_SESSION_KEY_ENCRYPTION_PLUGIN_VERSION SYSREQ_EDOC_SIGNATURE_TYPE SYSREQ_EDOC_SIGNED SYSREQ_EDOC_STORAGE SYSREQ_EDOC_STORAGES_ARCHIVE_STORAGE SYSREQ_EDOC_STORAGES_CHECK_RIGHTS SYSREQ_EDOC_STORAGES_COMPUTER_NAME SYSREQ_EDOC_STORAGES_EDIT_IN_STORAGE SYSREQ_EDOC_STORAGES_EXECUTIVE_STORAGE SYSREQ_EDOC_STORAGES_FUNCTION SYSREQ_EDOC_STORAGES_INITIALIZED SYSREQ_EDOC_STORAGES_LOCAL_PATH SYSREQ_EDOC_STORAGES_SAPERION_DATABASE_NAME SYSREQ_EDOC_STORAGES_SEARCH_BY_TEXT SYSREQ_EDOC_STORAGES_SERVER_NAME SYSREQ_EDOC_STORAGES_SHARED_SOURCE_NAME SYSREQ_EDOC_STORAGES_TYPE SYSREQ_EDOC_TEXT_MODIFIED SYSREQ_EDOC_TYPE_ACT_CODE SYSREQ_EDOC_TYPE_ACT_DESCRIPTION SYSREQ_EDOC_TYPE_ACT_DESCRIPTION_LOCALIZE_ID SYSREQ_EDOC_TYPE_ACT_ON_EXECUTE SYSREQ_EDOC_TYPE_ACT_ON_EXECUTE_EXISTS SYSREQ_EDOC_TYPE_ACT_SECTION SYSREQ_EDOC_TYPE_ADD_PARAMS SYSREQ_EDOC_TYPE_COMMENT SYSREQ_EDOC_TYPE_EVENT_TEXT SYSREQ_EDOC_TYPE_NAME_IN_SINGULAR SYSREQ_EDOC_TYPE_NAME_IN_SINGULAR_LOCALIZE_ID SYSREQ_EDOC_TYPE_NAME_LOCALIZE_ID SYSREQ_EDOC_TYPE_NUMERATION_METHOD SYSREQ_EDOC_TYPE_PSEUDO_REQUISITE_CODE SYSREQ_EDOC_TYPE_REQ_CODE SYSREQ_EDOC_TYPE_REQ_DESCRIPTION SYSREQ_EDOC_TYPE_REQ_DESCRIPTION_LOCALIZE_ID SYSREQ_EDOC_TYPE_REQ_IS_LEADING SYSREQ_EDOC_TYPE_REQ_IS_REQUIRED SYSREQ_EDOC_TYPE_REQ_NUMBER SYSREQ_EDOC_TYPE_REQ_ON_CHANGE SYSREQ_EDOC_TYPE_REQ_ON_CHANGE_EXISTS SYSREQ_EDOC_TYPE_REQ_ON_SELECT SYSREQ_EDOC_TYPE_REQ_ON_SELECT_KIND SYSREQ_EDOC_TYPE_REQ_SECTION SYSREQ_EDOC_TYPE_VIEW_CARD SYSREQ_EDOC_TYPE_VIEW_CODE SYSREQ_EDOC_TYPE_VIEW_COMMENT SYSREQ_EDOC_TYPE_VIEW_IS_MAIN SYSREQ_EDOC_TYPE_VIEW_NAME SYSREQ_EDOC_TYPE_VIEW_NAME_LOCALIZE_ID SYSREQ_EDOC_VERSION_AUTHOR SYSREQ_EDOC_VERSION_CRC SYSREQ_EDOC_VERSION_DATA SYSREQ_EDOC_VERSION_EDITOR SYSREQ_EDOC_VERSION_EXPORT_DATE SYSREQ_EDOC_VERSION_EXPORTER SYSREQ_EDOC_VERSION_HIDDEN SYSREQ_EDOC_VERSION_LIFE_STAGE SYSREQ_EDOC_VERSION_MODIFIED SYSREQ_EDOC_VERSION_NOTE SYSREQ_EDOC_VERSION_SIGNATURE_TYPE SYSREQ_EDOC_VERSION_SIGNED SYSREQ_EDOC_VERSION_SIZE SYSREQ_EDOC_VERSION_SOURCE SYSREQ_EDOC_VERSION_TEXT_MODIFIED SYSREQ_EDOCKIND_DEFAULT_VERSION_STATE_CODE SYSREQ_FOLDER_KIND SYSREQ_FUNC_CATEGORY SYSREQ_FUNC_COMMENT SYSREQ_FUNC_GROUP SYSREQ_FUNC_GROUP_COMMENT SYSREQ_FUNC_GROUP_NUMBER SYSREQ_FUNC_HELP SYSREQ_FUNC_PARAM_DEF_VALUE SYSREQ_FUNC_PARAM_IDENT SYSREQ_FUNC_PARAM_NUMBER SYSREQ_FUNC_PARAM_TYPE SYSREQ_FUNC_TEXT SYSREQ_GROUP_CATEGORY SYSREQ_ID SYSREQ_LAST_UPDATE SYSREQ_LEADER_REFERENCE SYSREQ_LINE_NUMBER SYSREQ_MAIN_RECORD_ID SYSREQ_NAME SYSREQ_NAME_LOCALIZE_ID SYSREQ_NOTE SYSREQ_ORIGINAL_RECORD SYSREQ_OUR_FIRM SYSREQ_PROFILING_SETTINGS_BATCH_LOGING SYSREQ_PROFILING_SETTINGS_BATCH_SIZE SYSREQ_PROFILING_SETTINGS_PROFILING_ENABLED SYSREQ_PROFILING_SETTINGS_SQL_PROFILING_ENABLED SYSREQ_PROFILING_SETTINGS_START_LOGGED SYSREQ_RECORD_STATUS SYSREQ_REF_REQ_FIELD_NAME SYSREQ_REF_REQ_FORMAT SYSREQ_REF_REQ_GENERATED SYSREQ_REF_REQ_LENGTH SYSREQ_REF_REQ_PRECISION SYSREQ_REF_REQ_REFERENCE SYSREQ_REF_REQ_SECTION SYSREQ_REF_REQ_STORED SYSREQ_REF_REQ_TOKENS SYSREQ_REF_REQ_TYPE SYSREQ_REF_REQ_VIEW SYSREQ_REF_TYPE_ACT_CODE SYSREQ_REF_TYPE_ACT_DESCRIPTION SYSREQ_REF_TYPE_ACT_DESCRIPTION_LOCALIZE_ID SYSREQ_REF_TYPE_ACT_ON_EXECUTE SYSREQ_REF_TYPE_ACT_ON_EXECUTE_EXISTS SYSREQ_REF_TYPE_ACT_SECTION SYSREQ_REF_TYPE_ADD_PARAMS SYSREQ_REF_TYPE_COMMENT SYSREQ_REF_TYPE_COMMON_SETTINGS SYSREQ_REF_TYPE_DISPLAY_REQUISITE_NAME SYSREQ_REF_TYPE_EVENT_TEXT SYSREQ_REF_TYPE_MAIN_LEADING_REF SYSREQ_REF_TYPE_NAME_IN_SINGULAR SYSREQ_REF_TYPE_NAME_IN_SINGULAR_LOCALIZE_ID SYSREQ_REF_TYPE_NAME_LOCALIZE_ID SYSREQ_REF_TYPE_NUMERATION_METHOD SYSREQ_REF_TYPE_REQ_CODE SYSREQ_REF_TYPE_REQ_DESCRIPTION SYSREQ_REF_TYPE_REQ_DESCRIPTION_LOCALIZE_ID SYSREQ_REF_TYPE_REQ_IS_CONTROL SYSREQ_REF_TYPE_REQ_IS_FILTER SYSREQ_REF_TYPE_REQ_IS_LEADING SYSREQ_REF_TYPE_REQ_IS_REQUIRED SYSREQ_REF_TYPE_REQ_NUMBER SYSREQ_REF_TYPE_REQ_ON_CHANGE SYSREQ_REF_TYPE_REQ_ON_CHANGE_EXISTS SYSREQ_REF_TYPE_REQ_ON_SELECT SYSREQ_REF_TYPE_REQ_ON_SELECT_KIND SYSREQ_REF_TYPE_REQ_SECTION SYSREQ_REF_TYPE_VIEW_CARD SYSREQ_REF_TYPE_VIEW_CODE SYSREQ_REF_TYPE_VIEW_COMMENT SYSREQ_REF_TYPE_VIEW_IS_MAIN SYSREQ_REF_TYPE_VIEW_NAME SYSREQ_REF_TYPE_VIEW_NAME_LOCALIZE_ID SYSREQ_REFERENCE_TYPE_ID SYSREQ_STATE SYSREQ_STATЕ SYSREQ_SYSTEM_SETTINGS_VALUE SYSREQ_TYPE SYSREQ_UNIT SYSREQ_UNIT_ID SYSREQ_USER_GROUPS_GROUP_FULL_NAME SYSREQ_USER_GROUPS_GROUP_NAME SYSREQ_USER_GROUPS_GROUP_SERVER_NAME SYSREQ_USERS_ACCESS_RIGHTS SYSREQ_USERS_AUTHENTICATION SYSREQ_USERS_CATEGORY SYSREQ_USERS_COMPONENT SYSREQ_USERS_COMPONENT_USER_IS_PUBLIC SYSREQ_USERS_DOMAIN SYSREQ_USERS_FULL_USER_NAME SYSREQ_USERS_GROUP SYSREQ_USERS_IS_MAIN_SERVER SYSREQ_USERS_LOGIN SYSREQ_USERS_REFERENCE_USER_IS_PUBLIC SYSREQ_USERS_STATUS SYSREQ_USERS_USER_CERTIFICATE SYSREQ_USERS_USER_CERTIFICATE_INFO SYSREQ_USERS_USER_CERTIFICATE_PLUGIN_NAME SYSREQ_USERS_USER_CERTIFICATE_PLUGIN_VERSION SYSREQ_USERS_USER_CERTIFICATE_STATE SYSREQ_USERS_USER_CERTIFICATE_SUBJECT_NAME SYSREQ_USERS_USER_CERTIFICATE_THUMBPRINT SYSREQ_USERS_USER_DEFAULT_CERTIFICATE SYSREQ_USERS_USER_DESCRIPTION SYSREQ_USERS_USER_GLOBAL_NAME SYSREQ_USERS_USER_LOGIN SYSREQ_USERS_USER_MAIN_SERVER SYSREQ_USERS_USER_TYPE SYSREQ_WORK_RULES_FOLDER_ID " + "RESULT_VAR_NAME RESULT_VAR_NAME_ENG " + "AUTO_NUMERATION_RULE_ID CANT_CHANGE_ID_REQUISITE_RULE_ID CANT_CHANGE_OURFIRM_REQUISITE_RULE_ID CHECK_CHANGING_REFERENCE_RECORD_USE_RULE_ID CHECK_CODE_REQUISITE_RULE_ID CHECK_DELETING_REFERENCE_RECORD_USE_RULE_ID CHECK_FILTRATER_CHANGES_RULE_ID CHECK_RECORD_INTERVAL_RULE_ID CHECK_REFERENCE_INTERVAL_RULE_ID CHECK_REQUIRED_DATA_FULLNESS_RULE_ID CHECK_REQUIRED_REQUISITES_FULLNESS_RULE_ID MAKE_RECORD_UNRATIFIED_RULE_ID RESTORE_AUTO_NUMERATION_RULE_ID SET_FIRM_CONTEXT_FROM_RECORD_RULE_ID SET_FIRST_RECORD_IN_LIST_FORM_RULE_ID SET_IDSPS_VALUE_RULE_ID SET_NEXT_CODE_VALUE_RULE_ID SET_OURFIRM_BOUNDS_RULE_ID SET_OURFIRM_REQUISITE_RULE_ID " + "SCRIPT_BLOCK_AFTER_FINISH_EVENT SCRIPT_BLOCK_BEFORE_START_EVENT SCRIPT_BLOCK_EXECUTION_RESULTS_PROPERTY SCRIPT_BLOCK_NAME_PROPERTY SCRIPT_BLOCK_SCRIPT_PROPERTY " + "SUBTASK_BLOCK_ABORT_DEADLINE_PROPERTY SUBTASK_BLOCK_AFTER_FINISH_EVENT SUBTASK_BLOCK_ASSIGN_PARAMS_EVENT SUBTASK_BLOCK_ATTACHMENTS_PROPERTY SUBTASK_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY SUBTASK_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY SUBTASK_BLOCK_BEFORE_START_EVENT SUBTASK_BLOCK_CREATED_TASK_PROPERTY SUBTASK_BLOCK_CREATION_EVENT SUBTASK_BLOCK_DEADLINE_PROPERTY SUBTASK_BLOCK_IMPORTANCE_PROPERTY SUBTASK_BLOCK_INITIATOR_PROPERTY SUBTASK_BLOCK_IS_RELATIVE_ABORT_DEADLINE_PROPERTY SUBTASK_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY SUBTASK_BLOCK_JOBS_TYPE_PROPERTY SUBTASK_BLOCK_NAME_PROPERTY SUBTASK_BLOCK_PARALLEL_ROUTE_PROPERTY SUBTASK_BLOCK_PERFORMERS_PROPERTY SUBTASK_BLOCK_RELATIVE_ABORT_DEADLINE_TYPE_PROPERTY SUBTASK_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY SUBTASK_BLOCK_REQUIRE_SIGN_PROPERTY SUBTASK_BLOCK_STANDARD_ROUTE_PROPERTY SUBTASK_BLOCK_START_EVENT SUBTASK_BLOCK_STEP_CONTROL_PROPERTY SUBTASK_BLOCK_SUBJECT_PROPERTY SUBTASK_BLOCK_TASK_CONTROL_PROPERTY SUBTASK_BLOCK_TEXT_PROPERTY SUBTASK_BLOCK_UNLOCK_ATTACHMENTS_ON_STOP_PROPERTY SUBTASK_BLOCK_USE_STANDARD_ROUTE_PROPERTY SUBTASK_BLOCK_WAIT_FOR_TASK_COMPLETE_PROPERTY " + "SYSCOMP_CONTROL_JOBS SYSCOMP_FOLDERS SYSCOMP_JOBS SYSCOMP_NOTICES SYSCOMP_TASKS " + "SYSDLG_CREATE_EDOCUMENT SYSDLG_CREATE_EDOCUMENT_VERSION SYSDLG_CURRENT_PERIOD SYSDLG_EDIT_FUNCTION_HELP SYSDLG_EDOCUMENT_KINDS_FOR_TEMPLATE SYSDLG_EXPORT_MULTIPLE_EDOCUMENTS SYSDLG_EXPORT_SINGLE_EDOCUMENT SYSDLG_IMPORT_EDOCUMENT SYSDLG_MULTIPLE_SELECT SYSDLG_SETUP_ACCESS_RIGHTS SYSDLG_SETUP_DEFAULT_RIGHTS SYSDLG_SETUP_FILTER_CONDITION SYSDLG_SETUP_SIGN_RIGHTS SYSDLG_SETUP_TASK_OBSERVERS SYSDLG_SETUP_TASK_ROUTE SYSDLG_SETUP_USERS_LIST SYSDLG_SIGN_EDOCUMENT SYSDLG_SIGN_MULTIPLE_EDOCUMENTS " + "SYSREF_ACCESS_RIGHTS_TYPES SYSREF_ADMINISTRATION_HISTORY SYSREF_ALL_AVAILABLE_COMPONENTS SYSREF_ALL_AVAILABLE_PRIVILEGES SYSREF_ALL_REPLICATING_COMPONENTS SYSREF_AVAILABLE_DEVELOPERS_COMPONENTS SYSREF_CALENDAR_EVENTS SYSREF_COMPONENT_TOKEN_HISTORY SYSREF_COMPONENT_TOKENS SYSREF_COMPONENTS SYSREF_CONSTANTS SYSREF_DATA_RECEIVE_PROTOCOL SYSREF_DATA_SEND_PROTOCOL SYSREF_DIALOGS SYSREF_DIALOGS_REQUISITES SYSREF_EDITORS SYSREF_EDOC_CARDS SYSREF_EDOC_TYPES SYSREF_EDOCUMENT_CARD_REQUISITES SYSREF_EDOCUMENT_CARD_TYPES SYSREF_EDOCUMENT_CARD_TYPES_REFERENCE SYSREF_EDOCUMENT_CARDS SYSREF_EDOCUMENT_HISTORY SYSREF_EDOCUMENT_KINDS SYSREF_EDOCUMENT_REQUISITES SYSREF_EDOCUMENT_SIGNATURES SYSREF_EDOCUMENT_TEMPLATES SYSREF_EDOCUMENT_TEXT_STORAGES SYSREF_EDOCUMENT_VIEWS SYSREF_FILTERER_SETUP_CONFLICTS SYSREF_FILTRATER_SETTING_CONFLICTS SYSREF_FOLDER_HISTORY SYSREF_FOLDERS SYSREF_FUNCTION_GROUPS SYSREF_FUNCTION_PARAMS SYSREF_FUNCTIONS SYSREF_JOB_HISTORY SYSREF_LINKS SYSREF_LOCALIZATION_DICTIONARY SYSREF_LOCALIZATION_LANGUAGES SYSREF_MODULES SYSREF_PRIVILEGES SYSREF_RECORD_HISTORY SYSREF_REFERENCE_REQUISITES SYSREF_REFERENCE_TYPE_VIEWS SYSREF_REFERENCE_TYPES SYSREF_REFERENCES SYSREF_REFERENCES_REQUISITES SYSREF_REMOTE_SERVERS SYSREF_REPLICATION_SESSIONS_LOG SYSREF_REPLICATION_SESSIONS_PROTOCOL SYSREF_REPORTS SYSREF_ROLES SYSREF_ROUTE_BLOCK_GROUPS SYSREF_ROUTE_BLOCKS SYSREF_SCRIPTS SYSREF_SEARCHES SYSREF_SERVER_EVENTS SYSREF_SERVER_EVENTS_HISTORY SYSREF_STANDARD_ROUTE_GROUPS SYSREF_STANDARD_ROUTES SYSREF_STATUSES SYSREF_SYSTEM_SETTINGS SYSREF_TASK_HISTORY SYSREF_TASK_KIND_GROUPS SYSREF_TASK_KINDS SYSREF_TASK_RIGHTS SYSREF_TASK_SIGNATURES SYSREF_TASKS SYSREF_UNITS SYSREF_USER_GROUPS SYSREF_USER_GROUPS_REFERENCE SYSREF_USER_SUBSTITUTION SYSREF_USERS SYSREF_USERS_REFERENCE SYSREF_VIEWERS SYSREF_WORKING_TIME_CALENDARS " + "ACCESS_RIGHTS_TABLE_NAME EDMS_ACCESS_TABLE_NAME EDOC_TYPES_TABLE_NAME " + "TEST_DEV_DB_NAME TEST_DEV_SYSTEM_CODE TEST_EDMS_DB_NAME TEST_EDMS_MAIN_CODE TEST_EDMS_MAIN_DB_NAME TEST_EDMS_SECOND_CODE TEST_EDMS_SECOND_DB_NAME TEST_EDMS_SYSTEM_CODE TEST_ISB5_MAIN_CODE TEST_ISB5_SECOND_CODE TEST_SQL_SERVER_2005_NAME TEST_SQL_SERVER_NAME " + "ATTENTION_CAPTION cbsCommandLinks cbsDefault CONFIRMATION_CAPTION ERROR_CAPTION INFORMATION_CAPTION mrCancel mrOk " + "EDOC_VERSION_ACTIVE_STAGE_CODE EDOC_VERSION_DESIGN_STAGE_CODE EDOC_VERSION_OBSOLETE_STAGE_CODE " + "cpDataEnciphermentEnabled cpDigitalSignatureEnabled cpID cpIssuer cpPluginVersion cpSerial cpSubjectName cpSubjSimpleName cpValidFromDate cpValidToDate " + "ISBL_SYNTAX NO_SYNTAX XML_SYNTAX " + "WAIT_BLOCK_AFTER_FINISH_EVENT WAIT_BLOCK_BEFORE_START_EVENT WAIT_BLOCK_DEADLINE_PROPERTY WAIT_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY WAIT_BLOCK_NAME_PROPERTY WAIT_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY " + "SYSRES_COMMON SYSRES_CONST SYSRES_MBFUNC SYSRES_SBDATA SYSRES_SBGUI SYSRES_SBINTF SYSRES_SBREFDSC SYSRES_SQLERRORS SYSRES_SYSCOMP ", Lt = "atUser atGroup atRole " + "aemEnabledAlways aemDisabledAlways aemEnabledOnBrowse aemEnabledOnEdit aemDisabledOnBrowseEmpty " + "apBegin apEnd " + "alLeft alRight " + "asmNever asmNoButCustomize asmAsLastTime asmYesButCustomize asmAlways " + "cirCommon cirRevoked " + "ctSignature ctEncode ctSignatureEncode " + "clbUnchecked clbChecked clbGrayed " + "ceISB ceAlways ceNever " + "ctDocument ctReference ctScript ctUnknown ctReport ctDialog ctFunction ctFolder ctEDocument ctTask ctJob ctNotice ctControlJob " + "cfInternal cfDisplay " + "ciUnspecified ciWrite ciRead " + "ckFolder ckEDocument ckTask ckJob ckComponentToken ckAny ckReference ckScript ckReport ckDialog " + "ctISBLEditor ctBevel ctButton ctCheckListBox ctComboBox ctComboEdit ctGrid ctDBCheckBox ctDBComboBox ctDBEdit ctDBEllipsis ctDBMemo ctDBNavigator ctDBRadioGroup ctDBStatusLabel ctEdit ctGroupBox ctInplaceHint ctMemo ctPanel ctListBox ctRadioButton ctRichEdit ctTabSheet ctWebBrowser ctImage ctHyperLink ctLabel ctDBMultiEllipsis ctRibbon ctRichView ctInnerPanel ctPanelGroup ctBitButton " + "cctDate cctInteger cctNumeric cctPick cctReference cctString cctText " + "cltInternal cltPrimary cltGUI " + "dseBeforeOpen dseAfterOpen dseBeforeClose dseAfterClose dseOnValidDelete dseBeforeDelete dseAfterDelete dseAfterDeleteOutOfTransaction dseOnDeleteError dseBeforeInsert dseAfterInsert dseOnValidUpdate dseBeforeUpdate dseOnUpdateRatifiedRecord dseAfterUpdate dseAfterUpdateOutOfTransaction dseOnUpdateError dseAfterScroll dseOnOpenRecord dseOnCloseRecord dseBeforeCancel dseAfterCancel dseOnUpdateDeadlockError dseBeforeDetailUpdate dseOnPrepareUpdate dseOnAnyRequisiteChange " + "dssEdit dssInsert dssBrowse dssInActive " + "dftDate dftShortDate dftDateTime dftTimeStamp " + "dotDays dotHours dotMinutes dotSeconds " + "dtkndLocal dtkndUTC " + "arNone arView arEdit arFull " + "ddaView ddaEdit " + "emLock emEdit emSign emExportWithLock emImportWithUnlock emChangeVersionNote emOpenForModify emChangeLifeStage emDelete emCreateVersion emImport emUnlockExportedWithLock emStart emAbort emReInit emMarkAsReaded emMarkAsUnreaded emPerform emAccept emResume emChangeRights emEditRoute emEditObserver emRecoveryFromLocalCopy emChangeWorkAccessType emChangeEncodeTypeToCertificate emChangeEncodeTypeToPassword emChangeEncodeTypeToNone emChangeEncodeTypeToCertificatePassword emChangeStandardRoute emGetText emOpenForView emMoveToStorage emCreateObject emChangeVersionHidden emDeleteVersion emChangeLifeCycleStage emApprovingSign emExport emContinue emLockFromEdit emUnLockForEdit emLockForServer emUnlockFromServer emDelegateAccessRights emReEncode " + "ecotFile ecotProcess " + "eaGet eaCopy eaCreate eaCreateStandardRoute " + "edltAll edltNothing edltQuery " + "essmText essmCard " + "esvtLast esvtLastActive esvtSpecified " + "edsfExecutive edsfArchive " + "edstSQLServer edstFile " + "edvstNone edvstEDocumentVersionCopy edvstFile edvstTemplate edvstScannedFile " + "vsDefault vsDesign vsActive vsObsolete " + "etNone etCertificate etPassword etCertificatePassword " + "ecException ecWarning ecInformation " + "estAll estApprovingOnly " + "evtLast evtLastActive evtQuery " + "fdtString fdtNumeric fdtInteger fdtDate fdtText fdtUnknown fdtWideString fdtLargeInteger " + "ftInbox ftOutbox ftFavorites ftCommonFolder ftUserFolder ftComponents ftQuickLaunch ftShortcuts ftSearch " + "grhAuto grhX1 grhX2 grhX3 " + "hltText hltRTF hltHTML " + "iffBMP iffJPEG iffMultiPageTIFF iffSinglePageTIFF iffTIFF iffPNG " + "im8bGrayscale im24bRGB im1bMonochrome " + "itBMP itJPEG itWMF itPNG " + "ikhInformation ikhWarning ikhError ikhNoIcon " + "icUnknown icScript icFunction icIntegratedReport icAnalyticReport icDataSetEventHandler icActionHandler icFormEventHandler icLookUpEventHandler icRequisiteChangeEventHandler icBeforeSearchEventHandler icRoleCalculation icSelectRouteEventHandler icBlockPropertyCalculation icBlockQueryParamsEventHandler icChangeSearchResultEventHandler icBlockEventHandler icSubTaskInitEventHandler icEDocDataSetEventHandler icEDocLookUpEventHandler icEDocActionHandler icEDocFormEventHandler icEDocRequisiteChangeEventHandler icStructuredConversionRule icStructuredConversionEventBefore icStructuredConversionEventAfter icWizardEventHandler icWizardFinishEventHandler icWizardStepEventHandler icWizardStepFinishEventHandler icWizardActionEnableEventHandler icWizardActionExecuteEventHandler icCreateJobsHandler icCreateNoticesHandler icBeforeLookUpEventHandler icAfterLookUpEventHandler icTaskAbortEventHandler icWorkflowBlockActionHandler icDialogDataSetEventHandler icDialogActionHandler icDialogLookUpEventHandler icDialogRequisiteChangeEventHandler icDialogFormEventHandler icDialogValidCloseEventHandler icBlockFormEventHandler icTaskFormEventHandler icReferenceMethod icEDocMethod icDialogMethod icProcessMessageHandler " + "isShow isHide isByUserSettings " + "jkJob jkNotice jkControlJob " + "jtInner jtLeft jtRight jtFull jtCross " + "lbpAbove lbpBelow lbpLeft lbpRight " + "eltPerConnection eltPerUser " + "sfcUndefined sfcBlack sfcGreen sfcRed sfcBlue sfcOrange sfcLilac " + "sfsItalic sfsStrikeout sfsNormal " + "ldctStandardRoute ldctWizard ldctScript ldctFunction ldctRouteBlock ldctIntegratedReport ldctAnalyticReport ldctReferenceType ldctEDocumentType ldctDialog ldctServerEvents " + "mrcrtNone mrcrtUser mrcrtMaximal mrcrtCustom " + "vtEqual vtGreaterOrEqual vtLessOrEqual vtRange " + "rdYesterday rdToday rdTomorrow rdThisWeek rdThisMonth rdThisYear rdNextMonth rdNextWeek rdLastWeek rdLastMonth " + "rdWindow rdFile rdPrinter " + "rdtString rdtNumeric rdtInteger rdtDate rdtReference rdtAccount rdtText rdtPick rdtUnknown rdtLargeInteger rdtDocument " + "reOnChange reOnChangeValues " + "ttGlobal ttLocal ttUser ttSystem " + "ssmBrowse ssmSelect ssmMultiSelect ssmBrowseModal " + "smSelect smLike smCard " + "stNone stAuthenticating stApproving " + "sctString sctStream " + "sstAnsiSort sstNaturalSort " + "svtEqual svtContain " + "soatString soatNumeric soatInteger soatDatetime soatReferenceRecord soatText soatPick soatBoolean soatEDocument soatAccount soatIntegerCollection soatNumericCollection soatStringCollection soatPickCollection soatDatetimeCollection soatBooleanCollection soatReferenceRecordCollection soatEDocumentCollection soatAccountCollection soatContents soatUnknown " + "tarAbortByUser tarAbortByWorkflowException " + "tvtAllWords tvtExactPhrase tvtAnyWord " + "usNone usCompleted usRedSquare usBlueSquare usYellowSquare usGreenSquare usOrangeSquare usPurpleSquare usFollowUp " + "utUnknown utUser utDeveloper utAdministrator utSystemDeveloper utDisconnected " + "btAnd btDetailAnd btOr btNotOr btOnly " + "vmView vmSelect vmNavigation " + "vsmSingle vsmMultiple vsmMultipleCheck vsmNoSelection " + "wfatPrevious wfatNext wfatCancel wfatFinish " + "wfepUndefined wfepText3 wfepText6 wfepText9 wfepSpinEdit wfepDropDown wfepRadioGroup wfepFlag wfepText12 wfepText15 wfepText18 wfepText21 wfepText24 wfepText27 wfepText30 wfepRadioGroupColumn1 wfepRadioGroupColumn2 wfepRadioGroupColumn3 " + "wfetQueryParameter wfetText wfetDelimiter wfetLabel " + "wptString wptInteger wptNumeric wptBoolean wptDateTime wptPick wptText wptUser wptUserList wptEDocumentInfo wptEDocumentInfoList wptReferenceRecordInfo wptReferenceRecordInfoList wptFolderInfo wptTaskInfo wptContents wptFileName wptDate " + "wsrComplete wsrGoNext wsrGoPrevious wsrCustom wsrCancel wsrGoFinal " + "wstForm wstEDocument wstTaskCard wstReferenceRecordCard wstFinal " + "waAll waPerformers waManual " + "wsbStart wsbFinish wsbNotice wsbStep wsbDecision wsbWait wsbMonitor wsbScript wsbConnector wsbSubTask wsbLifeCycleStage wsbPause " + "wdtInteger wdtFloat wdtString wdtPick wdtDateTime wdtBoolean wdtTask wdtJob wdtFolder wdtEDocument wdtReferenceRecord wdtUser wdtGroup wdtRole wdtIntegerCollection wdtFloatCollection wdtStringCollection wdtPickCollection wdtDateTimeCollection wdtBooleanCollection wdtTaskCollection wdtJobCollection wdtFolderCollection wdtEDocumentCollection wdtReferenceRecordCollection wdtUserCollection wdtGroupCollection wdtRoleCollection wdtContents wdtUserList wdtSearchDescription wdtDeadLine wdtPickSet wdtAccountCollection " + "wiLow wiNormal wiHigh " + "wrtSoft wrtHard " + "wsInit wsRunning wsDone wsControlled wsAborted wsContinued " + "wtmFull wtmFromCurrent wtmOnlyCurrent ", Ye = "AddSubString AdjustLineBreaks AmountInWords Analysis ArrayDimCount ArrayHighBound ArrayLowBound ArrayOf ArrayReDim Assert Assigned BeginOfMonth BeginOfPeriod BuildProfilingOperationAnalysis CallProcedure CanReadFile CArrayElement CDataSetRequisite ChangeDate ChangeReferenceDataset Char CharPos CheckParam CheckParamValue CompareStrings ConstantExists ControlState ConvertDateStr Copy CopyFile CreateArray CreateCachedReference CreateConnection CreateDialog CreateDualListDialog CreateEditor CreateException CreateFile CreateFolderDialog CreateInputDialog CreateLinkFile CreateList CreateLock CreateMemoryDataSet CreateObject CreateOpenDialog CreateProgress CreateQuery CreateReference CreateReport CreateSaveDialog CreateScript CreateSQLPivotFunction CreateStringList CreateTreeListSelectDialog CSelectSQL CSQL CSubString CurrentUserID CurrentUserName CurrentVersion DataSetLocateEx DateDiff DateTimeDiff DateToStr DayOfWeek DeleteFile DirectoryExists DisableCheckAccessRights DisableCheckFullShowingRestriction DisableMassTaskSendingRestrictions DropTable DupeString EditText EnableCheckAccessRights EnableCheckFullShowingRestriction EnableMassTaskSendingRestrictions EndOfMonth EndOfPeriod ExceptionExists ExceptionsOff ExceptionsOn Execute ExecuteProcess Exit ExpandEnvironmentVariables ExtractFileDrive ExtractFileExt ExtractFileName ExtractFilePath ExtractParams FileExists FileSize FindFile FindSubString FirmContext ForceDirectories Format FormatDate FormatNumeric FormatSQLDate FormatString FreeException GetComponent GetComponentLaunchParam GetConstant GetLastException GetReferenceRecord GetRefTypeByRefID GetTableID GetTempFolder IfThen In IndexOf InputDialog InputDialogEx InteractiveMode IsFileLocked IsGraphicFile IsNumeric Length LoadString LoadStringFmt LocalTimeToUTC LowerCase Max MessageBox MessageBoxEx MimeDecodeBinary MimeDecodeString MimeEncodeBinary MimeEncodeString Min MoneyInWords MoveFile NewID Now OpenFile Ord Precision Raise ReadCertificateFromFile ReadFile ReferenceCodeByID ReferenceNumber ReferenceRequisiteMode ReferenceRequisiteValue RegionDateSettings RegionNumberSettings RegionTimeSettings RegRead RegWrite RenameFile Replace Round SelectServerCode SelectSQL ServerDateTime SetConstant SetManagedFolderFieldsState ShowConstantsInputDialog ShowMessage Sleep Split SQL SQL2XLSTAB SQLProfilingSendReport StrToDate SubString SubStringCount SystemSetting Time TimeDiff Today Transliterate Trim UpperCase UserStatus UTCToLocalTime ValidateXML VarIsClear VarIsEmpty VarIsNull WorkTimeDiff WriteFile WriteFileEx WriteObjectHistory Анализ БазаДанных БлокЕсть БлокЕстьРасш БлокИнфо БлокСнять БлокСнятьРасш БлокУстановить Ввод ВводМеню ВедС ВедСпр ВерхняяГраницаМассива ВнешПрогр Восст ВременнаяПапка Время ВыборSQL ВыбратьЗапись ВыделитьСтр Вызвать Выполнить ВыпПрогр ГрафическийФайл ГруппаДополнительно ДатаВремяСерв ДеньНедели ДиалогДаНет ДлинаСтр ДобПодстр ЕПусто ЕслиТо ЕЧисло ЗамПодстр ЗаписьСправочника ЗначПоляСпр ИДТипСпр ИзвлечьДиск ИзвлечьИмяФайла ИзвлечьПуть ИзвлечьРасширение ИзмДат ИзменитьРазмерМассива ИзмеренийМассива ИмяОрг ИмяПоляСпр Индекс ИндикаторЗакрыть ИндикаторОткрыть ИндикаторШаг ИнтерактивныйРежим ИтогТблСпр КодВидВедСпр КодВидСпрПоИД КодПоAnalit КодСимвола КодСпр КолПодстр КолПроп КонМес Конст КонстЕсть КонстЗнач КонТран КопироватьФайл КопияСтр КПериод КСтрТблСпр Макс МаксСтрТблСпр Массив Меню МенюРасш Мин НаборДанныхНайтиРасш НаимВидСпр НаимПоAnalit НаимСпр НастроитьПереводыСтрок НачМес НачТран НижняяГраницаМассива НомерСпр НПериод Окно Окр Окружение ОтлИнфДобавить ОтлИнфУдалить Отчет ОтчетАнал ОтчетИнт ПапкаСуществует Пауза ПВыборSQL ПереименоватьФайл Переменные ПереместитьФайл Подстр ПоискПодстр ПоискСтр ПолучитьИДТаблицы ПользовательДополнительно ПользовательИД ПользовательИмя ПользовательСтатус Прервать ПроверитьПараметр ПроверитьПараметрЗнач ПроверитьУсловие РазбСтр РазнВремя РазнДат РазнДатаВремя РазнРабВремя РегУстВрем РегУстДат РегУстЧсл РедТекст РеестрЗапись РеестрСписокИменПарам РеестрЧтение РеквСпр РеквСпрПр Сегодня Сейчас Сервер СерверПроцессИД СертификатФайлСчитать СжПроб Символ СистемаДиректумКод СистемаИнформация СистемаКод Содержит СоединениеЗакрыть СоединениеОткрыть СоздатьДиалог СоздатьДиалогВыбораИзДвухСписков СоздатьДиалогВыбораПапки СоздатьДиалогОткрытияФайла СоздатьДиалогСохраненияФайла СоздатьЗапрос СоздатьИндикатор СоздатьИсключение СоздатьКэшированныйСправочник СоздатьМассив СоздатьНаборДанных СоздатьОбъект СоздатьОтчет СоздатьПапку СоздатьРедактор СоздатьСоединение СоздатьСписок СоздатьСписокСтрок СоздатьСправочник СоздатьСценарий СоздСпр СостСпр Сохр СохрСпр СписокСистем Спр Справочник СпрБлокЕсть СпрБлокСнять СпрБлокСнятьРасш СпрБлокУстановить СпрИзмНабДан СпрКод СпрНомер СпрОбновить СпрОткрыть СпрОтменить СпрПарам СпрПолеЗнач СпрПолеИмя СпрРекв СпрРеквВведЗн СпрРеквНовые СпрРеквПр СпрРеквПредЗн СпрРеквРежим СпрРеквТипТекст СпрСоздать СпрСост СпрСохранить СпрТблИтог СпрТблСтр СпрТблСтрКол СпрТблСтрМакс СпрТблСтрМин СпрТблСтрПред СпрТблСтрСлед СпрТблСтрСозд СпрТблСтрУд СпрТекПредст СпрУдалить СравнитьСтр СтрВерхРегистр СтрНижнРегистр СтрТблСпр СумПроп Сценарий СценарийПарам ТекВерсия ТекОрг Точн Тран Транслитерация УдалитьТаблицу УдалитьФайл УдСпр УдСтрТблСпр Уст УстановкиКонстант ФайлАтрибутСчитать ФайлАтрибутУстановить ФайлВремя ФайлВремяУстановить ФайлВыбрать ФайлЗанят ФайлЗаписать ФайлИскать ФайлКопировать ФайлМожноЧитать ФайлОткрыть ФайлПереименовать ФайлПерекодировать ФайлПереместить ФайлПросмотреть ФайлРазмер ФайлСоздать ФайлСсылкаСоздать ФайлСуществует ФайлСчитать ФайлУдалить ФмтSQLДат ФмтДат ФмтСтр ФмтЧсл Формат ЦМассивЭлемент ЦНаборДанныхРеквизит ЦПодстр ", Wt = "AltState Application CallType ComponentTokens CreatedJobs CreatedNotices ControlState DialogResult Dialogs EDocuments EDocumentVersionSource Folders GlobalIDs Job Jobs InputValue LookUpReference LookUpRequisiteNames LookUpSearch Object ParentComponent Processes References Requisite ReportName Reports Result Scripts Searches SelectedAttachments SelectedItems SelectMode Sender ServerEvents ServiceFactory ShiftState SubTask SystemDialogs Tasks Wizard Wizards Work ВызовСпособ ИмяОтчета РеквЗнач ", kt = "IApplication IAccessRights IAccountRepository IAccountSelectionRestrictions IAction IActionList IAdministrationHistoryDescription IAnchors IApplication IArchiveInfo IAttachment IAttachmentList ICheckListBox ICheckPointedList IColumn IComponent IComponentDescription IComponentToken IComponentTokenFactory IComponentTokenInfo ICompRecordInfo IConnection IContents IControl IControlJob IControlJobInfo IControlList ICrypto ICrypto2 ICustomJob ICustomJobInfo ICustomListBox ICustomObjectWizardStep ICustomWork ICustomWorkInfo IDataSet IDataSetAccessInfo IDataSigner IDateCriterion IDateRequisite IDateRequisiteDescription IDateValue IDeaAccessRights IDeaObjectInfo IDevelopmentComponentLock IDialog IDialogFactory IDialogPickRequisiteItems IDialogsFactory IDICSFactory IDocRequisite IDocumentInfo IDualListDialog IECertificate IECertificateInfo IECertificates IEditControl IEditorForm IEdmsExplorer IEdmsObject IEdmsObjectDescription IEdmsObjectFactory IEdmsObjectInfo IEDocument IEDocumentAccessRights IEDocumentDescription IEDocumentEditor IEDocumentFactory IEDocumentInfo IEDocumentStorage IEDocumentVersion IEDocumentVersionListDialog IEDocumentVersionSource IEDocumentWizardStep IEDocVerSignature IEDocVersionState IEnabledMode IEncodeProvider IEncrypter IEvent IEventList IException IExternalEvents IExternalHandler IFactory IField IFileDialog IFolder IFolderDescription IFolderDialog IFolderFactory IFolderInfo IForEach IForm IFormTitle IFormWizardStep IGlobalIDFactory IGlobalIDInfo IGrid IHasher IHistoryDescription IHyperLinkControl IImageButton IImageControl IInnerPanel IInplaceHint IIntegerCriterion IIntegerList IIntegerRequisite IIntegerValue IISBLEditorForm IJob IJobDescription IJobFactory IJobForm IJobInfo ILabelControl ILargeIntegerCriterion ILargeIntegerRequisite ILargeIntegerValue ILicenseInfo ILifeCycleStage IList IListBox ILocalIDInfo ILocalization ILock IMemoryDataSet IMessagingFactory IMetadataRepository INotice INoticeInfo INumericCriterion INumericRequisite INumericValue IObject IObjectDescription IObjectImporter IObjectInfo IObserver IPanelGroup IPickCriterion IPickProperty IPickRequisite IPickRequisiteDescription IPickRequisiteItem IPickRequisiteItems IPickValue IPrivilege IPrivilegeList IProcess IProcessFactory IProcessMessage IProgress IProperty IPropertyChangeEvent IQuery IReference IReferenceCriterion IReferenceEnabledMode IReferenceFactory IReferenceHistoryDescription IReferenceInfo IReferenceRecordCardWizardStep IReferenceRequisiteDescription IReferencesFactory IReferenceValue IRefRequisite IReport IReportFactory IRequisite IRequisiteDescription IRequisiteDescriptionList IRequisiteFactory IRichEdit IRouteStep IRule IRuleList ISchemeBlock IScript IScriptFactory ISearchCriteria ISearchCriterion ISearchDescription ISearchFactory ISearchFolderInfo ISearchForObjectDescription ISearchResultRestrictions ISecuredContext ISelectDialog IServerEvent IServerEventFactory IServiceDialog IServiceFactory ISignature ISignProvider ISignProvider2 ISignProvider3 ISimpleCriterion IStringCriterion IStringList IStringRequisite IStringRequisiteDescription IStringValue ISystemDialogsFactory ISystemInfo ITabSheet ITask ITaskAbortReasonInfo ITaskCardWizardStep ITaskDescription ITaskFactory ITaskInfo ITaskRoute ITextCriterion ITextRequisite ITextValue ITreeListSelectDialog IUser IUserList IValue IView IWebBrowserControl IWizard IWizardAction IWizardFactory IWizardFormElement IWizardParam IWizardPickParam IWizardReferenceParam IWizardStep IWorkAccessRights IWorkDescription IWorkflowAskableParam IWorkflowAskableParams IWorkflowBlock IWorkflowBlockResult IWorkflowEnabledMode IWorkflowParam IWorkflowPickParam IWorkflowReferenceParam IWorkState IWorkTreeCustomNode IWorkTreeJobNode IWorkTreeTaskNode IXMLEditorForm SBCrypto ", ne = Te + Lt, Dt = Wt, ye = "null true false nil ", he = {
+    const e = "[A-Za-zА-Яа-яёЁ_!][A-Za-zА-Яа-яёЁ_0-9]*", a = "[A-Za-zА-Яа-яёЁ_][A-Za-zА-Яа-яёЁ_0-9]*", s = "and и else иначе endexcept endfinally endforeach конецвсе endif конецесли endwhile конецпока except exitfor finally foreach все if если in в not не or или try while пока ", ke = "SYSRES_CONST_ACCES_RIGHT_TYPE_EDIT SYSRES_CONST_ACCES_RIGHT_TYPE_FULL SYSRES_CONST_ACCES_RIGHT_TYPE_VIEW SYSRES_CONST_ACCESS_MODE_REQUISITE_CODE SYSRES_CONST_ACCESS_NO_ACCESS_VIEW SYSRES_CONST_ACCESS_NO_ACCESS_VIEW_CODE SYSRES_CONST_ACCESS_RIGHTS_ADD_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_ADD_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_CHANGE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_CHANGE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_DELETE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_DELETE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_EXECUTE_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_EXECUTE_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_NO_ACCESS_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_NO_ACCESS_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_RATIFY_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_RATIFY_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_RIGHTS_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW SYSRES_CONST_ACCESS_RIGHTS_VIEW_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW_REQUISITE_CODE SYSRES_CONST_ACCESS_RIGHTS_VIEW_REQUISITE_YES_CODE SYSRES_CONST_ACCESS_TYPE_CHANGE SYSRES_CONST_ACCESS_TYPE_CHANGE_CODE SYSRES_CONST_ACCESS_TYPE_EXISTS SYSRES_CONST_ACCESS_TYPE_EXISTS_CODE SYSRES_CONST_ACCESS_TYPE_FULL SYSRES_CONST_ACCESS_TYPE_FULL_CODE SYSRES_CONST_ACCESS_TYPE_VIEW SYSRES_CONST_ACCESS_TYPE_VIEW_CODE SYSRES_CONST_ACTION_TYPE_ABORT SYSRES_CONST_ACTION_TYPE_ACCEPT SYSRES_CONST_ACTION_TYPE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ADD_ATTACHMENT SYSRES_CONST_ACTION_TYPE_CHANGE_CARD SYSRES_CONST_ACTION_TYPE_CHANGE_KIND SYSRES_CONST_ACTION_TYPE_CHANGE_STORAGE SYSRES_CONST_ACTION_TYPE_CONTINUE SYSRES_CONST_ACTION_TYPE_COPY SYSRES_CONST_ACTION_TYPE_CREATE SYSRES_CONST_ACTION_TYPE_CREATE_VERSION SYSRES_CONST_ACTION_TYPE_DELETE SYSRES_CONST_ACTION_TYPE_DELETE_ATTACHMENT SYSRES_CONST_ACTION_TYPE_DELETE_VERSION SYSRES_CONST_ACTION_TYPE_DISABLE_DELEGATE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ENABLE_DELEGATE_ACCESS_RIGHTS SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_CERTIFICATE SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_CERTIFICATE_AND_PASSWORD SYSRES_CONST_ACTION_TYPE_ENCRYPTION_BY_PASSWORD SYSRES_CONST_ACTION_TYPE_EXPORT_WITH_LOCK SYSRES_CONST_ACTION_TYPE_EXPORT_WITHOUT_LOCK SYSRES_CONST_ACTION_TYPE_IMPORT_WITH_UNLOCK SYSRES_CONST_ACTION_TYPE_IMPORT_WITHOUT_UNLOCK SYSRES_CONST_ACTION_TYPE_LIFE_CYCLE_STAGE SYSRES_CONST_ACTION_TYPE_LOCK SYSRES_CONST_ACTION_TYPE_LOCK_FOR_SERVER SYSRES_CONST_ACTION_TYPE_LOCK_MODIFY SYSRES_CONST_ACTION_TYPE_MARK_AS_READED SYSRES_CONST_ACTION_TYPE_MARK_AS_UNREADED SYSRES_CONST_ACTION_TYPE_MODIFY SYSRES_CONST_ACTION_TYPE_MODIFY_CARD SYSRES_CONST_ACTION_TYPE_MOVE_TO_ARCHIVE SYSRES_CONST_ACTION_TYPE_OFF_ENCRYPTION SYSRES_CONST_ACTION_TYPE_PASSWORD_CHANGE SYSRES_CONST_ACTION_TYPE_PERFORM SYSRES_CONST_ACTION_TYPE_RECOVER_FROM_LOCAL_COPY SYSRES_CONST_ACTION_TYPE_RESTART SYSRES_CONST_ACTION_TYPE_RESTORE_FROM_ARCHIVE SYSRES_CONST_ACTION_TYPE_REVISION SYSRES_CONST_ACTION_TYPE_SEND_BY_MAIL SYSRES_CONST_ACTION_TYPE_SIGN SYSRES_CONST_ACTION_TYPE_START SYSRES_CONST_ACTION_TYPE_UNLOCK SYSRES_CONST_ACTION_TYPE_UNLOCK_FROM_SERVER SYSRES_CONST_ACTION_TYPE_VERSION_STATE SYSRES_CONST_ACTION_TYPE_VERSION_VISIBILITY SYSRES_CONST_ACTION_TYPE_VIEW SYSRES_CONST_ACTION_TYPE_VIEW_SHADOW_COPY SYSRES_CONST_ACTION_TYPE_WORKFLOW_DESCRIPTION_MODIFY SYSRES_CONST_ACTION_TYPE_WRITE_HISTORY SYSRES_CONST_ACTIVE_VERSION_STATE_PICK_VALUE SYSRES_CONST_ADD_REFERENCE_MODE_NAME SYSRES_CONST_ADDITION_REQUISITE_CODE SYSRES_CONST_ADDITIONAL_PARAMS_REQUISITE_CODE SYSRES_CONST_ADITIONAL_JOB_END_DATE_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_READ_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_START_DATE_REQUISITE_NAME SYSRES_CONST_ADITIONAL_JOB_STATE_REQUISITE_NAME SYSRES_CONST_ADMINISTRATION_HISTORY_ADDING_USER_TO_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_ADDING_USER_TO_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_COMP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_COMP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_USER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_CREATION_USER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_CREATION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_CREATION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_DELETION SYSRES_CONST_ADMINISTRATION_HISTORY_DATABASE_USER_DELETION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_COMP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_COMP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_FROM_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_DELETION_USER_FROM_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_RESTRICTION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_FILTERER_RESTRICTION_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_PRIVILEGE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_PRIVILEGE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_RIGHTS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_GRANTING_RIGHTS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_IS_MAIN_SERVER_CHANGED_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_IS_MAIN_SERVER_CHANGED_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_IS_PUBLIC_CHANGED_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_IS_PUBLIC_CHANGED_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_RESTRICTION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_FILTERER_RESTRICTION_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_PRIVILEGE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_PRIVILEGE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_RIGHTS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_REMOVING_RIGHTS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_CREATION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_CREATION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_DELETION SYSRES_CONST_ADMINISTRATION_HISTORY_SERVER_LOGIN_DELETION_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_CATEGORY_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_CATEGORY_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_COMP_TITLE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_COMP_TITLE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_FULL_NAME_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_FULL_NAME_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_PARENT_GROUP_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_PARENT_GROUP_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_AUTH_TYPE_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_AUTH_TYPE_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_LOGIN_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_LOGIN_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_STATUS_ACTION SYSRES_CONST_ADMINISTRATION_HISTORY_UPDATING_USER_STATUS_ACTION_CODE SYSRES_CONST_ADMINISTRATION_HISTORY_USER_PASSWORD_CHANGE SYSRES_CONST_ADMINISTRATION_HISTORY_USER_PASSWORD_CHANGE_ACTION SYSRES_CONST_ALL_ACCEPT_CONDITION_RUS SYSRES_CONST_ALL_USERS_GROUP SYSRES_CONST_ALL_USERS_GROUP_NAME SYSRES_CONST_ALL_USERS_SERVER_GROUP_NAME SYSRES_CONST_ALLOWED_ACCESS_TYPE_CODE SYSRES_CONST_ALLOWED_ACCESS_TYPE_NAME SYSRES_CONST_APP_VIEWER_TYPE_REQUISITE_CODE SYSRES_CONST_APPROVING_SIGNATURE_NAME SYSRES_CONST_APPROVING_SIGNATURE_REQUISITE_CODE SYSRES_CONST_ASSISTANT_SUBSTITUE_TYPE SYSRES_CONST_ASSISTANT_SUBSTITUE_TYPE_CODE SYSRES_CONST_ATTACH_TYPE_COMPONENT_TOKEN SYSRES_CONST_ATTACH_TYPE_DOC SYSRES_CONST_ATTACH_TYPE_EDOC SYSRES_CONST_ATTACH_TYPE_FOLDER SYSRES_CONST_ATTACH_TYPE_JOB SYSRES_CONST_ATTACH_TYPE_REFERENCE SYSRES_CONST_ATTACH_TYPE_TASK SYSRES_CONST_AUTH_ENCODED_PASSWORD SYSRES_CONST_AUTH_ENCODED_PASSWORD_CODE SYSRES_CONST_AUTH_NOVELL SYSRES_CONST_AUTH_PASSWORD SYSRES_CONST_AUTH_PASSWORD_CODE SYSRES_CONST_AUTH_WINDOWS SYSRES_CONST_AUTHENTICATING_SIGNATURE_NAME SYSRES_CONST_AUTHENTICATING_SIGNATURE_REQUISITE_CODE SYSRES_CONST_AUTO_ENUM_METHOD_FLAG SYSRES_CONST_AUTO_NUMERATION_CODE SYSRES_CONST_AUTO_STRONG_ENUM_METHOD_FLAG SYSRES_CONST_AUTOTEXT_NAME_REQUISITE_CODE SYSRES_CONST_AUTOTEXT_TEXT_REQUISITE_CODE SYSRES_CONST_AUTOTEXT_USAGE_ALL SYSRES_CONST_AUTOTEXT_USAGE_ALL_CODE SYSRES_CONST_AUTOTEXT_USAGE_SIGN SYSRES_CONST_AUTOTEXT_USAGE_SIGN_CODE SYSRES_CONST_AUTOTEXT_USAGE_WORK SYSRES_CONST_AUTOTEXT_USAGE_WORK_CODE SYSRES_CONST_AUTOTEXT_USE_ANYWHERE_CODE SYSRES_CONST_AUTOTEXT_USE_ON_SIGNING_CODE SYSRES_CONST_AUTOTEXT_USE_ON_WORK_CODE SYSRES_CONST_BEGIN_DATE_REQUISITE_CODE SYSRES_CONST_BLACK_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_BLUE_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_BTN_PART SYSRES_CONST_CALCULATED_ROLE_TYPE_CODE SYSRES_CONST_CALL_TYPE_VARIABLE_BUTTON_VALUE SYSRES_CONST_CALL_TYPE_VARIABLE_PROGRAM_VALUE SYSRES_CONST_CANCEL_MESSAGE_FUNCTION_RESULT SYSRES_CONST_CARD_PART SYSRES_CONST_CARD_REFERENCE_MODE_NAME SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_ENCRYPT_VALUE SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_SIGN_AND_ENCRYPT_VALUE SYSRES_CONST_CERTIFICATE_TYPE_REQUISITE_SIGN_VALUE SYSRES_CONST_CHECK_PARAM_VALUE_DATE_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_FLOAT_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_INTEGER_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_PICK_PARAM_TYPE SYSRES_CONST_CHECK_PARAM_VALUE_REEFRENCE_PARAM_TYPE SYSRES_CONST_CLOSED_RECORD_FLAG_VALUE_FEMININE SYSRES_CONST_CLOSED_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_CODE_COMPONENT_TYPE_ADMIN SYSRES_CONST_CODE_COMPONENT_TYPE_DEVELOPER SYSRES_CONST_CODE_COMPONENT_TYPE_DOCS SYSRES_CONST_CODE_COMPONENT_TYPE_EDOC_CARDS SYSRES_CONST_CODE_COMPONENT_TYPE_EXTERNAL_EXECUTABLE SYSRES_CONST_CODE_COMPONENT_TYPE_OTHER SYSRES_CONST_CODE_COMPONENT_TYPE_REFERENCE SYSRES_CONST_CODE_COMPONENT_TYPE_REPORT SYSRES_CONST_CODE_COMPONENT_TYPE_SCRIPT SYSRES_CONST_CODE_COMPONENT_TYPE_URL SYSRES_CONST_CODE_REQUISITE_ACCESS SYSRES_CONST_CODE_REQUISITE_CODE SYSRES_CONST_CODE_REQUISITE_COMPONENT SYSRES_CONST_CODE_REQUISITE_DESCRIPTION SYSRES_CONST_CODE_REQUISITE_EXCLUDE_COMPONENT SYSRES_CONST_CODE_REQUISITE_RECORD SYSRES_CONST_COMMENT_REQ_CODE SYSRES_CONST_COMMON_SETTINGS_REQUISITE_CODE SYSRES_CONST_COMP_CODE_GRD SYSRES_CONST_COMPONENT_GROUP_TYPE_REQUISITE_CODE SYSRES_CONST_COMPONENT_TYPE_ADMIN_COMPONENTS SYSRES_CONST_COMPONENT_TYPE_DEVELOPER_COMPONENTS SYSRES_CONST_COMPONENT_TYPE_DOCS SYSRES_CONST_COMPONENT_TYPE_EDOC_CARDS SYSRES_CONST_COMPONENT_TYPE_EDOCS SYSRES_CONST_COMPONENT_TYPE_EXTERNAL_EXECUTABLE SYSRES_CONST_COMPONENT_TYPE_OTHER SYSRES_CONST_COMPONENT_TYPE_REFERENCE_TYPES SYSRES_CONST_COMPONENT_TYPE_REFERENCES SYSRES_CONST_COMPONENT_TYPE_REPORTS SYSRES_CONST_COMPONENT_TYPE_SCRIPTS SYSRES_CONST_COMPONENT_TYPE_URL SYSRES_CONST_COMPONENTS_REMOTE_SERVERS_VIEW_CODE SYSRES_CONST_CONDITION_BLOCK_DESCRIPTION SYSRES_CONST_CONST_FIRM_STATUS_COMMON SYSRES_CONST_CONST_FIRM_STATUS_INDIVIDUAL SYSRES_CONST_CONST_NEGATIVE_VALUE SYSRES_CONST_CONST_POSITIVE_VALUE SYSRES_CONST_CONST_SERVER_STATUS_DONT_REPLICATE SYSRES_CONST_CONST_SERVER_STATUS_REPLICATE SYSRES_CONST_CONTENTS_REQUISITE_CODE SYSRES_CONST_DATA_TYPE_BOOLEAN SYSRES_CONST_DATA_TYPE_DATE SYSRES_CONST_DATA_TYPE_FLOAT SYSRES_CONST_DATA_TYPE_INTEGER SYSRES_CONST_DATA_TYPE_PICK SYSRES_CONST_DATA_TYPE_REFERENCE SYSRES_CONST_DATA_TYPE_STRING SYSRES_CONST_DATA_TYPE_TEXT SYSRES_CONST_DATA_TYPE_VARIANT SYSRES_CONST_DATE_CLOSE_REQ_CODE SYSRES_CONST_DATE_FORMAT_DATE_ONLY_CHAR SYSRES_CONST_DATE_OPEN_REQ_CODE SYSRES_CONST_DATE_REQUISITE SYSRES_CONST_DATE_REQUISITE_CODE SYSRES_CONST_DATE_REQUISITE_NAME SYSRES_CONST_DATE_REQUISITE_TYPE SYSRES_CONST_DATE_TYPE_CHAR SYSRES_CONST_DATETIME_FORMAT_VALUE SYSRES_CONST_DEA_ACCESS_RIGHTS_ACTION_CODE SYSRES_CONST_DESCRIPTION_LOCALIZE_ID_REQUISITE_CODE SYSRES_CONST_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_DET1_PART SYSRES_CONST_DET2_PART SYSRES_CONST_DET3_PART SYSRES_CONST_DET4_PART SYSRES_CONST_DET5_PART SYSRES_CONST_DET6_PART SYSRES_CONST_DETAIL_DATASET_KEY_REQUISITE_CODE SYSRES_CONST_DETAIL_PICK_REQUISITE_CODE SYSRES_CONST_DETAIL_REQ_CODE SYSRES_CONST_DO_NOT_USE_ACCESS_TYPE_CODE SYSRES_CONST_DO_NOT_USE_ACCESS_TYPE_NAME SYSRES_CONST_DO_NOT_USE_ON_VIEW_ACCESS_TYPE_CODE SYSRES_CONST_DO_NOT_USE_ON_VIEW_ACCESS_TYPE_NAME SYSRES_CONST_DOCUMENT_STORAGES_CODE SYSRES_CONST_DOCUMENT_TEMPLATES_TYPE_NAME SYSRES_CONST_DOUBLE_REQUISITE_CODE SYSRES_CONST_EDITOR_CLOSE_FILE_OBSERV_TYPE_CODE SYSRES_CONST_EDITOR_CLOSE_PROCESS_OBSERV_TYPE_CODE SYSRES_CONST_EDITOR_TYPE_REQUISITE_CODE SYSRES_CONST_EDITORS_APPLICATION_NAME_REQUISITE_CODE SYSRES_CONST_EDITORS_CREATE_SEVERAL_PROCESSES_REQUISITE_CODE SYSRES_CONST_EDITORS_EXTENSION_REQUISITE_CODE SYSRES_CONST_EDITORS_OBSERVER_BY_PROCESS_TYPE SYSRES_CONST_EDITORS_REFERENCE_CODE SYSRES_CONST_EDITORS_REPLACE_SPEC_CHARS_REQUISITE_CODE SYSRES_CONST_EDITORS_USE_PLUGINS_REQUISITE_CODE SYSRES_CONST_EDITORS_VIEW_DOCUMENT_OPENED_TO_EDIT_CODE SYSRES_CONST_EDOC_CARD_TYPE_REQUISITE_CODE SYSRES_CONST_EDOC_CARD_TYPES_LINK_REQUISITE_CODE SYSRES_CONST_EDOC_CERTIFICATE_AND_PASSWORD_ENCODE_CODE SYSRES_CONST_EDOC_CERTIFICATE_ENCODE_CODE SYSRES_CONST_EDOC_DATE_REQUISITE_CODE SYSRES_CONST_EDOC_KIND_REFERENCE_CODE SYSRES_CONST_EDOC_KINDS_BY_TEMPLATE_ACTION_CODE SYSRES_CONST_EDOC_MANAGE_ACCESS_CODE SYSRES_CONST_EDOC_NONE_ENCODE_CODE SYSRES_CONST_EDOC_NUMBER_REQUISITE_CODE SYSRES_CONST_EDOC_PASSWORD_ENCODE_CODE SYSRES_CONST_EDOC_READONLY_ACCESS_CODE SYSRES_CONST_EDOC_SHELL_LIFE_TYPE_VIEW_VALUE SYSRES_CONST_EDOC_SIZE_RESTRICTION_PRIORITY_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_CHECK_ACCESS_RIGHTS_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_COMPUTER_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_DATABASE_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_EDIT_IN_STORAGE_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_LOCAL_PATH_REQUISITE_CODE SYSRES_CONST_EDOC_STORAGE_SHARED_SOURCE_NAME_REQUISITE_CODE SYSRES_CONST_EDOC_TEMPLATE_REQUISITE_CODE SYSRES_CONST_EDOC_TYPES_REFERENCE_CODE SYSRES_CONST_EDOC_VERSION_ACTIVE_STAGE_CODE SYSRES_CONST_EDOC_VERSION_DESIGN_STAGE_CODE SYSRES_CONST_EDOC_VERSION_OBSOLETE_STAGE_CODE SYSRES_CONST_EDOC_WRITE_ACCES_CODE SYSRES_CONST_EDOCUMENT_CARD_REQUISITES_REFERENCE_CODE_SELECTED_REQUISITE SYSRES_CONST_ENCODE_CERTIFICATE_TYPE_CODE SYSRES_CONST_END_DATE_REQUISITE_CODE SYSRES_CONST_ENUMERATION_TYPE_REQUISITE_CODE SYSRES_CONST_EXECUTE_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_EXECUTIVE_FILE_STORAGE_TYPE SYSRES_CONST_EXIST_CONST SYSRES_CONST_EXIST_VALUE SYSRES_CONST_EXPORT_LOCK_TYPE_ASK SYSRES_CONST_EXPORT_LOCK_TYPE_WITH_LOCK SYSRES_CONST_EXPORT_LOCK_TYPE_WITHOUT_LOCK SYSRES_CONST_EXPORT_VERSION_TYPE_ASK SYSRES_CONST_EXPORT_VERSION_TYPE_LAST SYSRES_CONST_EXPORT_VERSION_TYPE_LAST_ACTIVE SYSRES_CONST_EXTENSION_REQUISITE_CODE SYSRES_CONST_FILTER_NAME_REQUISITE_CODE SYSRES_CONST_FILTER_REQUISITE_CODE SYSRES_CONST_FILTER_TYPE_COMMON_CODE SYSRES_CONST_FILTER_TYPE_COMMON_NAME SYSRES_CONST_FILTER_TYPE_USER_CODE SYSRES_CONST_FILTER_TYPE_USER_NAME SYSRES_CONST_FILTER_VALUE_REQUISITE_NAME SYSRES_CONST_FLOAT_NUMBER_FORMAT_CHAR SYSRES_CONST_FLOAT_REQUISITE_TYPE SYSRES_CONST_FOLDER_AUTHOR_VALUE SYSRES_CONST_FOLDER_KIND_ANY_OBJECTS SYSRES_CONST_FOLDER_KIND_COMPONENTS SYSRES_CONST_FOLDER_KIND_EDOCS SYSRES_CONST_FOLDER_KIND_JOBS SYSRES_CONST_FOLDER_KIND_TASKS SYSRES_CONST_FOLDER_TYPE_COMMON SYSRES_CONST_FOLDER_TYPE_COMPONENT SYSRES_CONST_FOLDER_TYPE_FAVORITES SYSRES_CONST_FOLDER_TYPE_INBOX SYSRES_CONST_FOLDER_TYPE_OUTBOX SYSRES_CONST_FOLDER_TYPE_QUICK_LAUNCH SYSRES_CONST_FOLDER_TYPE_SEARCH SYSRES_CONST_FOLDER_TYPE_SHORTCUTS SYSRES_CONST_FOLDER_TYPE_USER SYSRES_CONST_FROM_DICTIONARY_ENUM_METHOD_FLAG SYSRES_CONST_FULL_SUBSTITUTE_TYPE SYSRES_CONST_FULL_SUBSTITUTE_TYPE_CODE SYSRES_CONST_FUNCTION_CANCEL_RESULT SYSRES_CONST_FUNCTION_CATEGORY_SYSTEM SYSRES_CONST_FUNCTION_CATEGORY_USER SYSRES_CONST_FUNCTION_FAILURE_RESULT SYSRES_CONST_FUNCTION_SAVE_RESULT SYSRES_CONST_GENERATED_REQUISITE SYSRES_CONST_GREEN_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_GROUP_ACCOUNT_TYPE_VALUE_CODE SYSRES_CONST_GROUP_CATEGORY_NORMAL_CODE SYSRES_CONST_GROUP_CATEGORY_NORMAL_NAME SYSRES_CONST_GROUP_CATEGORY_SERVICE_CODE SYSRES_CONST_GROUP_CATEGORY_SERVICE_NAME SYSRES_CONST_GROUP_COMMON_CATEGORY_FIELD_VALUE SYSRES_CONST_GROUP_FULL_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_RIGHTS_T_REQUISITE_CODE SYSRES_CONST_GROUP_SERVER_CODES_REQUISITE_CODE SYSRES_CONST_GROUP_SERVER_NAME_REQUISITE_CODE SYSRES_CONST_GROUP_SERVICE_CATEGORY_FIELD_VALUE SYSRES_CONST_GROUP_USER_REQUISITE_CODE SYSRES_CONST_GROUPS_REFERENCE_CODE SYSRES_CONST_GROUPS_REQUISITE_CODE SYSRES_CONST_HIDDEN_MODE_NAME SYSRES_CONST_HIGH_LVL_REQUISITE_CODE SYSRES_CONST_HISTORY_ACTION_CREATE_CODE SYSRES_CONST_HISTORY_ACTION_DELETE_CODE SYSRES_CONST_HISTORY_ACTION_EDIT_CODE SYSRES_CONST_HOUR_CHAR SYSRES_CONST_ID_REQUISITE_CODE SYSRES_CONST_IDSPS_REQUISITE_CODE SYSRES_CONST_IMAGE_MODE_COLOR SYSRES_CONST_IMAGE_MODE_GREYSCALE SYSRES_CONST_IMAGE_MODE_MONOCHROME SYSRES_CONST_IMPORTANCE_HIGH SYSRES_CONST_IMPORTANCE_LOW SYSRES_CONST_IMPORTANCE_NORMAL SYSRES_CONST_IN_DESIGN_VERSION_STATE_PICK_VALUE SYSRES_CONST_INCOMING_WORK_RULE_TYPE_CODE SYSRES_CONST_INT_REQUISITE SYSRES_CONST_INT_REQUISITE_TYPE SYSRES_CONST_INTEGER_NUMBER_FORMAT_CHAR SYSRES_CONST_INTEGER_TYPE_CHAR SYSRES_CONST_IS_GENERATED_REQUISITE_NEGATIVE_VALUE SYSRES_CONST_IS_PUBLIC_ROLE_REQUISITE_CODE SYSRES_CONST_IS_REMOTE_USER_NEGATIVE_VALUE SYSRES_CONST_IS_REMOTE_USER_POSITIVE_VALUE SYSRES_CONST_IS_STORED_REQUISITE_NEGATIVE_VALUE SYSRES_CONST_IS_STORED_REQUISITE_STORED_VALUE SYSRES_CONST_ITALIC_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_JOB_BLOCK_DESCRIPTION SYSRES_CONST_JOB_KIND_CONTROL_JOB SYSRES_CONST_JOB_KIND_JOB SYSRES_CONST_JOB_KIND_NOTICE SYSRES_CONST_JOB_STATE_ABORTED SYSRES_CONST_JOB_STATE_COMPLETE SYSRES_CONST_JOB_STATE_WORKING SYSRES_CONST_KIND_REQUISITE_CODE SYSRES_CONST_KIND_REQUISITE_NAME SYSRES_CONST_KINDS_CREATE_SHADOW_COPIES_REQUISITE_CODE SYSRES_CONST_KINDS_DEFAULT_EDOC_LIFE_STAGE_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALL_TEPLATES_ALLOWED_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALLOW_LIFE_CYCLE_STAGE_CHANGING_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_ALLOW_MULTIPLE_ACTIVE_VERSIONS_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_SHARE_ACCES_RIGHTS_BY_DEFAULT_CODE SYSRES_CONST_KINDS_EDOC_TEMPLATE_REQUISITE_CODE SYSRES_CONST_KINDS_EDOC_TYPE_REQUISITE_CODE SYSRES_CONST_KINDS_SIGNERS_REQUISITES_CODE SYSRES_CONST_KOD_INPUT_TYPE SYSRES_CONST_LAST_UPDATE_DATE_REQUISITE_CODE SYSRES_CONST_LIFE_CYCLE_START_STAGE_REQUISITE_CODE SYSRES_CONST_LILAC_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_LINK_OBJECT_KIND_COMPONENT SYSRES_CONST_LINK_OBJECT_KIND_DOCUMENT SYSRES_CONST_LINK_OBJECT_KIND_EDOC SYSRES_CONST_LINK_OBJECT_KIND_FOLDER SYSRES_CONST_LINK_OBJECT_KIND_JOB SYSRES_CONST_LINK_OBJECT_KIND_REFERENCE SYSRES_CONST_LINK_OBJECT_KIND_TASK SYSRES_CONST_LINK_REF_TYPE_REQUISITE_CODE SYSRES_CONST_LIST_REFERENCE_MODE_NAME SYSRES_CONST_LOCALIZATION_DICTIONARY_MAIN_VIEW_CODE SYSRES_CONST_MAIN_VIEW_CODE SYSRES_CONST_MANUAL_ENUM_METHOD_FLAG SYSRES_CONST_MASTER_COMP_TYPE_REQUISITE_CODE SYSRES_CONST_MASTER_TABLE_REC_ID_REQUISITE_CODE SYSRES_CONST_MAXIMIZED_MODE_NAME SYSRES_CONST_ME_VALUE SYSRES_CONST_MESSAGE_ATTENTION_CAPTION SYSRES_CONST_MESSAGE_CONFIRMATION_CAPTION SYSRES_CONST_MESSAGE_ERROR_CAPTION SYSRES_CONST_MESSAGE_INFORMATION_CAPTION SYSRES_CONST_MINIMIZED_MODE_NAME SYSRES_CONST_MINUTE_CHAR SYSRES_CONST_MODULE_REQUISITE_CODE SYSRES_CONST_MONITORING_BLOCK_DESCRIPTION SYSRES_CONST_MONTH_FORMAT_VALUE SYSRES_CONST_NAME_LOCALIZE_ID_REQUISITE_CODE SYSRES_CONST_NAME_REQUISITE_CODE SYSRES_CONST_NAME_SINGULAR_REQUISITE_CODE SYSRES_CONST_NAMEAN_INPUT_TYPE SYSRES_CONST_NEGATIVE_PICK_VALUE SYSRES_CONST_NEGATIVE_VALUE SYSRES_CONST_NO SYSRES_CONST_NO_PICK_VALUE SYSRES_CONST_NO_SIGNATURE_REQUISITE_CODE SYSRES_CONST_NO_VALUE SYSRES_CONST_NONE_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_NONOPERATING_RECORD_FLAG_VALUE SYSRES_CONST_NONOPERATING_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_NORMAL_ACCESS_RIGHTS_TYPE_CODE SYSRES_CONST_NORMAL_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_NORMAL_MODE_NAME SYSRES_CONST_NOT_ALLOWED_ACCESS_TYPE_CODE SYSRES_CONST_NOT_ALLOWED_ACCESS_TYPE_NAME SYSRES_CONST_NOTE_REQUISITE_CODE SYSRES_CONST_NOTICE_BLOCK_DESCRIPTION SYSRES_CONST_NUM_REQUISITE SYSRES_CONST_NUM_STR_REQUISITE_CODE SYSRES_CONST_NUMERATION_AUTO_NOT_STRONG SYSRES_CONST_NUMERATION_AUTO_STRONG SYSRES_CONST_NUMERATION_FROM_DICTONARY SYSRES_CONST_NUMERATION_MANUAL SYSRES_CONST_NUMERIC_TYPE_CHAR SYSRES_CONST_NUMREQ_REQUISITE_CODE SYSRES_CONST_OBSOLETE_VERSION_STATE_PICK_VALUE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_CODE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_FEMININE SYSRES_CONST_OPERATING_RECORD_FLAG_VALUE_MASCULINE SYSRES_CONST_OPTIONAL_FORM_COMP_REQCODE_PREFIX SYSRES_CONST_ORANGE_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_ORIGINALREF_REQUISITE_CODE SYSRES_CONST_OURFIRM_REF_CODE SYSRES_CONST_OURFIRM_REQUISITE_CODE SYSRES_CONST_OURFIRM_VAR SYSRES_CONST_OUTGOING_WORK_RULE_TYPE_CODE SYSRES_CONST_PICK_NEGATIVE_RESULT SYSRES_CONST_PICK_POSITIVE_RESULT SYSRES_CONST_PICK_REQUISITE SYSRES_CONST_PICK_REQUISITE_TYPE SYSRES_CONST_PICK_TYPE_CHAR SYSRES_CONST_PLAN_STATUS_REQUISITE_CODE SYSRES_CONST_PLATFORM_VERSION_COMMENT SYSRES_CONST_PLUGINS_SETTINGS_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_POSITIVE_PICK_VALUE SYSRES_CONST_POWER_TO_CREATE_ACTION_CODE SYSRES_CONST_POWER_TO_SIGN_ACTION_CODE SYSRES_CONST_PRIORITY_REQUISITE_CODE SYSRES_CONST_QUALIFIED_TASK_TYPE SYSRES_CONST_QUALIFIED_TASK_TYPE_CODE SYSRES_CONST_RECSTAT_REQUISITE_CODE SYSRES_CONST_RED_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_REF_ID_T_REF_TYPE_REQUISITE_CODE SYSRES_CONST_REF_REQUISITE SYSRES_CONST_REF_REQUISITE_TYPE SYSRES_CONST_REF_REQUISITES_REFERENCE_CODE_SELECTED_REQUISITE SYSRES_CONST_REFERENCE_RECORD_HISTORY_CREATE_ACTION_CODE SYSRES_CONST_REFERENCE_RECORD_HISTORY_DELETE_ACTION_CODE SYSRES_CONST_REFERENCE_RECORD_HISTORY_MODIFY_ACTION_CODE SYSRES_CONST_REFERENCE_TYPE_CHAR SYSRES_CONST_REFERENCE_TYPE_REQUISITE_NAME SYSRES_CONST_REFERENCES_ADD_PARAMS_REQUISITE_CODE SYSRES_CONST_REFERENCES_DISPLAY_REQUISITE_REQUISITE_CODE SYSRES_CONST_REMOTE_SERVER_STATUS_WORKING SYSRES_CONST_REMOTE_SERVER_TYPE_MAIN SYSRES_CONST_REMOTE_SERVER_TYPE_SECONDARY SYSRES_CONST_REMOTE_USER_FLAG_VALUE_CODE SYSRES_CONST_REPORT_APP_EDITOR_INTERNAL SYSRES_CONST_REPORT_BASE_REPORT_ID_REQUISITE_CODE SYSRES_CONST_REPORT_BASE_REPORT_REQUISITE_CODE SYSRES_CONST_REPORT_SCRIPT_REQUISITE_CODE SYSRES_CONST_REPORT_TEMPLATE_REQUISITE_CODE SYSRES_CONST_REPORT_VIEWER_CODE_REQUISITE_CODE SYSRES_CONST_REQ_ALLOW_COMPONENT_DEFAULT_VALUE SYSRES_CONST_REQ_ALLOW_RECORD_DEFAULT_VALUE SYSRES_CONST_REQ_ALLOW_SERVER_COMPONENT_DEFAULT_VALUE SYSRES_CONST_REQ_MODE_AVAILABLE_CODE SYSRES_CONST_REQ_MODE_EDIT_CODE SYSRES_CONST_REQ_MODE_HIDDEN_CODE SYSRES_CONST_REQ_MODE_NOT_AVAILABLE_CODE SYSRES_CONST_REQ_MODE_VIEW_CODE SYSRES_CONST_REQ_NUMBER_REQUISITE_CODE SYSRES_CONST_REQ_SECTION_VALUE SYSRES_CONST_REQ_TYPE_VALUE SYSRES_CONST_REQUISITE_FORMAT_BY_UNIT SYSRES_CONST_REQUISITE_FORMAT_DATE_FULL SYSRES_CONST_REQUISITE_FORMAT_DATE_TIME SYSRES_CONST_REQUISITE_FORMAT_LEFT SYSRES_CONST_REQUISITE_FORMAT_RIGHT SYSRES_CONST_REQUISITE_FORMAT_WITHOUT_UNIT SYSRES_CONST_REQUISITE_NUMBER_REQUISITE_CODE SYSRES_CONST_REQUISITE_SECTION_ACTIONS SYSRES_CONST_REQUISITE_SECTION_BUTTON SYSRES_CONST_REQUISITE_SECTION_BUTTONS SYSRES_CONST_REQUISITE_SECTION_CARD SYSRES_CONST_REQUISITE_SECTION_TABLE SYSRES_CONST_REQUISITE_SECTION_TABLE10 SYSRES_CONST_REQUISITE_SECTION_TABLE11 SYSRES_CONST_REQUISITE_SECTION_TABLE12 SYSRES_CONST_REQUISITE_SECTION_TABLE13 SYSRES_CONST_REQUISITE_SECTION_TABLE14 SYSRES_CONST_REQUISITE_SECTION_TABLE15 SYSRES_CONST_REQUISITE_SECTION_TABLE16 SYSRES_CONST_REQUISITE_SECTION_TABLE17 SYSRES_CONST_REQUISITE_SECTION_TABLE18 SYSRES_CONST_REQUISITE_SECTION_TABLE19 SYSRES_CONST_REQUISITE_SECTION_TABLE2 SYSRES_CONST_REQUISITE_SECTION_TABLE20 SYSRES_CONST_REQUISITE_SECTION_TABLE21 SYSRES_CONST_REQUISITE_SECTION_TABLE22 SYSRES_CONST_REQUISITE_SECTION_TABLE23 SYSRES_CONST_REQUISITE_SECTION_TABLE24 SYSRES_CONST_REQUISITE_SECTION_TABLE3 SYSRES_CONST_REQUISITE_SECTION_TABLE4 SYSRES_CONST_REQUISITE_SECTION_TABLE5 SYSRES_CONST_REQUISITE_SECTION_TABLE6 SYSRES_CONST_REQUISITE_SECTION_TABLE7 SYSRES_CONST_REQUISITE_SECTION_TABLE8 SYSRES_CONST_REQUISITE_SECTION_TABLE9 SYSRES_CONST_REQUISITES_PSEUDOREFERENCE_REQUISITE_NUMBER_REQUISITE_CODE SYSRES_CONST_RIGHT_ALIGNMENT_CODE SYSRES_CONST_ROLES_REFERENCE_CODE SYSRES_CONST_ROUTE_STEP_AFTER_RUS SYSRES_CONST_ROUTE_STEP_AND_CONDITION_RUS SYSRES_CONST_ROUTE_STEP_OR_CONDITION_RUS SYSRES_CONST_ROUTE_TYPE_COMPLEX SYSRES_CONST_ROUTE_TYPE_PARALLEL SYSRES_CONST_ROUTE_TYPE_SERIAL SYSRES_CONST_SBDATASETDESC_NEGATIVE_VALUE SYSRES_CONST_SBDATASETDESC_POSITIVE_VALUE SYSRES_CONST_SBVIEWSDESC_POSITIVE_VALUE SYSRES_CONST_SCRIPT_BLOCK_DESCRIPTION SYSRES_CONST_SEARCH_BY_TEXT_REQUISITE_CODE SYSRES_CONST_SEARCHES_COMPONENT_CONTENT SYSRES_CONST_SEARCHES_CRITERIA_ACTION_NAME SYSRES_CONST_SEARCHES_EDOC_CONTENT SYSRES_CONST_SEARCHES_FOLDER_CONTENT SYSRES_CONST_SEARCHES_JOB_CONTENT SYSRES_CONST_SEARCHES_REFERENCE_CODE SYSRES_CONST_SEARCHES_TASK_CONTENT SYSRES_CONST_SECOND_CHAR SYSRES_CONST_SECTION_REQUISITE_ACTIONS_VALUE SYSRES_CONST_SECTION_REQUISITE_CARD_VALUE SYSRES_CONST_SECTION_REQUISITE_CODE SYSRES_CONST_SECTION_REQUISITE_DETAIL_1_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_2_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_3_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_4_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_5_VALUE SYSRES_CONST_SECTION_REQUISITE_DETAIL_6_VALUE SYSRES_CONST_SELECT_REFERENCE_MODE_NAME SYSRES_CONST_SELECT_TYPE_SELECTABLE SYSRES_CONST_SELECT_TYPE_SELECTABLE_ONLY_CHILD SYSRES_CONST_SELECT_TYPE_SELECTABLE_WITH_CHILD SYSRES_CONST_SELECT_TYPE_UNSLECTABLE SYSRES_CONST_SERVER_TYPE_MAIN SYSRES_CONST_SERVICE_USER_CATEGORY_FIELD_VALUE SYSRES_CONST_SETTINGS_USER_REQUISITE_CODE SYSRES_CONST_SIGNATURE_AND_ENCODE_CERTIFICATE_TYPE_CODE SYSRES_CONST_SIGNATURE_CERTIFICATE_TYPE_CODE SYSRES_CONST_SINGULAR_TITLE_REQUISITE_CODE SYSRES_CONST_SQL_SERVER_AUTHENTIFICATION_FLAG_VALUE_CODE SYSRES_CONST_SQL_SERVER_ENCODE_AUTHENTIFICATION_FLAG_VALUE_CODE SYSRES_CONST_STANDART_ROUTE_REFERENCE_CODE SYSRES_CONST_STANDART_ROUTE_REFERENCE_COMMENT_REQUISITE_CODE SYSRES_CONST_STANDART_ROUTES_GROUPS_REFERENCE_CODE SYSRES_CONST_STATE_REQ_NAME SYSRES_CONST_STATE_REQUISITE_ACTIVE_VALUE SYSRES_CONST_STATE_REQUISITE_CLOSED_VALUE SYSRES_CONST_STATE_REQUISITE_CODE SYSRES_CONST_STATIC_ROLE_TYPE_CODE SYSRES_CONST_STATUS_PLAN_DEFAULT_VALUE SYSRES_CONST_STATUS_VALUE_AUTOCLEANING SYSRES_CONST_STATUS_VALUE_BLUE_SQUARE SYSRES_CONST_STATUS_VALUE_COMPLETE SYSRES_CONST_STATUS_VALUE_GREEN_SQUARE SYSRES_CONST_STATUS_VALUE_ORANGE_SQUARE SYSRES_CONST_STATUS_VALUE_PURPLE_SQUARE SYSRES_CONST_STATUS_VALUE_RED_SQUARE SYSRES_CONST_STATUS_VALUE_SUSPEND SYSRES_CONST_STATUS_VALUE_YELLOW_SQUARE SYSRES_CONST_STDROUTE_SHOW_TO_USERS_REQUISITE_CODE SYSRES_CONST_STORAGE_TYPE_FILE SYSRES_CONST_STORAGE_TYPE_SQL_SERVER SYSRES_CONST_STR_REQUISITE SYSRES_CONST_STRIKEOUT_LIFE_CYCLE_STAGE_DRAW_STYLE SYSRES_CONST_STRING_FORMAT_LEFT_ALIGN_CHAR SYSRES_CONST_STRING_FORMAT_RIGHT_ALIGN_CHAR SYSRES_CONST_STRING_REQUISITE_CODE SYSRES_CONST_STRING_REQUISITE_TYPE SYSRES_CONST_STRING_TYPE_CHAR SYSRES_CONST_SUBSTITUTES_PSEUDOREFERENCE_CODE SYSRES_CONST_SUBTASK_BLOCK_DESCRIPTION SYSRES_CONST_SYSTEM_SETTING_CURRENT_USER_PARAM_VALUE SYSRES_CONST_SYSTEM_SETTING_EMPTY_VALUE_PARAM_VALUE SYSRES_CONST_SYSTEM_VERSION_COMMENT SYSRES_CONST_TASK_ACCESS_TYPE_ALL SYSRES_CONST_TASK_ACCESS_TYPE_ALL_MEMBERS SYSRES_CONST_TASK_ACCESS_TYPE_MANUAL SYSRES_CONST_TASK_ENCODE_TYPE_CERTIFICATION SYSRES_CONST_TASK_ENCODE_TYPE_CERTIFICATION_AND_PASSWORD SYSRES_CONST_TASK_ENCODE_TYPE_NONE SYSRES_CONST_TASK_ENCODE_TYPE_PASSWORD SYSRES_CONST_TASK_ROUTE_ALL_CONDITION SYSRES_CONST_TASK_ROUTE_AND_CONDITION SYSRES_CONST_TASK_ROUTE_OR_CONDITION SYSRES_CONST_TASK_STATE_ABORTED SYSRES_CONST_TASK_STATE_COMPLETE SYSRES_CONST_TASK_STATE_CONTINUED SYSRES_CONST_TASK_STATE_CONTROL SYSRES_CONST_TASK_STATE_INIT SYSRES_CONST_TASK_STATE_WORKING SYSRES_CONST_TASK_TITLE SYSRES_CONST_TASK_TYPES_GROUPS_REFERENCE_CODE SYSRES_CONST_TASK_TYPES_REFERENCE_CODE SYSRES_CONST_TEMPLATES_REFERENCE_CODE SYSRES_CONST_TEST_DATE_REQUISITE_NAME SYSRES_CONST_TEST_DEV_DATABASE_NAME SYSRES_CONST_TEST_DEV_SYSTEM_CODE SYSRES_CONST_TEST_EDMS_DATABASE_NAME SYSRES_CONST_TEST_EDMS_MAIN_CODE SYSRES_CONST_TEST_EDMS_MAIN_DB_NAME SYSRES_CONST_TEST_EDMS_SECOND_CODE SYSRES_CONST_TEST_EDMS_SECOND_DB_NAME SYSRES_CONST_TEST_EDMS_SYSTEM_CODE SYSRES_CONST_TEST_NUMERIC_REQUISITE_NAME SYSRES_CONST_TEXT_REQUISITE SYSRES_CONST_TEXT_REQUISITE_CODE SYSRES_CONST_TEXT_REQUISITE_TYPE SYSRES_CONST_TEXT_TYPE_CHAR SYSRES_CONST_TYPE_CODE_REQUISITE_CODE SYSRES_CONST_TYPE_REQUISITE_CODE SYSRES_CONST_UNDEFINED_LIFE_CYCLE_STAGE_FONT_COLOR SYSRES_CONST_UNITS_SECTION_ID_REQUISITE_CODE SYSRES_CONST_UNITS_SECTION_REQUISITE_CODE SYSRES_CONST_UNOPERATING_RECORD_FLAG_VALUE_CODE SYSRES_CONST_UNSTORED_DATA_REQUISITE_CODE SYSRES_CONST_UNSTORED_DATA_REQUISITE_NAME SYSRES_CONST_USE_ACCESS_TYPE_CODE SYSRES_CONST_USE_ACCESS_TYPE_NAME SYSRES_CONST_USER_ACCOUNT_TYPE_VALUE_CODE SYSRES_CONST_USER_ADDITIONAL_INFORMATION_REQUISITE_CODE SYSRES_CONST_USER_AND_GROUP_ID_FROM_PSEUDOREFERENCE_REQUISITE_CODE SYSRES_CONST_USER_CATEGORY_NORMAL SYSRES_CONST_USER_CERTIFICATE_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_STATE_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_SUBJECT_NAME_REQUISITE_CODE SYSRES_CONST_USER_CERTIFICATE_THUMBPRINT_REQUISITE_CODE SYSRES_CONST_USER_COMMON_CATEGORY SYSRES_CONST_USER_COMMON_CATEGORY_CODE SYSRES_CONST_USER_FULL_NAME_REQUISITE_CODE SYSRES_CONST_USER_GROUP_TYPE_REQUISITE_CODE SYSRES_CONST_USER_LOGIN_REQUISITE_CODE SYSRES_CONST_USER_REMOTE_CONTROLLER_REQUISITE_CODE SYSRES_CONST_USER_REMOTE_SYSTEM_REQUISITE_CODE SYSRES_CONST_USER_RIGHTS_T_REQUISITE_CODE SYSRES_CONST_USER_SERVER_NAME_REQUISITE_CODE SYSRES_CONST_USER_SERVICE_CATEGORY SYSRES_CONST_USER_SERVICE_CATEGORY_CODE SYSRES_CONST_USER_STATUS_ADMINISTRATOR_CODE SYSRES_CONST_USER_STATUS_ADMINISTRATOR_NAME SYSRES_CONST_USER_STATUS_DEVELOPER_CODE SYSRES_CONST_USER_STATUS_DEVELOPER_NAME SYSRES_CONST_USER_STATUS_DISABLED_CODE SYSRES_CONST_USER_STATUS_DISABLED_NAME SYSRES_CONST_USER_STATUS_SYSTEM_DEVELOPER_CODE SYSRES_CONST_USER_STATUS_USER_CODE SYSRES_CONST_USER_STATUS_USER_NAME SYSRES_CONST_USER_STATUS_USER_NAME_DEPRECATED SYSRES_CONST_USER_TYPE_FIELD_VALUE_USER SYSRES_CONST_USER_TYPE_REQUISITE_CODE SYSRES_CONST_USERS_CONTROLLER_REQUISITE_CODE SYSRES_CONST_USERS_IS_MAIN_SERVER_REQUISITE_CODE SYSRES_CONST_USERS_REFERENCE_CODE SYSRES_CONST_USERS_REGISTRATION_CERTIFICATES_ACTION_NAME SYSRES_CONST_USERS_REQUISITE_CODE SYSRES_CONST_USERS_SYSTEM_REQUISITE_CODE SYSRES_CONST_USERS_USER_ACCESS_RIGHTS_TYPR_REQUISITE_CODE SYSRES_CONST_USERS_USER_AUTHENTICATION_REQUISITE_CODE SYSRES_CONST_USERS_USER_COMPONENT_REQUISITE_CODE SYSRES_CONST_USERS_USER_GROUP_REQUISITE_CODE SYSRES_CONST_USERS_VIEW_CERTIFICATES_ACTION_NAME SYSRES_CONST_VIEW_DEFAULT_CODE SYSRES_CONST_VIEW_DEFAULT_NAME SYSRES_CONST_VIEWER_REQUISITE_CODE SYSRES_CONST_WAITING_BLOCK_DESCRIPTION SYSRES_CONST_WIZARD_FORM_LABEL_TEST_STRING  SYSRES_CONST_WIZARD_QUERY_PARAM_HEIGHT_ETALON_STRING SYSRES_CONST_WIZARD_REFERENCE_COMMENT_REQUISITE_CODE SYSRES_CONST_WORK_RULES_DESCRIPTION_REQUISITE_CODE SYSRES_CONST_WORK_TIME_CALENDAR_REFERENCE_CODE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE_CODE SYSRES_CONST_WORK_WORKFLOW_HARD_ROUTE_TYPE_VALUE_CODE_RUS SYSRES_CONST_WORK_WORKFLOW_SOFT_ROUTE_TYPE_VALUE_CODE_RUS SYSRES_CONST_WORKFLOW_ROUTE_TYPR_HARD SYSRES_CONST_WORKFLOW_ROUTE_TYPR_SOFT SYSRES_CONST_XML_ENCODING SYSRES_CONST_XREC_STAT_REQUISITE_CODE SYSRES_CONST_XRECID_FIELD_NAME SYSRES_CONST_YES SYSRES_CONST_YES_NO_2_REQUISITE_CODE SYSRES_CONST_YES_NO_REQUISITE_CODE SYSRES_CONST_YES_NO_T_REF_TYPE_REQUISITE_CODE SYSRES_CONST_YES_PICK_VALUE SYSRES_CONST_YES_VALUE " + "CR FALSE nil NO_VALUE NULL TAB TRUE YES_VALUE " + "ADMINISTRATORS_GROUP_NAME CUSTOMIZERS_GROUP_NAME DEVELOPERS_GROUP_NAME SERVICE_USERS_GROUP_NAME " + "DECISION_BLOCK_FIRST_OPERAND_PROPERTY DECISION_BLOCK_NAME_PROPERTY DECISION_BLOCK_OPERATION_PROPERTY DECISION_BLOCK_RESULT_TYPE_PROPERTY DECISION_BLOCK_SECOND_OPERAND_PROPERTY " + "ANY_FILE_EXTENTION COMPRESSED_DOCUMENT_EXTENSION EXTENDED_DOCUMENT_EXTENSION SHORT_COMPRESSED_DOCUMENT_EXTENSION SHORT_EXTENDED_DOCUMENT_EXTENSION " + "JOB_BLOCK_ABORT_DEADLINE_PROPERTY JOB_BLOCK_AFTER_FINISH_EVENT JOB_BLOCK_AFTER_QUERY_PARAMETERS_EVENT JOB_BLOCK_ATTACHMENT_PROPERTY JOB_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY JOB_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY JOB_BLOCK_BEFORE_QUERY_PARAMETERS_EVENT JOB_BLOCK_BEFORE_START_EVENT JOB_BLOCK_CREATED_JOBS_PROPERTY JOB_BLOCK_DEADLINE_PROPERTY JOB_BLOCK_EXECUTION_RESULTS_PROPERTY JOB_BLOCK_IS_PARALLEL_PROPERTY JOB_BLOCK_IS_RELATIVE_ABORT_DEADLINE_PROPERTY JOB_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY JOB_BLOCK_JOB_TEXT_PROPERTY JOB_BLOCK_NAME_PROPERTY JOB_BLOCK_NEED_SIGN_ON_PERFORM_PROPERTY JOB_BLOCK_PERFORMER_PROPERTY JOB_BLOCK_RELATIVE_ABORT_DEADLINE_TYPE_PROPERTY JOB_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY JOB_BLOCK_SUBJECT_PROPERTY " + "ENGLISH_LANGUAGE_CODE RUSSIAN_LANGUAGE_CODE " + "smHidden smMaximized smMinimized smNormal wmNo wmYes " + "COMPONENT_TOKEN_LINK_KIND DOCUMENT_LINK_KIND EDOCUMENT_LINK_KIND FOLDER_LINK_KIND JOB_LINK_KIND REFERENCE_LINK_KIND TASK_LINK_KIND " + "COMPONENT_TOKEN_LOCK_TYPE EDOCUMENT_VERSION_LOCK_TYPE " + "MONITOR_BLOCK_AFTER_FINISH_EVENT MONITOR_BLOCK_BEFORE_START_EVENT MONITOR_BLOCK_DEADLINE_PROPERTY MONITOR_BLOCK_INTERVAL_PROPERTY MONITOR_BLOCK_INTERVAL_TYPE_PROPERTY MONITOR_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY MONITOR_BLOCK_NAME_PROPERTY MONITOR_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY MONITOR_BLOCK_SEARCH_SCRIPT_PROPERTY " + "NOTICE_BLOCK_AFTER_FINISH_EVENT NOTICE_BLOCK_ATTACHMENT_PROPERTY NOTICE_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY NOTICE_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY NOTICE_BLOCK_BEFORE_START_EVENT NOTICE_BLOCK_CREATED_NOTICES_PROPERTY NOTICE_BLOCK_DEADLINE_PROPERTY NOTICE_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY NOTICE_BLOCK_NAME_PROPERTY NOTICE_BLOCK_NOTICE_TEXT_PROPERTY NOTICE_BLOCK_PERFORMER_PROPERTY NOTICE_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY NOTICE_BLOCK_SUBJECT_PROPERTY " + "dseAfterCancel dseAfterClose dseAfterDelete dseAfterDeleteOutOfTransaction dseAfterInsert dseAfterOpen dseAfterScroll dseAfterUpdate dseAfterUpdateOutOfTransaction dseBeforeCancel dseBeforeClose dseBeforeDelete dseBeforeDetailUpdate dseBeforeInsert dseBeforeOpen dseBeforeUpdate dseOnAnyRequisiteChange dseOnCloseRecord dseOnDeleteError dseOnOpenRecord dseOnPrepareUpdate dseOnUpdateError dseOnUpdateRatifiedRecord dseOnValidDelete dseOnValidUpdate reOnChange reOnChangeValues SELECTION_BEGIN_ROUTE_EVENT SELECTION_END_ROUTE_EVENT " + "CURRENT_PERIOD_IS_REQUIRED PREVIOUS_CARD_TYPE_NAME SHOW_RECORD_PROPERTIES_FORM " + "ACCESS_RIGHTS_SETTING_DIALOG_CODE ADMINISTRATOR_USER_CODE ANALYTIC_REPORT_TYPE asrtHideLocal asrtHideRemote CALCULATED_ROLE_TYPE_CODE COMPONENTS_REFERENCE_DEVELOPER_VIEW_CODE DCTS_TEST_PROTOCOLS_FOLDER_PATH E_EDOC_VERSION_ALREADY_APPROVINGLY_SIGNED E_EDOC_VERSION_ALREADY_APPROVINGLY_SIGNED_BY_USER E_EDOC_VERSION_ALREDY_SIGNED E_EDOC_VERSION_ALREDY_SIGNED_BY_USER EDOC_TYPES_CODE_REQUISITE_FIELD_NAME EDOCUMENTS_ALIAS_NAME FILES_FOLDER_PATH FILTER_OPERANDS_DELIMITER FILTER_OPERATIONS_DELIMITER FORMCARD_NAME FORMLIST_NAME GET_EXTENDED_DOCUMENT_EXTENSION_CREATION_MODE GET_EXTENDED_DOCUMENT_EXTENSION_IMPORT_MODE INTEGRATED_REPORT_TYPE IS_BUILDER_APPLICATION_ROLE IS_BUILDER_APPLICATION_ROLE2 IS_BUILDER_USERS ISBSYSDEV LOG_FOLDER_PATH mbCancel mbNo mbNoToAll mbOK mbYes mbYesToAll MEMORY_DATASET_DESRIPTIONS_FILENAME mrNo mrNoToAll mrYes mrYesToAll MULTIPLE_SELECT_DIALOG_CODE NONOPERATING_RECORD_FLAG_FEMININE NONOPERATING_RECORD_FLAG_MASCULINE OPERATING_RECORD_FLAG_FEMININE OPERATING_RECORD_FLAG_MASCULINE PROFILING_SETTINGS_COMMON_SETTINGS_CODE_VALUE PROGRAM_INITIATED_LOOKUP_ACTION ratDelete ratEdit ratInsert REPORT_TYPE REQUIRED_PICK_VALUES_VARIABLE rmCard rmList SBRTE_PROGID_DEV SBRTE_PROGID_RELEASE STATIC_ROLE_TYPE_CODE SUPPRESS_EMPTY_TEMPLATE_CREATION SYSTEM_USER_CODE UPDATE_DIALOG_DATASET USED_IN_OBJECT_HINT_PARAM USER_INITIATED_LOOKUP_ACTION USER_NAME_FORMAT USER_SELECTION_RESTRICTIONS WORKFLOW_TEST_PROTOCOLS_FOLDER_PATH ELS_SUBTYPE_CONTROL_NAME ELS_FOLDER_KIND_CONTROL_NAME REPEAT_PROCESS_CURRENT_OBJECT_EXCEPTION_NAME " + "PRIVILEGE_COMPONENT_FULL_ACCESS PRIVILEGE_DEVELOPMENT_EXPORT PRIVILEGE_DEVELOPMENT_IMPORT PRIVILEGE_DOCUMENT_DELETE PRIVILEGE_ESD PRIVILEGE_FOLDER_DELETE PRIVILEGE_MANAGE_ACCESS_RIGHTS PRIVILEGE_MANAGE_REPLICATION PRIVILEGE_MANAGE_SESSION_SERVER PRIVILEGE_OBJECT_FULL_ACCESS PRIVILEGE_OBJECT_VIEW PRIVILEGE_RESERVE_LICENSE PRIVILEGE_SYSTEM_CUSTOMIZE PRIVILEGE_SYSTEM_DEVELOP PRIVILEGE_SYSTEM_INSTALL PRIVILEGE_TASK_DELETE PRIVILEGE_USER_PLUGIN_SETTINGS_CUSTOMIZE PRIVILEGES_PSEUDOREFERENCE_CODE " + "ACCESS_TYPES_PSEUDOREFERENCE_CODE ALL_AVAILABLE_COMPONENTS_PSEUDOREFERENCE_CODE ALL_AVAILABLE_PRIVILEGES_PSEUDOREFERENCE_CODE ALL_REPLICATE_COMPONENTS_PSEUDOREFERENCE_CODE AVAILABLE_DEVELOPERS_COMPONENTS_PSEUDOREFERENCE_CODE COMPONENTS_PSEUDOREFERENCE_CODE FILTRATER_SETTINGS_CONFLICTS_PSEUDOREFERENCE_CODE GROUPS_PSEUDOREFERENCE_CODE RECEIVE_PROTOCOL_PSEUDOREFERENCE_CODE REFERENCE_REQUISITE_PSEUDOREFERENCE_CODE REFERENCE_REQUISITES_PSEUDOREFERENCE_CODE REFTYPES_PSEUDOREFERENCE_CODE REPLICATION_SEANCES_DIARY_PSEUDOREFERENCE_CODE SEND_PROTOCOL_PSEUDOREFERENCE_CODE SUBSTITUTES_PSEUDOREFERENCE_CODE SYSTEM_SETTINGS_PSEUDOREFERENCE_CODE UNITS_PSEUDOREFERENCE_CODE USERS_PSEUDOREFERENCE_CODE VIEWERS_PSEUDOREFERENCE_CODE " + "CERTIFICATE_TYPE_ENCRYPT CERTIFICATE_TYPE_SIGN CERTIFICATE_TYPE_SIGN_AND_ENCRYPT " + "STORAGE_TYPE_FILE STORAGE_TYPE_NAS_CIFS STORAGE_TYPE_SAPERION STORAGE_TYPE_SQL_SERVER " + "COMPTYPE2_REQUISITE_DOCUMENTS_VALUE COMPTYPE2_REQUISITE_TASKS_VALUE COMPTYPE2_REQUISITE_FOLDERS_VALUE COMPTYPE2_REQUISITE_REFERENCES_VALUE " + "SYSREQ_CODE SYSREQ_COMPTYPE2 SYSREQ_CONST_AVAILABLE_FOR_WEB SYSREQ_CONST_COMMON_CODE SYSREQ_CONST_COMMON_VALUE SYSREQ_CONST_FIRM_CODE SYSREQ_CONST_FIRM_STATUS SYSREQ_CONST_FIRM_VALUE SYSREQ_CONST_SERVER_STATUS SYSREQ_CONTENTS SYSREQ_DATE_OPEN SYSREQ_DATE_CLOSE SYSREQ_DESCRIPTION SYSREQ_DESCRIPTION_LOCALIZE_ID SYSREQ_DOUBLE SYSREQ_EDOC_ACCESS_TYPE SYSREQ_EDOC_AUTHOR SYSREQ_EDOC_CREATED SYSREQ_EDOC_DELEGATE_RIGHTS_REQUISITE_CODE SYSREQ_EDOC_EDITOR SYSREQ_EDOC_ENCODE_TYPE SYSREQ_EDOC_ENCRYPTION_PLUGIN_NAME SYSREQ_EDOC_ENCRYPTION_PLUGIN_VERSION SYSREQ_EDOC_EXPORT_DATE SYSREQ_EDOC_EXPORTER SYSREQ_EDOC_KIND SYSREQ_EDOC_LIFE_STAGE_NAME SYSREQ_EDOC_LOCKED_FOR_SERVER_CODE SYSREQ_EDOC_MODIFIED SYSREQ_EDOC_NAME SYSREQ_EDOC_NOTE SYSREQ_EDOC_QUALIFIED_ID SYSREQ_EDOC_SESSION_KEY SYSREQ_EDOC_SESSION_KEY_ENCRYPTION_PLUGIN_NAME SYSREQ_EDOC_SESSION_KEY_ENCRYPTION_PLUGIN_VERSION SYSREQ_EDOC_SIGNATURE_TYPE SYSREQ_EDOC_SIGNED SYSREQ_EDOC_STORAGE SYSREQ_EDOC_STORAGES_ARCHIVE_STORAGE SYSREQ_EDOC_STORAGES_CHECK_RIGHTS SYSREQ_EDOC_STORAGES_COMPUTER_NAME SYSREQ_EDOC_STORAGES_EDIT_IN_STORAGE SYSREQ_EDOC_STORAGES_EXECUTIVE_STORAGE SYSREQ_EDOC_STORAGES_FUNCTION SYSREQ_EDOC_STORAGES_INITIALIZED SYSREQ_EDOC_STORAGES_LOCAL_PATH SYSREQ_EDOC_STORAGES_SAPERION_DATABASE_NAME SYSREQ_EDOC_STORAGES_SEARCH_BY_TEXT SYSREQ_EDOC_STORAGES_SERVER_NAME SYSREQ_EDOC_STORAGES_SHARED_SOURCE_NAME SYSREQ_EDOC_STORAGES_TYPE SYSREQ_EDOC_TEXT_MODIFIED SYSREQ_EDOC_TYPE_ACT_CODE SYSREQ_EDOC_TYPE_ACT_DESCRIPTION SYSREQ_EDOC_TYPE_ACT_DESCRIPTION_LOCALIZE_ID SYSREQ_EDOC_TYPE_ACT_ON_EXECUTE SYSREQ_EDOC_TYPE_ACT_ON_EXECUTE_EXISTS SYSREQ_EDOC_TYPE_ACT_SECTION SYSREQ_EDOC_TYPE_ADD_PARAMS SYSREQ_EDOC_TYPE_COMMENT SYSREQ_EDOC_TYPE_EVENT_TEXT SYSREQ_EDOC_TYPE_NAME_IN_SINGULAR SYSREQ_EDOC_TYPE_NAME_IN_SINGULAR_LOCALIZE_ID SYSREQ_EDOC_TYPE_NAME_LOCALIZE_ID SYSREQ_EDOC_TYPE_NUMERATION_METHOD SYSREQ_EDOC_TYPE_PSEUDO_REQUISITE_CODE SYSREQ_EDOC_TYPE_REQ_CODE SYSREQ_EDOC_TYPE_REQ_DESCRIPTION SYSREQ_EDOC_TYPE_REQ_DESCRIPTION_LOCALIZE_ID SYSREQ_EDOC_TYPE_REQ_IS_LEADING SYSREQ_EDOC_TYPE_REQ_IS_REQUIRED SYSREQ_EDOC_TYPE_REQ_NUMBER SYSREQ_EDOC_TYPE_REQ_ON_CHANGE SYSREQ_EDOC_TYPE_REQ_ON_CHANGE_EXISTS SYSREQ_EDOC_TYPE_REQ_ON_SELECT SYSREQ_EDOC_TYPE_REQ_ON_SELECT_KIND SYSREQ_EDOC_TYPE_REQ_SECTION SYSREQ_EDOC_TYPE_VIEW_CARD SYSREQ_EDOC_TYPE_VIEW_CODE SYSREQ_EDOC_TYPE_VIEW_COMMENT SYSREQ_EDOC_TYPE_VIEW_IS_MAIN SYSREQ_EDOC_TYPE_VIEW_NAME SYSREQ_EDOC_TYPE_VIEW_NAME_LOCALIZE_ID SYSREQ_EDOC_VERSION_AUTHOR SYSREQ_EDOC_VERSION_CRC SYSREQ_EDOC_VERSION_DATA SYSREQ_EDOC_VERSION_EDITOR SYSREQ_EDOC_VERSION_EXPORT_DATE SYSREQ_EDOC_VERSION_EXPORTER SYSREQ_EDOC_VERSION_HIDDEN SYSREQ_EDOC_VERSION_LIFE_STAGE SYSREQ_EDOC_VERSION_MODIFIED SYSREQ_EDOC_VERSION_NOTE SYSREQ_EDOC_VERSION_SIGNATURE_TYPE SYSREQ_EDOC_VERSION_SIGNED SYSREQ_EDOC_VERSION_SIZE SYSREQ_EDOC_VERSION_SOURCE SYSREQ_EDOC_VERSION_TEXT_MODIFIED SYSREQ_EDOCKIND_DEFAULT_VERSION_STATE_CODE SYSREQ_FOLDER_KIND SYSREQ_FUNC_CATEGORY SYSREQ_FUNC_COMMENT SYSREQ_FUNC_GROUP SYSREQ_FUNC_GROUP_COMMENT SYSREQ_FUNC_GROUP_NUMBER SYSREQ_FUNC_HELP SYSREQ_FUNC_PARAM_DEF_VALUE SYSREQ_FUNC_PARAM_IDENT SYSREQ_FUNC_PARAM_NUMBER SYSREQ_FUNC_PARAM_TYPE SYSREQ_FUNC_TEXT SYSREQ_GROUP_CATEGORY SYSREQ_ID SYSREQ_LAST_UPDATE SYSREQ_LEADER_REFERENCE SYSREQ_LINE_NUMBER SYSREQ_MAIN_RECORD_ID SYSREQ_NAME SYSREQ_NAME_LOCALIZE_ID SYSREQ_NOTE SYSREQ_ORIGINAL_RECORD SYSREQ_OUR_FIRM SYSREQ_PROFILING_SETTINGS_BATCH_LOGING SYSREQ_PROFILING_SETTINGS_BATCH_SIZE SYSREQ_PROFILING_SETTINGS_PROFILING_ENABLED SYSREQ_PROFILING_SETTINGS_SQL_PROFILING_ENABLED SYSREQ_PROFILING_SETTINGS_START_LOGGED SYSREQ_RECORD_STATUS SYSREQ_REF_REQ_FIELD_NAME SYSREQ_REF_REQ_FORMAT SYSREQ_REF_REQ_GENERATED SYSREQ_REF_REQ_LENGTH SYSREQ_REF_REQ_PRECISION SYSREQ_REF_REQ_REFERENCE SYSREQ_REF_REQ_SECTION SYSREQ_REF_REQ_STORED SYSREQ_REF_REQ_TOKENS SYSREQ_REF_REQ_TYPE SYSREQ_REF_REQ_VIEW SYSREQ_REF_TYPE_ACT_CODE SYSREQ_REF_TYPE_ACT_DESCRIPTION SYSREQ_REF_TYPE_ACT_DESCRIPTION_LOCALIZE_ID SYSREQ_REF_TYPE_ACT_ON_EXECUTE SYSREQ_REF_TYPE_ACT_ON_EXECUTE_EXISTS SYSREQ_REF_TYPE_ACT_SECTION SYSREQ_REF_TYPE_ADD_PARAMS SYSREQ_REF_TYPE_COMMENT SYSREQ_REF_TYPE_COMMON_SETTINGS SYSREQ_REF_TYPE_DISPLAY_REQUISITE_NAME SYSREQ_REF_TYPE_EVENT_TEXT SYSREQ_REF_TYPE_MAIN_LEADING_REF SYSREQ_REF_TYPE_NAME_IN_SINGULAR SYSREQ_REF_TYPE_NAME_IN_SINGULAR_LOCALIZE_ID SYSREQ_REF_TYPE_NAME_LOCALIZE_ID SYSREQ_REF_TYPE_NUMERATION_METHOD SYSREQ_REF_TYPE_REQ_CODE SYSREQ_REF_TYPE_REQ_DESCRIPTION SYSREQ_REF_TYPE_REQ_DESCRIPTION_LOCALIZE_ID SYSREQ_REF_TYPE_REQ_IS_CONTROL SYSREQ_REF_TYPE_REQ_IS_FILTER SYSREQ_REF_TYPE_REQ_IS_LEADING SYSREQ_REF_TYPE_REQ_IS_REQUIRED SYSREQ_REF_TYPE_REQ_NUMBER SYSREQ_REF_TYPE_REQ_ON_CHANGE SYSREQ_REF_TYPE_REQ_ON_CHANGE_EXISTS SYSREQ_REF_TYPE_REQ_ON_SELECT SYSREQ_REF_TYPE_REQ_ON_SELECT_KIND SYSREQ_REF_TYPE_REQ_SECTION SYSREQ_REF_TYPE_VIEW_CARD SYSREQ_REF_TYPE_VIEW_CODE SYSREQ_REF_TYPE_VIEW_COMMENT SYSREQ_REF_TYPE_VIEW_IS_MAIN SYSREQ_REF_TYPE_VIEW_NAME SYSREQ_REF_TYPE_VIEW_NAME_LOCALIZE_ID SYSREQ_REFERENCE_TYPE_ID SYSREQ_STATE SYSREQ_STATЕ SYSREQ_SYSTEM_SETTINGS_VALUE SYSREQ_TYPE SYSREQ_UNIT SYSREQ_UNIT_ID SYSREQ_USER_GROUPS_GROUP_FULL_NAME SYSREQ_USER_GROUPS_GROUP_NAME SYSREQ_USER_GROUPS_GROUP_SERVER_NAME SYSREQ_USERS_ACCESS_RIGHTS SYSREQ_USERS_AUTHENTICATION SYSREQ_USERS_CATEGORY SYSREQ_USERS_COMPONENT SYSREQ_USERS_COMPONENT_USER_IS_PUBLIC SYSREQ_USERS_DOMAIN SYSREQ_USERS_FULL_USER_NAME SYSREQ_USERS_GROUP SYSREQ_USERS_IS_MAIN_SERVER SYSREQ_USERS_LOGIN SYSREQ_USERS_REFERENCE_USER_IS_PUBLIC SYSREQ_USERS_STATUS SYSREQ_USERS_USER_CERTIFICATE SYSREQ_USERS_USER_CERTIFICATE_INFO SYSREQ_USERS_USER_CERTIFICATE_PLUGIN_NAME SYSREQ_USERS_USER_CERTIFICATE_PLUGIN_VERSION SYSREQ_USERS_USER_CERTIFICATE_STATE SYSREQ_USERS_USER_CERTIFICATE_SUBJECT_NAME SYSREQ_USERS_USER_CERTIFICATE_THUMBPRINT SYSREQ_USERS_USER_DEFAULT_CERTIFICATE SYSREQ_USERS_USER_DESCRIPTION SYSREQ_USERS_USER_GLOBAL_NAME SYSREQ_USERS_USER_LOGIN SYSREQ_USERS_USER_MAIN_SERVER SYSREQ_USERS_USER_TYPE SYSREQ_WORK_RULES_FOLDER_ID " + "RESULT_VAR_NAME RESULT_VAR_NAME_ENG " + "AUTO_NUMERATION_RULE_ID CANT_CHANGE_ID_REQUISITE_RULE_ID CANT_CHANGE_OURFIRM_REQUISITE_RULE_ID CHECK_CHANGING_REFERENCE_RECORD_USE_RULE_ID CHECK_CODE_REQUISITE_RULE_ID CHECK_DELETING_REFERENCE_RECORD_USE_RULE_ID CHECK_FILTRATER_CHANGES_RULE_ID CHECK_RECORD_INTERVAL_RULE_ID CHECK_REFERENCE_INTERVAL_RULE_ID CHECK_REQUIRED_DATA_FULLNESS_RULE_ID CHECK_REQUIRED_REQUISITES_FULLNESS_RULE_ID MAKE_RECORD_UNRATIFIED_RULE_ID RESTORE_AUTO_NUMERATION_RULE_ID SET_FIRM_CONTEXT_FROM_RECORD_RULE_ID SET_FIRST_RECORD_IN_LIST_FORM_RULE_ID SET_IDSPS_VALUE_RULE_ID SET_NEXT_CODE_VALUE_RULE_ID SET_OURFIRM_BOUNDS_RULE_ID SET_OURFIRM_REQUISITE_RULE_ID " + "SCRIPT_BLOCK_AFTER_FINISH_EVENT SCRIPT_BLOCK_BEFORE_START_EVENT SCRIPT_BLOCK_EXECUTION_RESULTS_PROPERTY SCRIPT_BLOCK_NAME_PROPERTY SCRIPT_BLOCK_SCRIPT_PROPERTY " + "SUBTASK_BLOCK_ABORT_DEADLINE_PROPERTY SUBTASK_BLOCK_AFTER_FINISH_EVENT SUBTASK_BLOCK_ASSIGN_PARAMS_EVENT SUBTASK_BLOCK_ATTACHMENTS_PROPERTY SUBTASK_BLOCK_ATTACHMENTS_RIGHTS_GROUP_PROPERTY SUBTASK_BLOCK_ATTACHMENTS_RIGHTS_TYPE_PROPERTY SUBTASK_BLOCK_BEFORE_START_EVENT SUBTASK_BLOCK_CREATED_TASK_PROPERTY SUBTASK_BLOCK_CREATION_EVENT SUBTASK_BLOCK_DEADLINE_PROPERTY SUBTASK_BLOCK_IMPORTANCE_PROPERTY SUBTASK_BLOCK_INITIATOR_PROPERTY SUBTASK_BLOCK_IS_RELATIVE_ABORT_DEADLINE_PROPERTY SUBTASK_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY SUBTASK_BLOCK_JOBS_TYPE_PROPERTY SUBTASK_BLOCK_NAME_PROPERTY SUBTASK_BLOCK_PARALLEL_ROUTE_PROPERTY SUBTASK_BLOCK_PERFORMERS_PROPERTY SUBTASK_BLOCK_RELATIVE_ABORT_DEADLINE_TYPE_PROPERTY SUBTASK_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY SUBTASK_BLOCK_REQUIRE_SIGN_PROPERTY SUBTASK_BLOCK_STANDARD_ROUTE_PROPERTY SUBTASK_BLOCK_START_EVENT SUBTASK_BLOCK_STEP_CONTROL_PROPERTY SUBTASK_BLOCK_SUBJECT_PROPERTY SUBTASK_BLOCK_TASK_CONTROL_PROPERTY SUBTASK_BLOCK_TEXT_PROPERTY SUBTASK_BLOCK_UNLOCK_ATTACHMENTS_ON_STOP_PROPERTY SUBTASK_BLOCK_USE_STANDARD_ROUTE_PROPERTY SUBTASK_BLOCK_WAIT_FOR_TASK_COMPLETE_PROPERTY " + "SYSCOMP_CONTROL_JOBS SYSCOMP_FOLDERS SYSCOMP_JOBS SYSCOMP_NOTICES SYSCOMP_TASKS " + "SYSDLG_CREATE_EDOCUMENT SYSDLG_CREATE_EDOCUMENT_VERSION SYSDLG_CURRENT_PERIOD SYSDLG_EDIT_FUNCTION_HELP SYSDLG_EDOCUMENT_KINDS_FOR_TEMPLATE SYSDLG_EXPORT_MULTIPLE_EDOCUMENTS SYSDLG_EXPORT_SINGLE_EDOCUMENT SYSDLG_IMPORT_EDOCUMENT SYSDLG_MULTIPLE_SELECT SYSDLG_SETUP_ACCESS_RIGHTS SYSDLG_SETUP_DEFAULT_RIGHTS SYSDLG_SETUP_FILTER_CONDITION SYSDLG_SETUP_SIGN_RIGHTS SYSDLG_SETUP_TASK_OBSERVERS SYSDLG_SETUP_TASK_ROUTE SYSDLG_SETUP_USERS_LIST SYSDLG_SIGN_EDOCUMENT SYSDLG_SIGN_MULTIPLE_EDOCUMENTS " + "SYSREF_ACCESS_RIGHTS_TYPES SYSREF_ADMINISTRATION_HISTORY SYSREF_ALL_AVAILABLE_COMPONENTS SYSREF_ALL_AVAILABLE_PRIVILEGES SYSREF_ALL_REPLICATING_COMPONENTS SYSREF_AVAILABLE_DEVELOPERS_COMPONENTS SYSREF_CALENDAR_EVENTS SYSREF_COMPONENT_TOKEN_HISTORY SYSREF_COMPONENT_TOKENS SYSREF_COMPONENTS SYSREF_CONSTANTS SYSREF_DATA_RECEIVE_PROTOCOL SYSREF_DATA_SEND_PROTOCOL SYSREF_DIALOGS SYSREF_DIALOGS_REQUISITES SYSREF_EDITORS SYSREF_EDOC_CARDS SYSREF_EDOC_TYPES SYSREF_EDOCUMENT_CARD_REQUISITES SYSREF_EDOCUMENT_CARD_TYPES SYSREF_EDOCUMENT_CARD_TYPES_REFERENCE SYSREF_EDOCUMENT_CARDS SYSREF_EDOCUMENT_HISTORY SYSREF_EDOCUMENT_KINDS SYSREF_EDOCUMENT_REQUISITES SYSREF_EDOCUMENT_SIGNATURES SYSREF_EDOCUMENT_TEMPLATES SYSREF_EDOCUMENT_TEXT_STORAGES SYSREF_EDOCUMENT_VIEWS SYSREF_FILTERER_SETUP_CONFLICTS SYSREF_FILTRATER_SETTING_CONFLICTS SYSREF_FOLDER_HISTORY SYSREF_FOLDERS SYSREF_FUNCTION_GROUPS SYSREF_FUNCTION_PARAMS SYSREF_FUNCTIONS SYSREF_JOB_HISTORY SYSREF_LINKS SYSREF_LOCALIZATION_DICTIONARY SYSREF_LOCALIZATION_LANGUAGES SYSREF_MODULES SYSREF_PRIVILEGES SYSREF_RECORD_HISTORY SYSREF_REFERENCE_REQUISITES SYSREF_REFERENCE_TYPE_VIEWS SYSREF_REFERENCE_TYPES SYSREF_REFERENCES SYSREF_REFERENCES_REQUISITES SYSREF_REMOTE_SERVERS SYSREF_REPLICATION_SESSIONS_LOG SYSREF_REPLICATION_SESSIONS_PROTOCOL SYSREF_REPORTS SYSREF_ROLES SYSREF_ROUTE_BLOCK_GROUPS SYSREF_ROUTE_BLOCKS SYSREF_SCRIPTS SYSREF_SEARCHES SYSREF_SERVER_EVENTS SYSREF_SERVER_EVENTS_HISTORY SYSREF_STANDARD_ROUTE_GROUPS SYSREF_STANDARD_ROUTES SYSREF_STATUSES SYSREF_SYSTEM_SETTINGS SYSREF_TASK_HISTORY SYSREF_TASK_KIND_GROUPS SYSREF_TASK_KINDS SYSREF_TASK_RIGHTS SYSREF_TASK_SIGNATURES SYSREF_TASKS SYSREF_UNITS SYSREF_USER_GROUPS SYSREF_USER_GROUPS_REFERENCE SYSREF_USER_SUBSTITUTION SYSREF_USERS SYSREF_USERS_REFERENCE SYSREF_VIEWERS SYSREF_WORKING_TIME_CALENDARS " + "ACCESS_RIGHTS_TABLE_NAME EDMS_ACCESS_TABLE_NAME EDOC_TYPES_TABLE_NAME " + "TEST_DEV_DB_NAME TEST_DEV_SYSTEM_CODE TEST_EDMS_DB_NAME TEST_EDMS_MAIN_CODE TEST_EDMS_MAIN_DB_NAME TEST_EDMS_SECOND_CODE TEST_EDMS_SECOND_DB_NAME TEST_EDMS_SYSTEM_CODE TEST_ISB5_MAIN_CODE TEST_ISB5_SECOND_CODE TEST_SQL_SERVER_2005_NAME TEST_SQL_SERVER_NAME " + "ATTENTION_CAPTION cbsCommandLinks cbsDefault CONFIRMATION_CAPTION ERROR_CAPTION INFORMATION_CAPTION mrCancel mrOk " + "EDOC_VERSION_ACTIVE_STAGE_CODE EDOC_VERSION_DESIGN_STAGE_CODE EDOC_VERSION_OBSOLETE_STAGE_CODE " + "cpDataEnciphermentEnabled cpDigitalSignatureEnabled cpID cpIssuer cpPluginVersion cpSerial cpSubjectName cpSubjSimpleName cpValidFromDate cpValidToDate " + "ISBL_SYNTAX NO_SYNTAX XML_SYNTAX " + "WAIT_BLOCK_AFTER_FINISH_EVENT WAIT_BLOCK_BEFORE_START_EVENT WAIT_BLOCK_DEADLINE_PROPERTY WAIT_BLOCK_IS_RELATIVE_DEADLINE_PROPERTY WAIT_BLOCK_NAME_PROPERTY WAIT_BLOCK_RELATIVE_DEADLINE_TYPE_PROPERTY " + "SYSRES_COMMON SYSRES_CONST SYSRES_MBFUNC SYSRES_SBDATA SYSRES_SBGUI SYSRES_SBINTF SYSRES_SBREFDSC SYSRES_SQLERRORS SYSRES_SYSCOMP ", Lt = "atUser atGroup atRole " + "aemEnabledAlways aemDisabledAlways aemEnabledOnBrowse aemEnabledOnEdit aemDisabledOnBrowseEmpty " + "apBegin apEnd " + "alLeft alRight " + "asmNever asmNoButCustomize asmAsLastTime asmYesButCustomize asmAlways " + "cirCommon cirRevoked " + "ctSignature ctEncode ctSignatureEncode " + "clbUnchecked clbChecked clbGrayed " + "ceISB ceAlways ceNever " + "ctDocument ctReference ctScript ctUnknown ctReport ctDialog ctFunction ctFolder ctEDocument ctTask ctJob ctNotice ctControlJob " + "cfInternal cfDisplay " + "ciUnspecified ciWrite ciRead " + "ckFolder ckEDocument ckTask ckJob ckComponentToken ckAny ckReference ckScript ckReport ckDialog " + "ctISBLEditor ctBevel ctButton ctCheckListBox ctComboBox ctComboEdit ctGrid ctDBCheckBox ctDBComboBox ctDBEdit ctDBEllipsis ctDBMemo ctDBNavigator ctDBRadioGroup ctDBStatusLabel ctEdit ctGroupBox ctInplaceHint ctMemo ctPanel ctListBox ctRadioButton ctRichEdit ctTabSheet ctWebBrowser ctImage ctHyperLink ctLabel ctDBMultiEllipsis ctRibbon ctRichView ctInnerPanel ctPanelGroup ctBitButton " + "cctDate cctInteger cctNumeric cctPick cctReference cctString cctText " + "cltInternal cltPrimary cltGUI " + "dseBeforeOpen dseAfterOpen dseBeforeClose dseAfterClose dseOnValidDelete dseBeforeDelete dseAfterDelete dseAfterDeleteOutOfTransaction dseOnDeleteError dseBeforeInsert dseAfterInsert dseOnValidUpdate dseBeforeUpdate dseOnUpdateRatifiedRecord dseAfterUpdate dseAfterUpdateOutOfTransaction dseOnUpdateError dseAfterScroll dseOnOpenRecord dseOnCloseRecord dseBeforeCancel dseAfterCancel dseOnUpdateDeadlockError dseBeforeDetailUpdate dseOnPrepareUpdate dseOnAnyRequisiteChange " + "dssEdit dssInsert dssBrowse dssInActive " + "dftDate dftShortDate dftDateTime dftTimeStamp " + "dotDays dotHours dotMinutes dotSeconds " + "dtkndLocal dtkndUTC " + "arNone arView arEdit arFull " + "ddaView ddaEdit " + "emLock emEdit emSign emExportWithLock emImportWithUnlock emChangeVersionNote emOpenForModify emChangeLifeStage emDelete emCreateVersion emImport emUnlockExportedWithLock emStart emAbort emReInit emMarkAsReaded emMarkAsUnreaded emPerform emAccept emResume emChangeRights emEditRoute emEditObserver emRecoveryFromLocalCopy emChangeWorkAccessType emChangeEncodeTypeToCertificate emChangeEncodeTypeToPassword emChangeEncodeTypeToNone emChangeEncodeTypeToCertificatePassword emChangeStandardRoute emGetText emOpenForView emMoveToStorage emCreateObject emChangeVersionHidden emDeleteVersion emChangeLifeCycleStage emApprovingSign emExport emContinue emLockFromEdit emUnLockForEdit emLockForServer emUnlockFromServer emDelegateAccessRights emReEncode " + "ecotFile ecotProcess " + "eaGet eaCopy eaCreate eaCreateStandardRoute " + "edltAll edltNothing edltQuery " + "essmText essmCard " + "esvtLast esvtLastActive esvtSpecified " + "edsfExecutive edsfArchive " + "edstSQLServer edstFile " + "edvstNone edvstEDocumentVersionCopy edvstFile edvstTemplate edvstScannedFile " + "vsDefault vsDesign vsActive vsObsolete " + "etNone etCertificate etPassword etCertificatePassword " + "ecException ecWarning ecInformation " + "estAll estApprovingOnly " + "evtLast evtLastActive evtQuery " + "fdtString fdtNumeric fdtInteger fdtDate fdtText fdtUnknown fdtWideString fdtLargeInteger " + "ftInbox ftOutbox ftFavorites ftCommonFolder ftUserFolder ftComponents ftQuickLaunch ftShortcuts ftSearch " + "grhAuto grhX1 grhX2 grhX3 " + "hltText hltRTF hltHTML " + "iffBMP iffJPEG iffMultiPageTIFF iffSinglePageTIFF iffTIFF iffPNG " + "im8bGrayscale im24bRGB im1bMonochrome " + "itBMP itJPEG itWMF itPNG " + "ikhInformation ikhWarning ikhError ikhNoIcon " + "icUnknown icScript icFunction icIntegratedReport icAnalyticReport icDataSetEventHandler icActionHandler icFormEventHandler icLookUpEventHandler icRequisiteChangeEventHandler icBeforeSearchEventHandler icRoleCalculation icSelectRouteEventHandler icBlockPropertyCalculation icBlockQueryParamsEventHandler icChangeSearchResultEventHandler icBlockEventHandler icSubTaskInitEventHandler icEDocDataSetEventHandler icEDocLookUpEventHandler icEDocActionHandler icEDocFormEventHandler icEDocRequisiteChangeEventHandler icStructuredConversionRule icStructuredConversionEventBefore icStructuredConversionEventAfter icWizardEventHandler icWizardFinishEventHandler icWizardStepEventHandler icWizardStepFinishEventHandler icWizardActionEnableEventHandler icWizardActionExecuteEventHandler icCreateJobsHandler icCreateNoticesHandler icBeforeLookUpEventHandler icAfterLookUpEventHandler icTaskAbortEventHandler icWorkflowBlockActionHandler icDialogDataSetEventHandler icDialogActionHandler icDialogLookUpEventHandler icDialogRequisiteChangeEventHandler icDialogFormEventHandler icDialogValidCloseEventHandler icBlockFormEventHandler icTaskFormEventHandler icReferenceMethod icEDocMethod icDialogMethod icProcessMessageHandler " + "isShow isHide isByUserSettings " + "jkJob jkNotice jkControlJob " + "jtInner jtLeft jtRight jtFull jtCross " + "lbpAbove lbpBelow lbpLeft lbpRight " + "eltPerConnection eltPerUser " + "sfcUndefined sfcBlack sfcGreen sfcRed sfcBlue sfcOrange sfcLilac " + "sfsItalic sfsStrikeout sfsNormal " + "ldctStandardRoute ldctWizard ldctScript ldctFunction ldctRouteBlock ldctIntegratedReport ldctAnalyticReport ldctReferenceType ldctEDocumentType ldctDialog ldctServerEvents " + "mrcrtNone mrcrtUser mrcrtMaximal mrcrtCustom " + "vtEqual vtGreaterOrEqual vtLessOrEqual vtRange " + "rdYesterday rdToday rdTomorrow rdThisWeek rdThisMonth rdThisYear rdNextMonth rdNextWeek rdLastWeek rdLastMonth " + "rdWindow rdFile rdPrinter " + "rdtString rdtNumeric rdtInteger rdtDate rdtReference rdtAccount rdtText rdtPick rdtUnknown rdtLargeInteger rdtDocument " + "reOnChange reOnChangeValues " + "ttGlobal ttLocal ttUser ttSystem " + "ssmBrowse ssmSelect ssmMultiSelect ssmBrowseModal " + "smSelect smLike smCard " + "stNone stAuthenticating stApproving " + "sctString sctStream " + "sstAnsiSort sstNaturalSort " + "svtEqual svtContain " + "soatString soatNumeric soatInteger soatDatetime soatReferenceRecord soatText soatPick soatBoolean soatEDocument soatAccount soatIntegerCollection soatNumericCollection soatStringCollection soatPickCollection soatDatetimeCollection soatBooleanCollection soatReferenceRecordCollection soatEDocumentCollection soatAccountCollection soatContents soatUnknown " + "tarAbortByUser tarAbortByWorkflowException " + "tvtAllWords tvtExactPhrase tvtAnyWord " + "usNone usCompleted usRedSquare usBlueSquare usYellowSquare usGreenSquare usOrangeSquare usPurpleSquare usFollowUp " + "utUnknown utUser utDeveloper utAdministrator utSystemDeveloper utDisconnected " + "btAnd btDetailAnd btOr btNotOr btOnly " + "vmView vmSelect vmNavigation " + "vsmSingle vsmMultiple vsmMultipleCheck vsmNoSelection " + "wfatPrevious wfatNext wfatCancel wfatFinish " + "wfepUndefined wfepText3 wfepText6 wfepText9 wfepSpinEdit wfepDropDown wfepRadioGroup wfepFlag wfepText12 wfepText15 wfepText18 wfepText21 wfepText24 wfepText27 wfepText30 wfepRadioGroupColumn1 wfepRadioGroupColumn2 wfepRadioGroupColumn3 " + "wfetQueryParameter wfetText wfetDelimiter wfetLabel " + "wptString wptInteger wptNumeric wptBoolean wptDateTime wptPick wptText wptUser wptUserList wptEDocumentInfo wptEDocumentInfoList wptReferenceRecordInfo wptReferenceRecordInfoList wptFolderInfo wptTaskInfo wptContents wptFileName wptDate " + "wsrComplete wsrGoNext wsrGoPrevious wsrCustom wsrCancel wsrGoFinal " + "wstForm wstEDocument wstTaskCard wstReferenceRecordCard wstFinal " + "waAll waPerformers waManual " + "wsbStart wsbFinish wsbNotice wsbStep wsbDecision wsbWait wsbMonitor wsbScript wsbConnector wsbSubTask wsbLifeCycleStage wsbPause " + "wdtInteger wdtFloat wdtString wdtPick wdtDateTime wdtBoolean wdtTask wdtJob wdtFolder wdtEDocument wdtReferenceRecord wdtUser wdtGroup wdtRole wdtIntegerCollection wdtFloatCollection wdtStringCollection wdtPickCollection wdtDateTimeCollection wdtBooleanCollection wdtTaskCollection wdtJobCollection wdtFolderCollection wdtEDocumentCollection wdtReferenceRecordCollection wdtUserCollection wdtGroupCollection wdtRoleCollection wdtContents wdtUserList wdtSearchDescription wdtDeadLine wdtPickSet wdtAccountCollection " + "wiLow wiNormal wiHigh " + "wrtSoft wrtHard " + "wsInit wsRunning wsDone wsControlled wsAborted wsContinued " + "wtmFull wtmFromCurrent wtmOnlyCurrent ", Ye = "AddSubString AdjustLineBreaks AmountInWords Analysis ArrayDimCount ArrayHighBound ArrayLowBound ArrayOf ArrayReDim Assert Assigned BeginOfMonth BeginOfPeriod BuildProfilingOperationAnalysis CallProcedure CanReadFile CArrayElement CDataSetRequisite ChangeDate ChangeReferenceDataset Char CharPos CheckParam CheckParamValue CompareStrings ConstantExists ControlState ConvertDateStr Copy CopyFile CreateArray CreateCachedReference CreateConnection CreateDialog CreateDualListDialog CreateEditor CreateException CreateFile CreateFolderDialog CreateInputDialog CreateLinkFile CreateList CreateLock CreateMemoryDataSet CreateObject CreateOpenDialog CreateProgress CreateQuery CreateReference CreateReport CreateSaveDialog CreateScript CreateSQLPivotFunction CreateStringList CreateTreeListSelectDialog CSelectSQL CSQL CSubString CurrentUserID CurrentUserName CurrentVersion DataSetLocateEx DateDiff DateTimeDiff DateToStr DayOfWeek DeleteFile DirectoryExists DisableCheckAccessRights DisableCheckFullShowingRestriction DisableMassTaskSendingRestrictions DropTable DupeString EditText EnableCheckAccessRights EnableCheckFullShowingRestriction EnableMassTaskSendingRestrictions EndOfMonth EndOfPeriod ExceptionExists ExceptionsOff ExceptionsOn Execute ExecuteProcess Exit ExpandEnvironmentVariables ExtractFileDrive ExtractFileExt ExtractFileName ExtractFilePath ExtractParams FileExists FileSize FindFile FindSubString FirmContext ForceDirectories Format FormatDate FormatNumeric FormatSQLDate FormatString FreeException GetComponent GetComponentLaunchParam GetConstant GetLastException GetReferenceRecord GetRefTypeByRefID GetTableID GetTempFolder IfThen In IndexOf InputDialog InputDialogEx InteractiveMode IsFileLocked IsGraphicFile IsNumeric Length LoadString LoadStringFmt LocalTimeToUTC LowerCase Max MessageBox MessageBoxEx MimeDecodeBinary MimeDecodeString MimeEncodeBinary MimeEncodeString Min MoneyInWords MoveFile NewID Now OpenFile Ord Precision Raise ReadCertificateFromFile ReadFile ReferenceCodeByID ReferenceNumber ReferenceRequisiteMode ReferenceRequisiteValue RegionDateSettings RegionNumberSettings RegionTimeSettings RegRead RegWrite RenameFile Replace Round SelectServerCode SelectSQL ServerDateTime SetConstant SetManagedFolderFieldsState ShowConstantsInputDialog ShowMessage Sleep Split SQL SQL2XLSTAB SQLProfilingSendReport StrToDate SubString SubStringCount SystemSetting Time TimeDiff Today Transliterate Trim UpperCase UserStatus UTCToLocalTime ValidateXML VarIsClear VarIsEmpty VarIsNull WorkTimeDiff WriteFile WriteFileEx WriteObjectHistory Анализ БазаДанных БлокЕсть БлокЕстьРасш БлокИнфо БлокСнять БлокСнятьРасш БлокУстановить Ввод ВводМеню ВедС ВедСпр ВерхняяГраницаМассива ВнешПрогр Восст ВременнаяПапка Время ВыборSQL ВыбратьЗапись ВыделитьСтр Вызвать Выполнить ВыпПрогр ГрафическийФайл ГруппаДополнительно ДатаВремяСерв ДеньНедели ДиалогДаНет ДлинаСтр ДобПодстр ЕПусто ЕслиТо ЕЧисло ЗамПодстр ЗаписьСправочника ЗначПоляСпр ИДТипСпр ИзвлечьДиск ИзвлечьИмяФайла ИзвлечьПуть ИзвлечьРасширение ИзмДат ИзменитьРазмерМассива ИзмеренийМассива ИмяОрг ИмяПоляСпр Индекс ИндикаторЗакрыть ИндикаторОткрыть ИндикаторШаг ИнтерактивныйРежим ИтогТблСпр КодВидВедСпр КодВидСпрПоИД КодПоAnalit КодСимвола КодСпр КолПодстр КолПроп КонМес Конст КонстЕсть КонстЗнач КонТран КопироватьФайл КопияСтр КПериод КСтрТблСпр Макс МаксСтрТблСпр Массив Меню МенюРасш Мин НаборДанныхНайтиРасш НаимВидСпр НаимПоAnalit НаимСпр НастроитьПереводыСтрок НачМес НачТран НижняяГраницаМассива НомерСпр НПериод Окно Окр Окружение ОтлИнфДобавить ОтлИнфУдалить Отчет ОтчетАнал ОтчетИнт ПапкаСуществует Пауза ПВыборSQL ПереименоватьФайл Переменные ПереместитьФайл Подстр ПоискПодстр ПоискСтр ПолучитьИДТаблицы ПользовательДополнительно ПользовательИД ПользовательИмя ПользовательСтатус Прервать ПроверитьПараметр ПроверитьПараметрЗнач ПроверитьУсловие РазбСтр РазнВремя РазнДат РазнДатаВремя РазнРабВремя РегУстВрем РегУстДат РегУстЧсл РедТекст РеестрЗапись РеестрСписокИменПарам РеестрЧтение РеквСпр РеквСпрПр Сегодня Сейчас Сервер СерверПроцессИД СертификатФайлСчитать СжПроб Символ СистемаДиректумКод СистемаИнформация СистемаКод Содержит СоединениеЗакрыть СоединениеОткрыть СоздатьДиалог СоздатьДиалогВыбораИзДвухСписков СоздатьДиалогВыбораПапки СоздатьДиалогОткрытияФайла СоздатьДиалогСохраненияФайла СоздатьЗапрос СоздатьИндикатор СоздатьИсключение СоздатьКэшированныйСправочник СоздатьМассив СоздатьНаборДанных СоздатьОбъект СоздатьОтчет СоздатьПапку СоздатьРедактор СоздатьСоединение СоздатьСписок СоздатьСписокСтрок СоздатьСправочник СоздатьСценарий СоздСпр СостСпр Сохр СохрСпр СписокСистем Спр Справочник СпрБлокЕсть СпрБлокСнять СпрБлокСнятьРасш СпрБлокУстановить СпрИзмНабДан СпрКод СпрНомер СпрОбновить СпрОткрыть СпрОтменить СпрПарам СпрПолеЗнач СпрПолеИмя СпрРекв СпрРеквВведЗн СпрРеквНовые СпрРеквПр СпрРеквПредЗн СпрРеквРежим СпрРеквТипТекст СпрСоздать СпрСост СпрСохранить СпрТблИтог СпрТблСтр СпрТблСтрКол СпрТблСтрМакс СпрТблСтрМин СпрТблСтрПред СпрТблСтрСлед СпрТблСтрСозд СпрТблСтрУд СпрТекПредст СпрУдалить СравнитьСтр СтрВерхРегистр СтрНижнРегистр СтрТблСпр СумПроп Сценарий СценарийПарам ТекВерсия ТекОрг Точн Тран Транслитерация УдалитьТаблицу УдалитьФайл УдСпр УдСтрТблСпр Уст УстановкиКонстант ФайлАтрибутСчитать ФайлАтрибутУстановить ФайлВремя ФайлВремяУстановить ФайлВыбрать ФайлЗанят ФайлЗаписать ФайлИскать ФайлКопировать ФайлМожноЧитать ФайлОткрыть ФайлПереименовать ФайлПерекодировать ФайлПереместить ФайлПросмотреть ФайлРазмер ФайлСоздать ФайлСсылкаСоздать ФайлСуществует ФайлСчитать ФайлУдалить ФмтSQLДат ФмтДат ФмтСтр ФмтЧсл Формат ЦМассивЭлемент ЦНаборДанныхРеквизит ЦПодстр ", Wt = "AltState Application CallType ComponentTokens CreatedJobs CreatedNotices ControlState DialogResult Dialogs EDocuments EDocumentVersionSource Folders GlobalIDs Job Jobs InputValue LookUpReference LookUpRequisiteNames LookUpSearch Object ParentComponent Processes References Requisite ReportName Reports Result Scripts Searches SelectedAttachments SelectedItems SelectMode Sender ServerEvents ServiceFactory ShiftState SubTask SystemDialogs Tasks Wizard Wizards Work ВызовСпособ ИмяОтчета РеквЗнач ", Tt = "IApplication IAccessRights IAccountRepository IAccountSelectionRestrictions IAction IActionList IAdministrationHistoryDescription IAnchors IApplication IArchiveInfo IAttachment IAttachmentList ICheckListBox ICheckPointedList IColumn IComponent IComponentDescription IComponentToken IComponentTokenFactory IComponentTokenInfo ICompRecordInfo IConnection IContents IControl IControlJob IControlJobInfo IControlList ICrypto ICrypto2 ICustomJob ICustomJobInfo ICustomListBox ICustomObjectWizardStep ICustomWork ICustomWorkInfo IDataSet IDataSetAccessInfo IDataSigner IDateCriterion IDateRequisite IDateRequisiteDescription IDateValue IDeaAccessRights IDeaObjectInfo IDevelopmentComponentLock IDialog IDialogFactory IDialogPickRequisiteItems IDialogsFactory IDICSFactory IDocRequisite IDocumentInfo IDualListDialog IECertificate IECertificateInfo IECertificates IEditControl IEditorForm IEdmsExplorer IEdmsObject IEdmsObjectDescription IEdmsObjectFactory IEdmsObjectInfo IEDocument IEDocumentAccessRights IEDocumentDescription IEDocumentEditor IEDocumentFactory IEDocumentInfo IEDocumentStorage IEDocumentVersion IEDocumentVersionListDialog IEDocumentVersionSource IEDocumentWizardStep IEDocVerSignature IEDocVersionState IEnabledMode IEncodeProvider IEncrypter IEvent IEventList IException IExternalEvents IExternalHandler IFactory IField IFileDialog IFolder IFolderDescription IFolderDialog IFolderFactory IFolderInfo IForEach IForm IFormTitle IFormWizardStep IGlobalIDFactory IGlobalIDInfo IGrid IHasher IHistoryDescription IHyperLinkControl IImageButton IImageControl IInnerPanel IInplaceHint IIntegerCriterion IIntegerList IIntegerRequisite IIntegerValue IISBLEditorForm IJob IJobDescription IJobFactory IJobForm IJobInfo ILabelControl ILargeIntegerCriterion ILargeIntegerRequisite ILargeIntegerValue ILicenseInfo ILifeCycleStage IList IListBox ILocalIDInfo ILocalization ILock IMemoryDataSet IMessagingFactory IMetadataRepository INotice INoticeInfo INumericCriterion INumericRequisite INumericValue IObject IObjectDescription IObjectImporter IObjectInfo IObserver IPanelGroup IPickCriterion IPickProperty IPickRequisite IPickRequisiteDescription IPickRequisiteItem IPickRequisiteItems IPickValue IPrivilege IPrivilegeList IProcess IProcessFactory IProcessMessage IProgress IProperty IPropertyChangeEvent IQuery IReference IReferenceCriterion IReferenceEnabledMode IReferenceFactory IReferenceHistoryDescription IReferenceInfo IReferenceRecordCardWizardStep IReferenceRequisiteDescription IReferencesFactory IReferenceValue IRefRequisite IReport IReportFactory IRequisite IRequisiteDescription IRequisiteDescriptionList IRequisiteFactory IRichEdit IRouteStep IRule IRuleList ISchemeBlock IScript IScriptFactory ISearchCriteria ISearchCriterion ISearchDescription ISearchFactory ISearchFolderInfo ISearchForObjectDescription ISearchResultRestrictions ISecuredContext ISelectDialog IServerEvent IServerEventFactory IServiceDialog IServiceFactory ISignature ISignProvider ISignProvider2 ISignProvider3 ISimpleCriterion IStringCriterion IStringList IStringRequisite IStringRequisiteDescription IStringValue ISystemDialogsFactory ISystemInfo ITabSheet ITask ITaskAbortReasonInfo ITaskCardWizardStep ITaskDescription ITaskFactory ITaskInfo ITaskRoute ITextCriterion ITextRequisite ITextValue ITreeListSelectDialog IUser IUserList IValue IView IWebBrowserControl IWizard IWizardAction IWizardFactory IWizardFormElement IWizardParam IWizardPickParam IWizardReferenceParam IWizardStep IWorkAccessRights IWorkDescription IWorkflowAskableParam IWorkflowAskableParams IWorkflowBlock IWorkflowBlockResult IWorkflowEnabledMode IWorkflowParam IWorkflowPickParam IWorkflowReferenceParam IWorkState IWorkTreeCustomNode IWorkTreeJobNode IWorkTreeTaskNode IXMLEditorForm SBCrypto ", re = ke + Lt, Dt = Wt, ye = "null true false nil ", fe = {
       className: "number",
       begin: t.NUMBER_RE,
       relevance: 0
-    }, pt = {
+    }, _t = {
       className: "string",
       variants: [
         {
@@ -70247,60 +70359,60 @@ function pZ() {
           end: "'"
         }
       ]
-    }, Xe = {
+    }, Qe = {
       className: "doctag",
       begin: "\\b(?:TODO|DONE|BEGIN|END|STUB|CHG|FIXME|NOTE|BUG|XXX)\\b",
       relevance: 0
-    }, Tt = {
+    }, bt = {
       className: "comment",
       begin: "//",
       end: "$",
       relevance: 0,
       contains: [
         t.PHRASAL_WORDS_MODE,
-        Xe
+        Qe
       ]
-    }, bt = {
+    }, Rt = {
       className: "comment",
       begin: "/\\*",
       end: "\\*/",
       relevance: 0,
       contains: [
         t.PHRASAL_WORDS_MODE,
-        Xe
+        Qe
       ]
     }, F = { variants: [
-      Tt,
-      bt
-    ] }, Q = {
+      bt,
+      Rt
+    ] }, K = {
       $pattern: e,
       keyword: s,
-      built_in: ne,
+      built_in: re,
       class: Dt,
       literal: ye
-    }, oe = {
+    }, ie = {
       begin: "\\.\\s*" + t.UNDERSCORE_IDENT_RE,
-      keywords: Q,
+      keywords: K,
       relevance: 0
-    }, pe = {
+    }, _e = {
       className: "type",
-      begin: ":[ \\t]*(" + kt.trim().replace(/\s/g, "|") + ")",
+      begin: ":[ \\t]*(" + Tt.trim().replace(/\s/g, "|") + ")",
       end: "[ \\t]*=",
       excludeEnd: !0
     }, Ie = {
       className: "variable",
-      keywords: Q,
+      keywords: K,
       begin: e,
       relevance: 0,
       contains: [
-        pe,
-        oe
+        _e,
+        ie
       ]
     }, qe = a + "\\(";
     return {
       name: "ISBL",
       case_insensitive: !0,
-      keywords: Q,
+      keywords: K,
       illegal: "\\$|\\?|%|,|;$|~|#|@|</",
       contains: [
         {
@@ -70308,7 +70420,7 @@ function pZ() {
           begin: qe,
           end: "\\)$",
           returnBegin: !0,
-          keywords: Q,
+          keywords: K,
           illegal: "[\\[\\]\\|\\$\\?%,~#@]",
           contains: [
             {
@@ -70322,18 +70434,18 @@ function pZ() {
               returnBegin: !0,
               excludeEnd: !0
             },
-            oe,
+            ie,
             Ie,
-            pt,
-            he,
+            _t,
+            fe,
             F
           ]
         },
-        pe,
-        oe,
+        _e,
+        ie,
         Ie,
-        pt,
-        he,
+        _t,
+        fe,
         F
       ]
     };
@@ -70367,11 +70479,11 @@ function _Z() {
     ],
     relevance: 0
   };
-  function s(d, u, h) {
-    return h === -1 ? "" : d.replace(u, (m) => s(d, u, h - 1));
+  function s(d, u, m) {
+    return m === -1 ? "" : d.replace(u, (h) => s(d, u, m - 1));
   }
   function c(d) {
-    const u = d.regex, h = "[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*", m = h + s("(?:<" + h + "~~~(?:\\s*,\\s*" + h + "~~~)*>)?", /~~~/g, 2), p = {
+    const u = d.regex, m = "[À-ʸa-zA-Z_$][À-ʸa-zA-Z_$0-9]*", h = m + s("(?:<" + m + "~~~(?:\\s*,\\s*" + m + "~~~)*>)?", /~~~/g, 2), _ = {
       keyword: [
         "synchronized",
         "abstract",
@@ -70437,9 +70549,9 @@ function _Z() {
         "super",
         "this"
       ]
-    }, C = {
+    }, S = {
       className: "meta",
-      begin: "@" + h,
+      begin: "@" + m,
       contains: [
         {
           begin: /\(/,
@@ -70452,7 +70564,7 @@ function _Z() {
       className: "params",
       begin: /\(/,
       end: /\)/,
-      keywords: p,
+      keywords: _,
       relevance: 0,
       contains: [d.C_BLOCK_COMMENT_MODE],
       endsParent: !0
@@ -70460,7 +70572,7 @@ function _Z() {
     return {
       name: "Java",
       aliases: ["jsp"],
-      keywords: p,
+      keywords: _,
       illegal: /<\/|#/,
       contains: [
         d.COMMENT(
@@ -70501,7 +70613,7 @@ function _Z() {
           match: [
             /\b(?:class|interface|enum|extends|implements|new)/,
             /\s+/,
-            h
+            m
           ],
           className: {
             1: "keyword",
@@ -70515,9 +70627,9 @@ function _Z() {
         },
         {
           begin: [
-            u.concat(/(?!else)/, h),
+            u.concat(/(?!else)/, m),
             /\s+/,
-            h,
+            m,
             /\s+/,
             /=(?!=)/
           ],
@@ -70531,7 +70643,7 @@ function _Z() {
           begin: [
             /record/,
             /\s+/,
-            h
+            m
           ],
           className: {
             1: "keyword",
@@ -70551,21 +70663,21 @@ function _Z() {
         },
         {
           begin: [
-            "(?:" + m + "\\s+)",
+            "(?:" + h + "\\s+)",
             d.UNDERSCORE_IDENT_RE,
             /\s*(?=\()/
           ],
           className: { 2: "title.function" },
-          keywords: p,
+          keywords: _,
           contains: [
             {
               className: "params",
               begin: /\(/,
               end: /\)/,
-              keywords: p,
+              keywords: _,
               relevance: 0,
               contains: [
-                C,
+                S,
                 d.APOS_STRING_MODE,
                 d.QUOTE_STRING_MODE,
                 a,
@@ -70577,7 +70689,7 @@ function _Z() {
           ]
         },
         a,
-        C
+        S
       ]
     };
   }
@@ -70733,42 +70845,42 @@ function mZ() {
     a,
     s
   );
-  function h(m) {
-    const _ = m.regex, g = (_e, { after: ue }) => {
-      const Se = "</" + _e[0].slice(1);
-      return _e.input.indexOf(Se, ue) !== -1;
-    }, w = r, S = {
+  function m(h) {
+    const p = h.regex, g = (he, { after: pe }) => {
+      const xe = "</" + he[0].slice(1);
+      return he.input.indexOf(xe, pe) !== -1;
+    }, w = r, C = {
       begin: "<>",
       end: "</>"
-    }, p = /<[A-Za-z0-9\\._:-]+\s*\/>/, C = {
+    }, _ = /<[A-Za-z0-9\\._:-]+\s*\/>/, S = {
       begin: /<[A-Za-z0-9\\._:-]+/,
       end: /\/[A-Za-z0-9\\._:-]+>|\/>/,
       /**
        * @param {RegExpMatchArray} match
        * @param {CallbackResponse} response
        */
-      isTrulyOpeningTag: (_e, ue) => {
-        const Se = _e[0].length + _e.index, Ce = _e.input[Se];
+      isTrulyOpeningTag: (he, pe) => {
+        const xe = he[0].length + he.index, ve = he.input[xe];
         if (
           // HTML should not include another raw `<` inside a tag
           // nested type?
           // `<Array<Array<number>>`, etc.
-          Ce === "<" || // the , gives away that this is not HTML
+          ve === "<" || // the , gives away that this is not HTML
           // `<T, A extends keyof T, V>`
-          Ce === ","
+          ve === ","
         ) {
-          ue.ignoreMatch();
+          pe.ignoreMatch();
           return;
         }
-        Ce === ">" && (g(_e, { after: Se }) || ue.ignoreMatch());
-        let ve;
-        const Pe = _e.input.substring(Se);
-        if (ve = Pe.match(/^\s*=/)) {
-          ue.ignoreMatch();
+        ve === ">" && (g(he, { after: xe }) || pe.ignoreMatch());
+        let Te;
+        const Pe = he.input.substring(xe);
+        if (Te = Pe.match(/^\s*=/)) {
+          pe.ignoreMatch();
           return;
         }
-        if ((ve = Pe.match(/^\s+extends\s+/)) && ve.index === 0) {
-          ue.ignoreMatch();
+        if ((Te = Pe.match(/^\s+extends\s+/)) && Te.index === 0) {
+          pe.ignoreMatch();
           return;
         }
       }
@@ -70778,12 +70890,12 @@ function mZ() {
       literal: e,
       built_in: u,
       "variable.language": d
-    }, R = "[0-9](_?[0-9])*", T = `\\.(${R})`, A = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", L = {
+    }, R = "[0-9](_?[0-9])*", T = `\\.(${R})`, N = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", I = {
       className: "number",
       variants: [
         // DecimalLiteral
-        { begin: `(\\b(${A})((${T})|\\.)?|(${T}))[eE][+-]?(${R})\\b` },
-        { begin: `\\b(${A})\\b((${T})\\b|\\.)?|(${T})\\b` },
+        { begin: `(\\b(${N})((${T})|\\.)?|(${T}))[eE][+-]?(${R})\\b` },
+        { begin: `\\b(${N})\\b((${T})\\b|\\.)?|(${T})\\b` },
         // DecimalBigIntegerLiteral
         { begin: "\\b(0|[1-9](_?[0-9])*)n\\b" },
         // NonDecimalIntegerLiteral
@@ -70809,47 +70921,47 @@ function mZ() {
         end: "`",
         returnEnd: !1,
         contains: [
-          m.BACKSLASH_ESCAPE,
+          h.BACKSLASH_ESCAPE,
           y
         ],
         subLanguage: "xml"
       }
-    }, P = {
+    }, D = {
       begin: ".?css`",
       end: "",
       starts: {
         end: "`",
         returnEnd: !1,
         contains: [
-          m.BACKSLASH_ESCAPE,
+          h.BACKSLASH_ESCAPE,
           y
         ],
         subLanguage: "css"
       }
-    }, H = {
+    }, U = {
       begin: ".?gql`",
       end: "",
       starts: {
         end: "`",
         returnEnd: !1,
         contains: [
-          m.BACKSLASH_ESCAPE,
+          h.BACKSLASH_ESCAPE,
           y
         ],
         subLanguage: "graphql"
       }
-    }, K = {
+    }, W = {
       className: "string",
       begin: "`",
       end: "`",
       contains: [
-        m.BACKSLASH_ESCAPE,
+        h.BACKSLASH_ESCAPE,
         y
       ]
-    }, q = {
+    }, Y = {
       className: "comment",
       variants: [
-        m.COMMENT(
+        h.COMMENT(
           /\/\*\*(?!\/)/,
           "\\*/",
           {
@@ -70888,24 +71000,24 @@ function mZ() {
             ]
           }
         ),
-        m.C_BLOCK_COMMENT_MODE,
-        m.C_LINE_COMMENT_MODE
+        h.C_BLOCK_COMMENT_MODE,
+        h.C_LINE_COMMENT_MODE
       ]
-    }, ae = [
-      m.APOS_STRING_MODE,
-      m.QUOTE_STRING_MODE,
+    }, se = [
+      h.APOS_STRING_MODE,
+      h.QUOTE_STRING_MODE,
       b,
-      P,
-      H,
-      K,
+      D,
+      U,
+      W,
       // Skip numbers when they are part of a variable name
       { match: /\$\d+/ },
-      L
+      I
       // This is intentional:
       // See https://github.com/highlightjs/highlight.js/issues/3288
       // hljs.REGEXP_MODE
     ];
-    y.contains = ae.concat({
+    y.contains = se.concat({
       // we need to pair up {} inside our subst to prevent
       // it from ending too early by matching another }
       begin: /\{/,
@@ -70913,17 +71025,17 @@ function mZ() {
       keywords: f,
       contains: [
         "self"
-      ].concat(ae)
+      ].concat(se)
     });
-    const we = [].concat(q, y.contains), le = we.concat([
+    const Ee = [].concat(Y, y.contains), ae = Ee.concat([
       // eat recursive parens in sub expressions
       {
         begin: /(\s*)\(/,
         end: /\)/,
         keywords: f,
-        contains: ["self"].concat(we)
+        contains: ["self"].concat(Ee)
       }
-    ]), ce = {
+    ]), de = {
       className: "params",
       // convert this to negative lookbehind in v12
       begin: /(\s*)\(/,
@@ -70932,8 +71044,8 @@ function mZ() {
       excludeBegin: !0,
       excludeEnd: !0,
       keywords: f,
-      contains: le
-    }, de = {
+      contains: ae
+    }, ue = {
       variants: [
         // class Car extends vehicle
         {
@@ -70944,7 +71056,7 @@ function mZ() {
             /\s+/,
             /extends/,
             /\s+/,
-            _.concat(w, "(", _.concat(/\./, w), ")*")
+            p.concat(w, "(", p.concat(/\./, w), ")*")
           ],
           scope: {
             1: "keyword",
@@ -70966,9 +71078,9 @@ function mZ() {
           }
         }
       ]
-    }, ge = {
+    }, me = {
       relevance: 0,
-      match: _.either(
+      match: p.either(
         // Hard coded exceptions
         /\bJSON/,
         // Float32Array, OutT
@@ -70990,7 +71102,7 @@ function mZ() {
           ...s
         ]
       }
-    }, xe = {
+    }, Se = {
       label: "use_strict",
       className: "meta",
       relevance: 10,
@@ -71018,32 +71130,32 @@ function mZ() {
         3: "title.function"
       },
       label: "func.def",
-      contains: [ce],
+      contains: [de],
       illegal: /%/
-    }, Z = {
+    }, He = {
       relevance: 0,
       match: /\b[A-Z][A-Z_0-9]+\b/,
       className: "variable.constant"
     };
-    function ze(_e) {
-      return _.concat("(?!", _e.join("|"), ")");
+    function ze(he) {
+      return p.concat("(?!", he.join("|"), ")");
     }
-    const Fe = {
-      match: _.concat(
+    const X = {
+      match: p.concat(
         /\b/,
         ze([
           ...c,
           "super",
           "import"
-        ].map((_e) => `${_e}\\s*\\(`)),
+        ].map((he) => `${he}\\s*\\(`)),
         w,
-        _.lookahead(/\s*\(/)
+        p.lookahead(/\s*\(/)
       ),
       className: "title.function",
       relevance: 0
     }, Ue = {
-      begin: _.concat(/\./, _.lookahead(
-        _.concat(w, /(?![0-9A-Za-z$_(])/)
+      begin: p.concat(/\./, p.lookahead(
+        p.concat(w, /(?![0-9A-Za-z$_(])/)
       )),
       end: w,
       excludeBegin: !0,
@@ -71066,9 +71178,9 @@ function mZ() {
           // eat to avoid empty params
           begin: /\(\)/
         },
-        ce
+        de
       ]
-    }, Te = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + m.UNDERSCORE_IDENT_RE + ")\\s*=>", Oe = {
+    }, ke = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + h.UNDERSCORE_IDENT_RE + ")\\s*=>", Oe = {
       match: [
         /const|var|let/,
         /\s+/,
@@ -71077,7 +71189,7 @@ function mZ() {
         /=\s*/,
         /(async\s*)?/,
         // async is optional
-        _.lookahead(Te)
+        p.lookahead(ke)
       ],
       keywords: "async",
       className: {
@@ -71085,7 +71197,7 @@ function mZ() {
         3: "title.function"
       },
       contains: [
-        ce
+        de
       ]
     };
     return {
@@ -71093,46 +71205,46 @@ function mZ() {
       aliases: ["js", "jsx", "mjs", "cjs"],
       keywords: f,
       // this will be extended by TypeScript
-      exports: { PARAMS_CONTAINS: le, CLASS_REFERENCE: ge },
+      exports: { PARAMS_CONTAINS: ae, CLASS_REFERENCE: me },
       illegal: /#(?![$_A-z])/,
       contains: [
-        m.SHEBANG({
+        h.SHEBANG({
           label: "shebang",
           binary: "node",
           relevance: 5
         }),
-        xe,
-        m.APOS_STRING_MODE,
-        m.QUOTE_STRING_MODE,
+        Se,
+        h.APOS_STRING_MODE,
+        h.QUOTE_STRING_MODE,
         b,
-        P,
-        H,
-        K,
-        q,
+        D,
+        U,
+        W,
+        Y,
         // Skip numbers when they are part of a variable name
         { match: /\$\d+/ },
-        L,
-        ge,
+        I,
+        me,
         {
           scope: "attr",
-          match: w + _.lookahead(":"),
+          match: w + p.lookahead(":"),
           relevance: 0
         },
         Oe,
         {
           // "value" container
-          begin: "(" + m.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
+          begin: "(" + h.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
           keywords: "return throw case",
           relevance: 0,
           contains: [
-            q,
-            m.REGEXP_MODE,
+            Y,
+            h.REGEXP_MODE,
             {
               className: "function",
               // we have to count the parens to make sure we actually have the
               // correct bounding ( ) before the =>.  There could be any number of
               // sub-expressions inside also surrounded by parens.
-              begin: Te,
+              begin: ke,
               returnBegin: !0,
               end: "\\s*=>",
               contains: [
@@ -71140,7 +71252,7 @@ function mZ() {
                   className: "params",
                   variants: [
                     {
-                      begin: m.UNDERSCORE_IDENT_RE,
+                      begin: h.UNDERSCORE_IDENT_RE,
                       relevance: 0
                     },
                     {
@@ -71154,7 +71266,7 @@ function mZ() {
                       excludeBegin: !0,
                       excludeEnd: !0,
                       keywords: f,
-                      contains: le
+                      contains: ae
                     }
                   ]
                 }
@@ -71172,21 +71284,21 @@ function mZ() {
             {
               // JSX
               variants: [
-                { begin: S.begin, end: S.end },
-                { match: p },
+                { begin: C.begin, end: C.end },
+                { match: _ },
                 {
-                  begin: C.begin,
+                  begin: S.begin,
                   // we carefully check the opening tag to see if it truly
                   // is a tag and not a false positive
-                  "on:begin": C.isTrulyOpeningTag,
-                  end: C.end
+                  "on:begin": S.isTrulyOpeningTag,
+                  end: S.end
                 }
               ],
               subLanguage: "xml",
               contains: [
                 {
-                  begin: C.begin,
-                  end: C.end,
+                  begin: S.begin,
+                  end: S.end,
                   skip: !0,
                   contains: ["self"]
                 }
@@ -71204,13 +71316,13 @@ function mZ() {
           // we have to count the parens to make sure we actually have the correct
           // bounding ( ).  There could be any number of sub-expressions inside
           // also surrounded by parens.
-          begin: "\\b(?!function)" + m.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
+          begin: "\\b(?!function)" + h.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
           // end parens
           returnBegin: !0,
           label: "func.def",
           contains: [
-            ce,
-            m.inherit(m.TITLE_MODE, { begin: w, className: "title.function" })
+            de,
+            h.inherit(h.TITLE_MODE, { begin: w, className: "title.function" })
           ]
         },
         // catch ... so it won't trigger the property rule below
@@ -71229,11 +71341,11 @@ function mZ() {
         {
           match: [/\bconstructor(?=\s*\()/],
           className: { 1: "title.function" },
-          contains: [ce]
+          contains: [de]
         },
-        Fe,
-        Z,
-        de,
+        X,
+        He,
+        ue,
         De,
         {
           match: /\$[(.]/
@@ -71242,7 +71354,7 @@ function mZ() {
       ]
     };
   }
-  return Lr = h, Lr;
+  return Lr = m, Lr;
 }
 var Dr, Va;
 function hZ() {
@@ -71611,7 +71723,7 @@ function wZ() {
     }, u = {
       keywords: d,
       illegal: /<\//
-    }, h = {
+    }, m = {
       className: "number",
       // supported numeric literals:
       //  * binary literal (e.g. 0x10)
@@ -71622,10 +71734,10 @@ function wZ() {
       //  * floating pointe literal (e.g. 1.2, 1.2f, .2, 1., 1.2e10, 1.2e-10)
       begin: /(\b0x[\d_]*(\.[\d_]*)?|0x\.\d[\d_]*)p[-+]?\d+|\b0[box][a-fA-F0-9][a-fA-F0-9_]*|(\b\d[\d_]*(\.[\d_]*)?|\.\d[\d_]*)([eEfF][-+]?\d+)?/,
       relevance: 0
-    }, m = {
+    }, h = {
       className: "string",
       begin: /'(.|\\[xXuU][a-zA-Z0-9]+)'/
-    }, _ = {
+    }, p = {
       className: "subst",
       begin: /\$\(/,
       end: /\)/,
@@ -71637,7 +71749,7 @@ function wZ() {
       className: "string",
       contains: [
         t.BACKSLASH_ESCAPE,
-        _,
+        p,
         g
       ],
       variants: [
@@ -71651,19 +71763,19 @@ function wZ() {
           end: /"\w*/
         }
       ]
-    }, S = {
+    }, C = {
       className: "string",
       contains: [
         t.BACKSLASH_ESCAPE,
-        _,
+        p,
         g
       ],
       begin: "`",
       end: "`"
-    }, p = {
+    }, _ = {
       className: "meta",
       begin: "@" + e
-    }, C = {
+    }, S = {
       className: "comment",
       variants: [
         {
@@ -71678,12 +71790,12 @@ function wZ() {
       ]
     };
     return u.name = "Julia", u.contains = [
-      h,
       m,
+      h,
       w,
-      S,
-      p,
       C,
+      _,
+      S,
       t.HASH_COMMENT_MODE,
       {
         className: "keyword",
@@ -71691,7 +71803,7 @@ function wZ() {
       },
       { begin: /<:/ }
       // relevance booster
-    ], _.contains = u.contains, u;
+    ], p.contains = u.contains, u;
   }
   return Br = r, Br;
 }
@@ -71766,15 +71878,15 @@ function EZ() {
           begin: /@\w+/
         }
       ] }
-    }, h = {
+    }, m = {
       className: "symbol",
       begin: c.UNDERSCORE_IDENT_RE + "@"
-    }, m = {
+    }, h = {
       className: "subst",
       begin: /\$\{/,
       end: /\}/,
       contains: [c.C_NUMBER_MODE]
-    }, _ = {
+    }, p = {
       className: "variable",
       begin: "\\$" + c.UNDERSCORE_IDENT_RE
     }, g = {
@@ -71784,8 +71896,8 @@ function EZ() {
           begin: '"""',
           end: '"""(?=[^"])',
           contains: [
-            _,
-            m
+            p,
+            h
           ]
         },
         // Can't use built-in modes easily, as we want to use STRING in the meta
@@ -71803,17 +71915,17 @@ function EZ() {
           illegal: /\n/,
           contains: [
             c.BACKSLASH_ESCAPE,
-            _,
-            m
+            p,
+            h
           ]
         }
       ]
     };
-    m.contains.push(g);
+    h.contains.push(g);
     const w = {
       className: "meta",
       begin: "@(?:file|property|field|get|set|receiver|param|setparam|delegate)\\s*:(?:\\s*" + c.UNDERSCORE_IDENT_RE + ")?"
-    }, S = {
+    }, C = {
       className: "meta",
       begin: "@" + c.UNDERSCORE_IDENT_RE,
       contains: [
@@ -71826,7 +71938,7 @@ function EZ() {
           ]
         }
       ]
-    }, p = a, C = c.COMMENT(
+    }, _ = a, S = c.COMMENT(
       "/\\*",
       "\\*/",
       { contains: [c.C_BLOCK_COMMENT_MODE] }
@@ -71864,11 +71976,11 @@ function EZ() {
           }
         ),
         c.C_LINE_COMMENT_MODE,
-        C,
-        u,
-        h,
-        w,
         S,
+        u,
+        m,
+        w,
+        C,
         {
           className: "function",
           beginKeywords: "fun",
@@ -71906,19 +72018,19 @@ function EZ() {
                   contains: [
                     f,
                     c.C_LINE_COMMENT_MODE,
-                    C
+                    S
                   ],
                   relevance: 0
                 },
                 c.C_LINE_COMMENT_MODE,
-                C,
-                w,
                 S,
+                w,
+                C,
                 g,
                 c.C_NUMBER_MODE
               ]
             },
-            C
+            S
           ]
         },
         {
@@ -71953,7 +72065,7 @@ function EZ() {
               returnEnd: !0
             },
             w,
-            S
+            C
           ]
         },
         g,
@@ -71964,7 +72076,7 @@ function EZ() {
           illegal: `
 `
         },
-        p
+        _
       ]
     };
   }
@@ -71992,13 +72104,13 @@ function SZ() {
         returnEnd: !0,
         contains: [d]
       }
-    }, h = {
+    }, m = {
       className: "meta",
       begin: "\\[/noprocess|" + a
-    }, m = {
+    }, h = {
       className: "symbol",
       begin: "'" + e + "'"
-    }, _ = [
+    }, p = [
       t.C_LINE_COMMENT_MODE,
       t.C_BLOCK_COMMENT_MODE,
       t.inherit(t.C_NUMBER_MODE, { begin: t.C_NUMBER_RE + "|(-?infinity|NaN)\\b" }),
@@ -72039,7 +72151,7 @@ function SZ() {
       {
         begin: /(->|\.)\s*/,
         relevance: 0,
-        contains: [m]
+        contains: [h]
       },
       {
         className: "class",
@@ -72071,7 +72183,7 @@ function SZ() {
           }
         },
         u,
-        h,
+        m,
         {
           className: "meta",
           begin: "\\[no_square_brackets",
@@ -72091,8 +72203,8 @@ function SZ() {
                 }
               },
               u,
-              h
-            ].concat(_)
+              m
+            ].concat(p)
           }
         },
         {
@@ -72106,7 +72218,7 @@ function SZ() {
           end: "lasso9$",
           relevance: 10
         }
-      ].concat(_)
+      ].concat(p)
     };
   }
   return Fr = r, Fr;
@@ -72137,7 +72249,7 @@ function CZ() {
       "(?:[Ss]igma|varsigma|tau|[Uu]psilon|[Pp]hi|varphi|chi|[Pp]si|[Oo]mega)",
       "(?:frac|sum|prod|lim|infty|times|sqrt|leq|geq|left|right|middle|[bB]igg?)",
       "(?:[lr]angle|q?quad|[lcvdi]?dots|d?dot|hat|tilde|bar)"
-    ].map((q) => q + "(?![a-zA-Z@:_])")), s = new RegExp([
+    ].map((Y) => Y + "(?![a-zA-Z@:_])")), s = new RegExp([
       // A function \module_function_name:signature or \__module_function_name:signature,
       // where both module and function_name need at least two characters and
       // function_name may contain single underscores.
@@ -72158,7 +72270,7 @@ function CZ() {
       "(?:hbox|vbox):n",
       "::[a-zA-Z]_unbraced",
       "::[a-zA-Z:]"
-    ].map((q) => q + "(?![a-zA-Z:_])").join("|")), c = [
+    ].map((Y) => Y + "(?![a-zA-Z:_])").join("|")), c = [
       { begin: /[a-zA-Z@]+/ },
       // control word
       { begin: /[^a-zA-Z@]?/ }
@@ -72193,14 +72305,14 @@ function CZ() {
           variants: c
         }
       ]
-    }, h = {
+    }, m = {
       className: "params",
       relevance: 0,
       begin: /#+\d?/
-    }, m = {
+    }, h = {
       // relevance: 1
       variants: d
-    }, _ = {
+    }, p = {
       className: "built_in",
       relevance: 0,
       begin: /[$&^_]/
@@ -72213,29 +72325,29 @@ function CZ() {
       "%",
       "$",
       { relevance: 0 }
-    ), S = [
+    ), C = [
       u,
-      h,
       m,
-      _,
+      h,
+      p,
       g,
       w
-    ], p = {
+    ], _ = {
       begin: /\{/,
       end: /\}/,
       relevance: 0,
       contains: [
         "self",
-        ...S
+        ...C
       ]
-    }, C = t.inherit(
-      p,
+    }, S = t.inherit(
+      _,
       {
         relevance: 0,
         endsParent: !0,
         contains: [
-          p,
-          ...S
+          _,
+          ...C
         ]
       }
     ), f = {
@@ -72244,64 +72356,64 @@ function CZ() {
       endsParent: !0,
       relevance: 0,
       contains: [
-        p,
-        ...S
+        _,
+        ...C
       ]
     }, R = {
       begin: /\s+/,
       relevance: 0
-    }, T = [C], A = [f], L = function(q, ae) {
+    }, T = [S], N = [f], I = function(Y, se) {
       return {
         contains: [R],
         starts: {
           relevance: 0,
-          contains: q,
-          starts: ae
+          contains: Y,
+          starts: se
         }
       };
-    }, y = function(q, ae) {
+    }, y = function(Y, se) {
       return {
-        begin: "\\\\" + q + "(?![a-zA-Z@:_])",
+        begin: "\\\\" + Y + "(?![a-zA-Z@:_])",
         keywords: {
           $pattern: /\\[a-zA-Z]+/,
-          keyword: "\\" + q
+          keyword: "\\" + Y
         },
         relevance: 0,
         contains: [R],
-        starts: ae
+        starts: se
       };
-    }, b = function(q, ae) {
+    }, b = function(Y, se) {
       return t.inherit(
         {
-          begin: "\\\\begin(?=[ 	]*(\\r?\\n[ 	]*)?\\{" + q + "\\})",
+          begin: "\\\\begin(?=[ 	]*(\\r?\\n[ 	]*)?\\{" + Y + "\\})",
           keywords: {
             $pattern: /\\[a-zA-Z]+/,
             keyword: "\\begin"
           },
           relevance: 0
         },
-        L(T, ae)
+        I(T, se)
       );
-    }, P = (q = "string") => t.END_SAME_AS_BEGIN({
-      className: q,
+    }, D = (Y = "string") => t.END_SAME_AS_BEGIN({
+      className: Y,
       begin: /(.|\r?\n)/,
       end: /(.|\r?\n)/,
       excludeBegin: !0,
       excludeEnd: !0,
       endsParent: !0
-    }), H = function(q) {
+    }), U = function(Y) {
       return {
         className: "string",
-        end: "(?=\\\\end\\{" + q + "\\})"
+        end: "(?=\\\\end\\{" + Y + "\\})"
       };
-    }, K = (q = "string") => ({
+    }, W = (Y = "string") => ({
       relevance: 0,
       begin: /\{/,
       starts: {
         endsParent: !0,
         contains: [
           {
-            className: q,
+            className: Y,
             end: /(?=\})/,
             endsParent: !0,
             contains: [
@@ -72315,44 +72427,44 @@ function CZ() {
           }
         ]
       }
-    }), ie = [
+    }), le = [
       ...[
         "verb",
         "lstinline"
-      ].map((q) => y(q, { contains: [P()] })),
-      y("mint", L(T, { contains: [P()] })),
-      y("mintinline", L(T, { contains: [
-        K(),
-        P()
+      ].map((Y) => y(Y, { contains: [D()] })),
+      y("mint", I(T, { contains: [D()] })),
+      y("mintinline", I(T, { contains: [
+        W(),
+        D()
       ] })),
       y("url", { contains: [
-        K("link"),
-        K("link")
+        W("link"),
+        W("link")
       ] }),
-      y("hyperref", { contains: [K("link")] }),
-      y("href", L(A, { contains: [K("link")] })),
+      y("hyperref", { contains: [W("link")] }),
+      y("href", I(N, { contains: [W("link")] })),
       ...[].concat(...[
         "",
         "\\*"
-      ].map((q) => [
-        b("verbatim" + q, H("verbatim" + q)),
-        b("filecontents" + q, L(T, H("filecontents" + q))),
+      ].map((Y) => [
+        b("verbatim" + Y, U("verbatim" + Y)),
+        b("filecontents" + Y, I(T, U("filecontents" + Y))),
         ...[
           "",
           "B",
           "L"
         ].map(
-          (ae) => b(ae + "Verbatim" + q, L(A, H(ae + "Verbatim" + q)))
+          (se) => b(se + "Verbatim" + Y, I(N, U(se + "Verbatim" + Y)))
         )
       ])),
-      b("minted", L(A, L(T, H("minted"))))
+      b("minted", I(N, I(T, U("minted"))))
     ];
     return {
       name: "LaTeX",
       aliases: ["tex"],
       contains: [
-        ...ie,
-        ...S
+        ...le,
+        ...C
       ]
     };
   }
@@ -72479,12 +72591,12 @@ var $r, Za;
 function kZ() {
   if (Za) return $r;
   Za = 1;
-  const r = (_) => ({
+  const r = (p) => ({
     IMPORTANT: {
       scope: "meta",
       begin: "!important"
     },
-    BLOCK_COMMENT: _.C_BLOCK_COMMENT_MODE,
+    BLOCK_COMMENT: p.C_BLOCK_COMMENT_MODE,
     HEXCOLOR: {
       scope: "number",
       begin: /#(([0-9a-fA-F]{3,4})|(([0-9a-fA-F]{2}){3,4}))\b/
@@ -72499,13 +72611,13 @@ function kZ() {
       end: /\]/,
       illegal: "$",
       contains: [
-        _.APOS_STRING_MODE,
-        _.QUOTE_STRING_MODE
+        p.APOS_STRING_MODE,
+        p.QUOTE_STRING_MODE
       ]
     },
     CSS_NUMBER_MODE: {
       scope: "number",
-      begin: _.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
+      begin: p.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
       relevance: 0
     },
     CSS_VARIABLE: {
@@ -73275,35 +73387,35 @@ function kZ() {
     "y",
     "z-index",
     "zoom"
-  ].sort().reverse(), h = c.concat(d).sort().reverse();
-  function m(_) {
-    const g = r(_), w = h, S = "and or not only", p = "[\\w-]+", C = "(" + p + "|@\\{" + p + "\\})", f = [], R = [], T = function(we) {
+  ].sort().reverse(), m = c.concat(d).sort().reverse();
+  function h(p) {
+    const g = r(p), w = m, C = "and or not only", _ = "[\\w-]+", S = "(" + _ + "|@\\{" + _ + "\\})", f = [], R = [], T = function(Ee) {
       return {
         // Less strings are not multiline (also include '~' for more consistent coloring of "escaped" strings)
         className: "string",
-        begin: "~?" + we + ".*?" + we
+        begin: "~?" + Ee + ".*?" + Ee
       };
-    }, A = function(we, le, ce) {
+    }, N = function(Ee, ae, de) {
       return {
-        className: we,
-        begin: le,
-        relevance: ce
+        className: Ee,
+        begin: ae,
+        relevance: de
       };
-    }, L = {
+    }, I = {
       $pattern: /[a-z-]+/,
-      keyword: S,
+      keyword: C,
       attribute: s.join(" ")
     }, y = {
       // used only to properly balance nested parens inside mixin call, def. arg list
       begin: "\\(",
       end: "\\)",
       contains: R,
-      keywords: L,
+      keywords: I,
       relevance: 0
     };
     R.push(
-      _.C_LINE_COMMENT_MODE,
-      _.C_BLOCK_COMMENT_MODE,
+      p.C_LINE_COMMENT_MODE,
+      p.C_BLOCK_COMMENT_MODE,
       T("'"),
       T('"'),
       g.CSS_NUMBER_MODE,
@@ -73318,14 +73430,14 @@ function kZ() {
       },
       g.HEXCOLOR,
       y,
-      A("variable", "@@?" + p, 10),
-      A("variable", "@\\{" + p + "\\}"),
-      A("built_in", "~?`[^`]*?`"),
+      N("variable", "@@?" + _, 10),
+      N("variable", "@\\{" + _ + "\\}"),
+      N("built_in", "~?`[^`]*?`"),
       // inline javascript (or whatever host language) *multiline* string
       {
         // @media features (it’s here to not duplicate things in AT_RULE_MODE with extra PARENS_MODE overriding):
         className: "attribute",
-        begin: p + "\\s*:",
+        begin: _ + "\\s*:",
         end: ":",
         returnBegin: !0,
         excludeEnd: !0
@@ -73338,13 +73450,13 @@ function kZ() {
       begin: /\{/,
       end: /\}/,
       contains: f
-    }), P = {
+    }), D = {
       beginKeywords: "when",
       endsWithParent: !0,
       contains: [{ beginKeywords: "and not" }].concat(R)
       // using this form to override VALUE’s 'function' match
-    }, H = {
-      begin: C + "\\s*:",
+    }, U = {
+      begin: S + "\\s*:",
       returnBegin: !0,
       end: /[;}]/,
       relevance: 0,
@@ -73363,17 +73475,17 @@ function kZ() {
           }
         }
       ]
-    }, K = {
+    }, W = {
       className: "keyword",
       begin: "@(import|media|charset|font-face|(-[a-z]+-)?keyframes|supports|document|namespace|page|viewport|host)\\b",
       starts: {
         end: "[;{}]",
-        keywords: L,
+        keywords: I,
         returnEnd: !0,
         contains: R,
         relevance: 0
       }
-    }, ie = {
+    }, le = {
       className: "variable",
       variants: [
         // using more strict pattern for higher relevance to increase chances of Less detection.
@@ -73381,17 +73493,17 @@ function kZ() {
         // (we’ll still often loose to the css-parser unless there's '//' comment,
         // simply because 1 variable just can't beat 99 properties :)
         {
-          begin: "@" + p + "\\s*:",
+          begin: "@" + _ + "\\s*:",
           relevance: 15
         },
-        { begin: "@" + p }
+        { begin: "@" + _ }
       ],
       starts: {
         end: "[;}]",
         returnEnd: !0,
         contains: b
       }
-    }, q = {
+    }, Y = {
       // first parse unambiguous selectors (i.e. those not starting with tag)
       // then fall into the scary lookahead-discriminator variant.
       // this mode also handles mixin definitions and calls
@@ -73402,7 +73514,7 @@ function kZ() {
           // mixin calls end with ';'
         },
         {
-          begin: C,
+          begin: S,
           end: /\{/
         }
       ],
@@ -73411,21 +73523,21 @@ function kZ() {
       illegal: `[<='$"]`,
       relevance: 0,
       contains: [
-        _.C_LINE_COMMENT_MODE,
-        _.C_BLOCK_COMMENT_MODE,
-        P,
-        A("keyword", "all\\b"),
-        A("variable", "@\\{" + p + "\\}"),
+        p.C_LINE_COMMENT_MODE,
+        p.C_BLOCK_COMMENT_MODE,
+        D,
+        N("keyword", "all\\b"),
+        N("variable", "@\\{" + _ + "\\}"),
         // otherwise it’s identified as tag
         {
           begin: "\\b(" + a.join("|") + ")\\b",
           className: "selector-tag"
         },
         g.CSS_NUMBER_MODE,
-        A("selector-tag", C, 0),
-        A("selector-id", "#" + C),
-        A("selector-class", "\\." + C, 0),
-        A("selector-tag", "&", 0),
+        N("selector-tag", S, 0),
+        N("selector-id", "#" + S),
+        N("selector-class", "\\." + S, 0),
+        N("selector-tag", "&", 0),
         g.ATTRIBUTE_SELECTOR_MODE,
         {
           className: "selector-pseudo",
@@ -73446,20 +73558,20 @@ function kZ() {
         // eat !important after mixin call or it will be colored as tag
         g.FUNCTION_DISPATCH
       ]
-    }, ae = {
-      begin: p + `:(:)?(${w.join("|")})`,
+    }, se = {
+      begin: _ + `:(:)?(${w.join("|")})`,
       returnBegin: !0,
-      contains: [q]
+      contains: [Y]
     };
     return f.push(
-      _.C_LINE_COMMENT_MODE,
-      _.C_BLOCK_COMMENT_MODE,
-      K,
-      ie,
-      ae,
-      H,
-      q,
-      P,
+      p.C_LINE_COMMENT_MODE,
+      p.C_BLOCK_COMMENT_MODE,
+      W,
+      le,
+      se,
+      U,
+      Y,
+      D,
       g.FUNCTION_DISPATCH
     ), {
       name: "Less",
@@ -73468,7 +73580,7 @@ function kZ() {
       contains: f
     };
   }
-  return $r = m, $r;
+  return $r = h, $r;
 }
 var Yr, Ja;
 function TZ() {
@@ -73493,25 +73605,25 @@ function TZ() {
           end: "\\)"
         }
       ]
-    }, u = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), h = t.COMMENT(
+    }, u = t.inherit(t.QUOTE_STRING_MODE, { illegal: null }), m = t.COMMENT(
       ";",
       "$",
       { relevance: 0 }
-    ), m = {
+    ), h = {
       begin: "\\*",
       end: "\\*"
-    }, _ = {
+    }, p = {
       className: "symbol",
       begin: "[:&]" + e
     }, g = {
       begin: e,
       relevance: 0
-    }, w = { begin: a }, p = {
+    }, w = { begin: a }, _ = {
       contains: [
         d,
         u,
-        m,
-        _,
+        h,
+        p,
         {
           begin: "\\(",
           end: "\\)",
@@ -73537,7 +73649,7 @@ function TZ() {
         },
         { begin: "'" + a }
       ]
-    }, C = { variants: [
+    }, S = { variants: [
       { begin: "'" + e },
       { begin: "#'" + e + "(::" + e + ")*" }
     ] }, f = {
@@ -73560,15 +73672,15 @@ function TZ() {
       },
       R
     ], R.contains = [
-      p,
-      C,
+      _,
+      S,
       f,
       c,
       d,
       u,
-      h,
       m,
-      _,
+      h,
+      p,
       w,
       g
     ], {
@@ -73579,9 +73691,9 @@ function TZ() {
         t.SHEBANG(),
         c,
         u,
-        h,
-        p,
-        C,
+        m,
+        _,
+        S,
         f,
         g
       ]
@@ -73823,10 +73935,10 @@ function RZ() {
     a
   );
   function d(u) {
-    const h = [
+    const m = [
       "npm",
       "print"
-    ], m = [
+    ], h = [
       "yes",
       "no",
       "on",
@@ -73834,7 +73946,7 @@ function RZ() {
       "it",
       "that",
       "void"
-    ], _ = [
+    ], p = [
       "then",
       "unless",
       "until",
@@ -73865,15 +73977,15 @@ function RZ() {
       "__bind",
       "__indexOf"
     ], g = {
-      keyword: r.concat(_),
-      literal: t.concat(m),
-      built_in: c.concat(h)
-    }, w = "[A-Za-z$_](?:-[0-9A-Za-z$_]|[0-9A-Za-z$_])*", S = u.inherit(u.TITLE_MODE, { begin: w }), p = {
+      keyword: r.concat(p),
+      literal: t.concat(h),
+      built_in: c.concat(m)
+    }, w = "[A-Za-z$_](?:-[0-9A-Za-z$_]|[0-9A-Za-z$_])*", C = u.inherit(u.TITLE_MODE, { begin: w }), _ = {
       className: "subst",
       begin: /#\{/,
       end: /\}/,
       keywords: g
-    }, C = {
+    }, S = {
       className: "subst",
       begin: /#[A-Za-z$_]/,
       end: /(?:-[0-9A-Za-z$_]|[0-9A-Za-z$_])*/,
@@ -73908,8 +74020,8 @@ function RZ() {
             end: /"""/,
             contains: [
               u.BACKSLASH_ESCAPE,
-              p,
-              C
+              _,
+              S
             ]
           },
           {
@@ -73917,8 +74029,8 @@ function RZ() {
             end: /"/,
             contains: [
               u.BACKSLASH_ESCAPE,
-              p,
-              C
+              _,
+              S
             ]
           },
           {
@@ -73935,7 +74047,7 @@ function RZ() {
             begin: "//",
             end: "//[gim]*",
             contains: [
-              p,
+              _,
               u.HASH_COMMENT_MODE
             ]
           },
@@ -73955,7 +74067,7 @@ function RZ() {
         subLanguage: "javascript"
       }
     ];
-    p.contains = f;
+    _.contains = f;
     const R = {
       className: "params",
       begin: "\\(",
@@ -73970,7 +74082,7 @@ function RZ() {
           contains: ["self"].concat(f)
         }
       ]
-    }, T = { begin: "(#=>|=>|\\|>>|-?->|!->)" }, A = {
+    }, T = { begin: "(#=>|=>|\\|>>|-?->|!->)" }, N = {
       variants: [
         { match: [
           /class\s+/,
@@ -74002,7 +74114,7 @@ function RZ() {
         {
           className: "function",
           contains: [
-            S,
+            C,
             R
           ],
           returnBegin: !0,
@@ -74021,7 +74133,7 @@ function RZ() {
             }
           ]
         },
-        A,
+        N,
         {
           begin: w + ":",
           end: ":",
@@ -74057,21 +74169,21 @@ function OZ() {
         { begin: /[-+]?\d+(?:[.]\d+)?(?:[eE][-+]?\d+(?:[.]\d+)?)?/ }
       ],
       relevance: 0
-    }, h = {
+    }, m = {
       className: "symbol",
       variants: [
         { begin: /^\s*[a-z]+:/ }
         // labels
       ],
       relevance: 0
-    }, m = {
+    }, h = {
       className: "variable",
       variants: [
         { begin: e.concat(/%/, a) },
         { begin: /%\d+/ },
         { begin: /#\d+/ }
       ]
-    }, _ = {
+    }, p = {
       className: "title",
       variants: [
         { begin: e.concat(/@/, a) },
@@ -74108,11 +74220,11 @@ function OZ() {
             }
           ]
         },
-        _,
+        p,
         d,
         c,
-        m,
         h,
+        m,
         u
       ]
     };
@@ -81554,27 +81666,27 @@ function yZ() {
     "$WolframUUID"
   ];
   function t(e) {
-    const a = e.regex, s = /([2-9]|[1-2]\d|[3][0-5])\^\^/, c = /(\w*\.\w+|\w+\.\w*|\w+)/, d = /(\d*\.\d+|\d+\.\d*|\d+)/, u = a.either(a.concat(s, c), d), h = /``[+-]?(\d*\.\d+|\d+\.\d*|\d+)/, m = /`([+-]?(\d*\.\d+|\d+\.\d*|\d+))?/, _ = a.either(h, m), g = /\*\^[+-]?\d+/, S = {
+    const a = e.regex, s = /([2-9]|[1-2]\d|[3][0-5])\^\^/, c = /(\w*\.\w+|\w+\.\w*|\w+)/, d = /(\d*\.\d+|\d+\.\d*|\d+)/, u = a.either(a.concat(s, c), d), m = /``[+-]?(\d*\.\d+|\d+\.\d*|\d+)/, h = /`([+-]?(\d*\.\d+|\d+\.\d*|\d+))?/, p = a.either(m, h), g = /\*\^[+-]?\d+/, C = {
       className: "number",
       relevance: 0,
       begin: a.concat(
         u,
-        a.optional(_),
+        a.optional(p),
         a.optional(g)
       )
-    }, p = /[a-zA-Z$][a-zA-Z0-9$]*/, C = new Set(r), f = { variants: [
+    }, _ = /[a-zA-Z$][a-zA-Z0-9$]*/, S = new Set(r), f = { variants: [
       {
         className: "builtin-symbol",
-        begin: p,
+        begin: _,
         // for performance out of fear of regex.either(...Mathematica.SYSTEM_SYMBOLS)
-        "on:begin": (P, H) => {
-          C.has(P[0]) || H.ignoreMatch();
+        "on:begin": (D, U) => {
+          S.has(D[0]) || U.ignoreMatch();
         }
       },
       {
         className: "symbol",
         relevance: 0,
-        begin: p
+        begin: _
       }
     ] }, R = {
       className: "named-character",
@@ -81583,11 +81695,11 @@ function yZ() {
       className: "operator",
       relevance: 0,
       begin: /[+\-*/,;.:@~=><&|_`'^?!%]+/
-    }, A = {
+    }, N = {
       className: "pattern",
       relevance: 0,
       begin: /([a-zA-Z$][a-zA-Z0-9$]*)?_+([a-zA-Z$][a-zA-Z0-9$]*)?/
-    }, L = {
+    }, I = {
       className: "slot",
       relevance: 0,
       begin: /#[a-zA-Z$][a-zA-Z0-9$]*|#+[0-9]?/
@@ -81598,7 +81710,7 @@ function yZ() {
     }, b = {
       className: "message-name",
       relevance: 0,
-      begin: a.concat("::", p)
+      begin: a.concat("::", _)
     };
     return {
       name: "Mathematica",
@@ -81617,13 +81729,13 @@ function yZ() {
       },
       contains: [
         e.COMMENT(/\(\*/, /\*\)/, { contains: ["self"] }),
-        A,
-        L,
+        N,
+        I,
         b,
         f,
         R,
         e.QUOTE_STRING_MODE,
-        S,
+        C,
         T,
         y
       ]
@@ -82211,10 +82323,10 @@ function UZ() {
       begin: /->\{/,
       end: /\}/
       // contains defined later
-    }, h = {
+    }, m = {
       scope: "attr",
       match: /\s+:\s*\w+(\s*\(.*?\))?/
-    }, m = {
+    }, h = {
       scope: "variable",
       variants: [
         { begin: /\$\d/ },
@@ -82232,8 +82344,8 @@ function UZ() {
           relevance: 0
         }
       ],
-      contains: [h]
-    }, _ = {
+      contains: [m]
+    }, p = {
       className: "number",
       variants: [
         // decimal numbers:
@@ -82251,7 +82363,7 @@ function UZ() {
     }, g = [
       t.BACKSLASH_ESCAPE,
       d,
-      m
+      h
     ], w = [
       /!/,
       /\//,
@@ -82262,25 +82374,25 @@ function UZ() {
       // valid but infrequent and weird
       /#/
       // valid but infrequent and weird
-    ], S = (f, R, T = "\\1") => {
-      const A = T === "\\1" ? T : e.concat(T, R);
+    ], C = (f, R, T = "\\1") => {
+      const N = T === "\\1" ? T : e.concat(T, R);
       return e.concat(
         e.concat("(?:", f, ")"),
         R,
         /(?:\\.|[^\\\/])*?/,
-        A,
+        N,
         /(?:\\.|[^\\\/])*?/,
         T,
         s
       );
-    }, p = (f, R, T) => e.concat(
+    }, _ = (f, R, T) => e.concat(
       e.concat("(?:", f, ")"),
       R,
       /(?:\\.|[^\\\/])*?/,
       T,
       s
-    ), C = [
-      m,
+    ), S = [
+      h,
       t.HASH_COMMENT_MODE,
       t.COMMENT(
         /^=\w/,
@@ -82346,7 +82458,7 @@ function UZ() {
           }
         ]
       },
-      _,
+      p,
       {
         // regexp container
         begin: "(\\/\\/|" + t.RE_STARTERS_RE + "|\\b(split|return|print|reverse|grep)\\b)\\s*",
@@ -82358,11 +82470,11 @@ function UZ() {
             className: "regexp",
             variants: [
               // allow matching common delimiters
-              { begin: S("s|tr|y", e.either(...w, { capture: !0 })) },
+              { begin: C("s|tr|y", e.either(...w, { capture: !0 })) },
               // and then paired delmis
-              { begin: S("s|tr|y", "\\(", "\\)") },
-              { begin: S("s|tr|y", "\\[", "\\]") },
-              { begin: S("s|tr|y", "\\{", "\\}") }
+              { begin: C("s|tr|y", "\\(", "\\)") },
+              { begin: C("s|tr|y", "\\[", "\\]") },
+              { begin: C("s|tr|y", "\\{", "\\}") }
             ],
             relevance: 2
           },
@@ -82376,13 +82488,13 @@ function UZ() {
                 relevance: 0
               },
               // prefix is optional with /regex/
-              { begin: p("(?:m|qr)?", /\//, /\//) },
+              { begin: _("(?:m|qr)?", /\//, /\//) },
               // allow matching common delimiters
-              { begin: p("m|qr", e.either(...w, { capture: !0 }), /\1/) },
+              { begin: _("m|qr", e.either(...w, { capture: !0 }), /\1/) },
               // allow common paired delmins
-              { begin: p("m|qr", /\(/, /\)/) },
-              { begin: p("m|qr", /\[/, /\]/) },
-              { begin: p("m|qr", /\{/, /\}/) }
+              { begin: _("m|qr", /\(/, /\)/) },
+              { begin: _("m|qr", /\[/, /\]/) },
+              { begin: _("m|qr", /\{/, /\}/) }
             ]
           }
         ]
@@ -82393,7 +82505,7 @@ function UZ() {
         end: "(\\s*\\(.*?\\))?[;{]",
         excludeEnd: !0,
         relevance: 5,
-        contains: [t.TITLE_MODE, h]
+        contains: [t.TITLE_MODE, m]
       },
       {
         className: "class",
@@ -82401,7 +82513,7 @@ function UZ() {
         end: "[;{]",
         excludeEnd: !0,
         relevance: 5,
-        contains: [t.TITLE_MODE, h, _]
+        contains: [t.TITLE_MODE, m, p]
       },
       {
         begin: "-\\w\\b",
@@ -82420,14 +82532,14 @@ function UZ() {
         ]
       }
     ];
-    return d.contains = C, u.contains = C, {
+    return d.contains = S, u.contains = S, {
       name: "Perl",
       aliases: [
         "pl",
         "pm"
       ],
       keywords: c,
-      contains: C
+      contains: S
     };
   }
   return io = r, io;
@@ -82696,7 +82808,7 @@ function GZ() {
       }
     ];
     s.contains = c;
-    const d = t.inherit(t.TITLE_MODE, { begin: a }), u = "(\\(.*\\)\\s*)?\\B[-=]>", h = {
+    const d = t.inherit(t.TITLE_MODE, { begin: a }), u = "(\\(.*\\)\\s*)?\\B[-=]>", m = {
       className: "params",
       begin: "\\([^\\(]",
       returnBegin: !0,
@@ -82726,7 +82838,7 @@ function GZ() {
           returnBegin: !0,
           contains: [
             d,
-            h
+            m
           ]
         },
         {
@@ -82739,7 +82851,7 @@ function GZ() {
               begin: u,
               end: "[-=]>",
               returnBegin: !0,
-              contains: [h]
+              contains: [m]
             }
           ]
         },
@@ -83692,17 +83804,17 @@ function WZ() {
         "unsafeGetAttrPos",
         "warn",
         "zipAttrsWith"
-      ].map((P) => `builtins\\.${P}`)),
+      ].map((D) => `builtins\\.${D}`)),
       relevance: 10
     }, c = "[A-Za-z_][A-Za-z0-9_'-]*", d = {
       scope: "symbol",
       match: new RegExp(`<${c}(/${c})*>`)
-    }, u = "[A-Za-z0-9_\\+\\.-]+", h = {
+    }, u = "[A-Za-z0-9_\\+\\.-]+", m = {
       scope: "symbol",
       match: new RegExp(`(\\.\\.|\\.|~)?/(${u})?(/${u})*(?=[\\s;])`)
-    }, m = e.either("==", "=", "\\+\\+", "\\+", "<=", "<\\|", "<", ">=", ">", "->", "//", "/", "!=", "!", "\\|\\|", "\\|>", "\\?", "\\*", "&&"), _ = {
+    }, h = e.either("==", "=", "\\+\\+", "\\+", "<=", "<\\|", "<", ">=", ">", "->", "//", "/", "!=", "!", "\\|\\|", "\\|>", "\\?", "\\*", "&&"), p = {
       scope: "operator",
-      match: e.concat(m, /(?!-)/),
+      match: e.concat(h, /(?!-)/),
       relevance: 0
     }, g = {
       scope: "number",
@@ -83729,7 +83841,7 @@ function WZ() {
         },
         {
           begin: [
-            m,
+            h,
             /-/,
             /(?!>)/
           ],
@@ -83740,7 +83852,7 @@ function WZ() {
         }
       ],
       relevance: 0
-    }, S = {
+    }, C = {
       beforeMatch: /(^|\{|;)\s*/,
       begin: new RegExp(`${c}(\\.${c})*\\s*=(?!=)`),
       returnBegin: !0,
@@ -83752,10 +83864,10 @@ function WZ() {
           relevance: 0.2
         }
       ]
-    }, p = {
+    }, _ = {
       scope: "char.escape",
       match: /\\\$/
-    }, C = {
+    }, S = {
       scope: "char.escape",
       match: /''\$/
     }, f = {
@@ -83769,14 +83881,14 @@ function WZ() {
     }, T = {
       scope: "char.escape",
       match: /\\(?!\$)./
-    }, A = {
+    }, N = {
       scope: "string",
       variants: [
         {
           begin: "''",
           end: "''",
           contains: [
-            C,
+            S,
             f,
             R,
             T
@@ -83786,13 +83898,13 @@ function WZ() {
           begin: '"',
           end: '"',
           contains: [
-            p,
+            _,
             f,
             T
           ]
         }
       ]
-    }, L = {
+    }, I = {
       scope: "params",
       match: new RegExp(`${c}\\s*:(?=\\s)`)
     }, y = [
@@ -83808,13 +83920,13 @@ function WZ() {
         }
       ),
       s,
-      A,
+      N,
       d,
-      h,
-      L,
-      S,
+      m,
+      I,
+      C,
       w,
-      _
+      p
     ];
     f.contains = y;
     const b = [
@@ -84011,16 +84123,16 @@ function jZ() {
       // ${defines}
       className: "variable",
       begin: /\$+\{[\!\w.:-]+\}/
-    }, h = {
+    }, m = {
       // $variables
       className: "variable",
       begin: /\$+\w[\w\.]*/,
       illegal: /\(\)\{\}/
-    }, m = {
+    }, h = {
       // $(language_strings)
       className: "variable",
       begin: /\$+\([\w^.:!-]+\)/
-    }, _ = {
+    }, p = {
       // command parameters
       className: "params",
       begin: e.either(...s)
@@ -84035,11 +84147,11 @@ function jZ() {
       // $\n, $\r, $\t, $$
       className: "char.escape",
       begin: /\$(\\[nrt]|\$)/
-    }, S = {
+    }, C = {
       // plug::ins
       className: "title.function",
       begin: /\w+::\w+/
-    }, p = {
+    }, _ = {
       className: "string",
       variants: [
         {
@@ -84060,10 +84172,10 @@ function jZ() {
         w,
         d,
         u,
-        h,
-        m
+        m,
+        h
       ]
-    }, C = [
+    }, S = [
       "Abort",
       "AddBrandingImage",
       "AddSize",
@@ -84340,7 +84452,7 @@ function jZ() {
         1: "keyword",
         3: "title.function"
       }
-    }, A = {
+    }, N = {
       match: [
         /Var/,
         /\s+/,
@@ -84357,7 +84469,7 @@ function jZ() {
       name: "NSIS",
       case_insensitive: !0,
       keywords: {
-        keyword: C,
+        keyword: S,
         literal: f
       },
       contains: [
@@ -84368,16 +84480,16 @@ function jZ() {
           "$",
           { relevance: 0 }
         ),
-        A,
+        N,
         R,
         { beginKeywords: "Function PageEx Section SectionGroup FunctionEnd SectionEnd" },
-        p,
+        _,
         g,
         u,
-        h,
         m,
-        _,
-        S,
+        h,
+        p,
+        C,
         t.NUMBER_MODE
       ]
     };
@@ -84392,7 +84504,7 @@ function QZ() {
     const e = {
       className: "built_in",
       begin: "\\b(AV|CA|CF|CG|CI|CL|CM|CN|CT|MK|MP|MTK|MTL|NS|SCN|SK|UI|WK|XC)\\w+"
-    }, a = /[a-zA-Z@][a-zA-Z0-9_]*/, h = {
+    }, a = /[a-zA-Z@][a-zA-Z0-9_]*/, m = {
       "variable.language": [
         "this",
         "super"
@@ -84548,7 +84660,7 @@ function QZ() {
         "id|0",
         "_Bool"
       ]
-    }, m = {
+    }, h = {
       $pattern: a,
       keyword: [
         "@interface",
@@ -84566,7 +84678,7 @@ function QZ() {
         "obj-c++",
         "objective-c++"
       ],
-      keywords: h,
+      keywords: m,
       illegal: "</",
       contains: [
         e,
@@ -84609,10 +84721,10 @@ function QZ() {
         },
         {
           className: "class",
-          begin: "(" + m.keyword.join("|") + ")\\b",
+          begin: "(" + h.keyword.join("|") + ")\\b",
           end: /(\{|$)/,
           excludeEnd: !0,
-          keywords: m,
+          keywords: h,
           contains: [t.UNDERSCORE_TITLE_MODE]
         },
         {
@@ -84726,10 +84838,10 @@ function ZZ() {
         e,
         a
       ]
-    }, h = {
+    }, m = {
       begin: "[*!#%]",
       relevance: 0
-    }, m = {
+    }, h = {
       className: "function",
       beginKeywords: "module function",
       end: /=|\{/,
@@ -84753,8 +84865,8 @@ function ZZ() {
         d,
         c,
         e,
-        h,
-        m
+        m,
+        h
       ]
     };
   }
@@ -84803,7 +84915,7 @@ function JZ() {
         a,
         s
       ]
-    }, h = {
+    }, m = {
       scope: "punctuation",
       match: /;/,
       relevance: 0
@@ -84821,7 +84933,7 @@ function JZ() {
         d,
         t.NUMBER_MODE,
         u,
-        h
+        m
       ]
     };
   }
@@ -84930,15 +85042,15 @@ function nJ() {
     ), u = (
       // only those not in keywrods already
       "SUPERUSER NOSUPERUSER CREATEDB NOCREATEDB CREATEROLE NOCREATEROLE INHERIT NOINHERIT LOGIN NOLOGIN REPLICATION NOREPLICATION BYPASSRLS NOBYPASSRLS "
-    ), h = "ALIAS BEGIN CONSTANT DECLARE END EXCEPTION RETURN PERFORM|10 RAISE GET DIAGNOSTICS STACKED|10 FOREACH LOOP ELSIF EXIT WHILE REVERSE SLICE DEBUG LOG INFO NOTICE WARNING ASSERT OPEN ", m = (
+    ), m = "ALIAS BEGIN CONSTANT DECLARE END EXCEPTION RETURN PERFORM|10 RAISE GET DIAGNOSTICS STACKED|10 FOREACH LOOP ELSIF EXIT WHILE REVERSE SLICE DEBUG LOG INFO NOTICE WARNING ASSERT OPEN ", h = (
       // https://www.postgresql.org/docs/11/static/datatype.html
       "BIGINT INT8 BIGSERIAL SERIAL8 BIT VARYING VARBIT BOOLEAN BOOL BOX BYTEA CHARACTER CHAR VARCHAR CIDR CIRCLE DATE DOUBLE PRECISION FLOAT8 FLOAT INET INTEGER INT INT4 INTERVAL JSON JSONB LINE LSEG|10 MACADDR MACADDR8 MONEY NUMERIC DEC DECIMAL PATH POINT POLYGON REAL FLOAT4 SMALLINT INT2 SMALLSERIAL|10 SERIAL2|10 SERIAL|10 SERIAL4|10 TEXT TIME ZONE TIMETZ|10 TIMESTAMP TIMESTAMPTZ|10 TSQUERY|10 TSVECTOR|10 TXID_SNAPSHOT|10 UUID XML NATIONAL NCHAR INT4RANGE|10 INT8RANGE|10 NUMRANGE|10 TSRANGE|10 TSTZRANGE|10 DATERANGE|10 ANYELEMENT ANYARRAY ANYNONARRAY ANYENUM ANYRANGE CSTRING INTERNAL RECORD PG_DDL_COMMAND VOID UNKNOWN OPAQUE REFCURSOR NAME OID REGPROC|10 REGPROCEDURE|10 REGOPER|10 REGOPERATOR|10 REGCLASS|10 REGTYPE|10 REGROLE|10 REGNAMESPACE|10 REGCONFIG|10 REGDICTIONARY|10 "
-    ), _ = m.trim().split(" ").map(function(f) {
+    ), p = h.trim().split(" ").map(function(f) {
       return f.split("|")[0];
-    }).join("|"), g = "CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER CURRENT_CATALOG|10 CURRENT_DATE LOCALTIME LOCALTIMESTAMP CURRENT_ROLE|10 CURRENT_SCHEMA|10 SESSION_USER PUBLIC ", w = "FOUND NEW OLD TG_NAME|10 TG_WHEN|10 TG_LEVEL|10 TG_OP|10 TG_RELID|10 TG_RELNAME|10 TG_TABLE_NAME|10 TG_TABLE_SCHEMA|10 TG_NARGS|10 TG_ARGV|10 TG_EVENT|10 TG_TAG|10 ROW_COUNT RESULT_OID|10 PG_CONTEXT|10 RETURNED_SQLSTATE COLUMN_NAME CONSTRAINT_NAME PG_DATATYPE_NAME|10 MESSAGE_TEXT TABLE_NAME SCHEMA_NAME PG_EXCEPTION_DETAIL|10 PG_EXCEPTION_HINT|10 PG_EXCEPTION_CONTEXT|10 ", S = (
+    }).join("|"), g = "CURRENT_TIME CURRENT_TIMESTAMP CURRENT_USER CURRENT_CATALOG|10 CURRENT_DATE LOCALTIME LOCALTIMESTAMP CURRENT_ROLE|10 CURRENT_SCHEMA|10 SESSION_USER PUBLIC ", w = "FOUND NEW OLD TG_NAME|10 TG_WHEN|10 TG_LEVEL|10 TG_OP|10 TG_RELID|10 TG_RELNAME|10 TG_TABLE_NAME|10 TG_TABLE_SCHEMA|10 TG_NARGS|10 TG_ARGV|10 TG_EVENT|10 TG_TAG|10 ROW_COUNT RESULT_OID|10 PG_CONTEXT|10 RETURNED_SQLSTATE COLUMN_NAME CONSTRAINT_NAME PG_DATATYPE_NAME|10 MESSAGE_TEXT TABLE_NAME SCHEMA_NAME PG_EXCEPTION_DETAIL|10 PG_EXCEPTION_HINT|10 PG_EXCEPTION_CONTEXT|10 ", C = (
       // exceptions https://www.postgresql.org/docs/current/static/errcodes-appendix.html
       "SQLSTATE SQLERRM|10 SUCCESSFUL_COMPLETION WARNING DYNAMIC_RESULT_SETS_RETURNED IMPLICIT_ZERO_BIT_PADDING NULL_VALUE_ELIMINATED_IN_SET_FUNCTION PRIVILEGE_NOT_GRANTED PRIVILEGE_NOT_REVOKED STRING_DATA_RIGHT_TRUNCATION DEPRECATED_FEATURE NO_DATA NO_ADDITIONAL_DYNAMIC_RESULT_SETS_RETURNED SQL_STATEMENT_NOT_YET_COMPLETE CONNECTION_EXCEPTION CONNECTION_DOES_NOT_EXIST CONNECTION_FAILURE SQLCLIENT_UNABLE_TO_ESTABLISH_SQLCONNECTION SQLSERVER_REJECTED_ESTABLISHMENT_OF_SQLCONNECTION TRANSACTION_RESOLUTION_UNKNOWN PROTOCOL_VIOLATION TRIGGERED_ACTION_EXCEPTION FEATURE_NOT_SUPPORTED INVALID_TRANSACTION_INITIATION LOCATOR_EXCEPTION INVALID_LOCATOR_SPECIFICATION INVALID_GRANTOR INVALID_GRANT_OPERATION INVALID_ROLE_SPECIFICATION DIAGNOSTICS_EXCEPTION STACKED_DIAGNOSTICS_ACCESSED_WITHOUT_ACTIVE_HANDLER CASE_NOT_FOUND CARDINALITY_VIOLATION DATA_EXCEPTION ARRAY_SUBSCRIPT_ERROR CHARACTER_NOT_IN_REPERTOIRE DATETIME_FIELD_OVERFLOW DIVISION_BY_ZERO ERROR_IN_ASSIGNMENT ESCAPE_CHARACTER_CONFLICT INDICATOR_OVERFLOW INTERVAL_FIELD_OVERFLOW INVALID_ARGUMENT_FOR_LOGARITHM INVALID_ARGUMENT_FOR_NTILE_FUNCTION INVALID_ARGUMENT_FOR_NTH_VALUE_FUNCTION INVALID_ARGUMENT_FOR_POWER_FUNCTION INVALID_ARGUMENT_FOR_WIDTH_BUCKET_FUNCTION INVALID_CHARACTER_VALUE_FOR_CAST INVALID_DATETIME_FORMAT INVALID_ESCAPE_CHARACTER INVALID_ESCAPE_OCTET INVALID_ESCAPE_SEQUENCE NONSTANDARD_USE_OF_ESCAPE_CHARACTER INVALID_INDICATOR_PARAMETER_VALUE INVALID_PARAMETER_VALUE INVALID_REGULAR_EXPRESSION INVALID_ROW_COUNT_IN_LIMIT_CLAUSE INVALID_ROW_COUNT_IN_RESULT_OFFSET_CLAUSE INVALID_TABLESAMPLE_ARGUMENT INVALID_TABLESAMPLE_REPEAT INVALID_TIME_ZONE_DISPLACEMENT_VALUE INVALID_USE_OF_ESCAPE_CHARACTER MOST_SPECIFIC_TYPE_MISMATCH NULL_VALUE_NOT_ALLOWED NULL_VALUE_NO_INDICATOR_PARAMETER NUMERIC_VALUE_OUT_OF_RANGE SEQUENCE_GENERATOR_LIMIT_EXCEEDED STRING_DATA_LENGTH_MISMATCH STRING_DATA_RIGHT_TRUNCATION SUBSTRING_ERROR TRIM_ERROR UNTERMINATED_C_STRING ZERO_LENGTH_CHARACTER_STRING FLOATING_POINT_EXCEPTION INVALID_TEXT_REPRESENTATION INVALID_BINARY_REPRESENTATION BAD_COPY_FILE_FORMAT UNTRANSLATABLE_CHARACTER NOT_AN_XML_DOCUMENT INVALID_XML_DOCUMENT INVALID_XML_CONTENT INVALID_XML_COMMENT INVALID_XML_PROCESSING_INSTRUCTION INTEGRITY_CONSTRAINT_VIOLATION RESTRICT_VIOLATION NOT_NULL_VIOLATION FOREIGN_KEY_VIOLATION UNIQUE_VIOLATION CHECK_VIOLATION EXCLUSION_VIOLATION INVALID_CURSOR_STATE INVALID_TRANSACTION_STATE ACTIVE_SQL_TRANSACTION BRANCH_TRANSACTION_ALREADY_ACTIVE HELD_CURSOR_REQUIRES_SAME_ISOLATION_LEVEL INAPPROPRIATE_ACCESS_MODE_FOR_BRANCH_TRANSACTION INAPPROPRIATE_ISOLATION_LEVEL_FOR_BRANCH_TRANSACTION NO_ACTIVE_SQL_TRANSACTION_FOR_BRANCH_TRANSACTION READ_ONLY_SQL_TRANSACTION SCHEMA_AND_DATA_STATEMENT_MIXING_NOT_SUPPORTED NO_ACTIVE_SQL_TRANSACTION IN_FAILED_SQL_TRANSACTION IDLE_IN_TRANSACTION_SESSION_TIMEOUT INVALID_SQL_STATEMENT_NAME TRIGGERED_DATA_CHANGE_VIOLATION INVALID_AUTHORIZATION_SPECIFICATION INVALID_PASSWORD DEPENDENT_PRIVILEGE_DESCRIPTORS_STILL_EXIST DEPENDENT_OBJECTS_STILL_EXIST INVALID_TRANSACTION_TERMINATION SQL_ROUTINE_EXCEPTION FUNCTION_EXECUTED_NO_RETURN_STATEMENT MODIFYING_SQL_DATA_NOT_PERMITTED PROHIBITED_SQL_STATEMENT_ATTEMPTED READING_SQL_DATA_NOT_PERMITTED INVALID_CURSOR_NAME EXTERNAL_ROUTINE_EXCEPTION CONTAINING_SQL_NOT_PERMITTED MODIFYING_SQL_DATA_NOT_PERMITTED PROHIBITED_SQL_STATEMENT_ATTEMPTED READING_SQL_DATA_NOT_PERMITTED EXTERNAL_ROUTINE_INVOCATION_EXCEPTION INVALID_SQLSTATE_RETURNED NULL_VALUE_NOT_ALLOWED TRIGGER_PROTOCOL_VIOLATED SRF_PROTOCOL_VIOLATED EVENT_TRIGGER_PROTOCOL_VIOLATED SAVEPOINT_EXCEPTION INVALID_SAVEPOINT_SPECIFICATION INVALID_CATALOG_NAME INVALID_SCHEMA_NAME TRANSACTION_ROLLBACK TRANSACTION_INTEGRITY_CONSTRAINT_VIOLATION SERIALIZATION_FAILURE STATEMENT_COMPLETION_UNKNOWN DEADLOCK_DETECTED SYNTAX_ERROR_OR_ACCESS_RULE_VIOLATION SYNTAX_ERROR INSUFFICIENT_PRIVILEGE CANNOT_COERCE GROUPING_ERROR WINDOWING_ERROR INVALID_RECURSION INVALID_FOREIGN_KEY INVALID_NAME NAME_TOO_LONG RESERVED_NAME DATATYPE_MISMATCH INDETERMINATE_DATATYPE COLLATION_MISMATCH INDETERMINATE_COLLATION WRONG_OBJECT_TYPE GENERATED_ALWAYS UNDEFINED_COLUMN UNDEFINED_FUNCTION UNDEFINED_TABLE UNDEFINED_PARAMETER UNDEFINED_OBJECT DUPLICATE_COLUMN DUPLICATE_CURSOR DUPLICATE_DATABASE DUPLICATE_FUNCTION DUPLICATE_PREPARED_STATEMENT DUPLICATE_SCHEMA DUPLICATE_TABLE DUPLICATE_ALIAS DUPLICATE_OBJECT AMBIGUOUS_COLUMN AMBIGUOUS_FUNCTION AMBIGUOUS_PARAMETER AMBIGUOUS_ALIAS INVALID_COLUMN_REFERENCE INVALID_COLUMN_DEFINITION INVALID_CURSOR_DEFINITION INVALID_DATABASE_DEFINITION INVALID_FUNCTION_DEFINITION INVALID_PREPARED_STATEMENT_DEFINITION INVALID_SCHEMA_DEFINITION INVALID_TABLE_DEFINITION INVALID_OBJECT_DEFINITION WITH_CHECK_OPTION_VIOLATION INSUFFICIENT_RESOURCES DISK_FULL OUT_OF_MEMORY TOO_MANY_CONNECTIONS CONFIGURATION_LIMIT_EXCEEDED PROGRAM_LIMIT_EXCEEDED STATEMENT_TOO_COMPLEX TOO_MANY_COLUMNS TOO_MANY_ARGUMENTS OBJECT_NOT_IN_PREREQUISITE_STATE OBJECT_IN_USE CANT_CHANGE_RUNTIME_PARAM LOCK_NOT_AVAILABLE OPERATOR_INTERVENTION QUERY_CANCELED ADMIN_SHUTDOWN CRASH_SHUTDOWN CANNOT_CONNECT_NOW DATABASE_DROPPED SYSTEM_ERROR IO_ERROR UNDEFINED_FILE DUPLICATE_FILE SNAPSHOT_TOO_OLD CONFIG_FILE_ERROR LOCK_FILE_EXISTS FDW_ERROR FDW_COLUMN_NAME_NOT_FOUND FDW_DYNAMIC_PARAMETER_VALUE_NEEDED FDW_FUNCTION_SEQUENCE_ERROR FDW_INCONSISTENT_DESCRIPTOR_INFORMATION FDW_INVALID_ATTRIBUTE_VALUE FDW_INVALID_COLUMN_NAME FDW_INVALID_COLUMN_NUMBER FDW_INVALID_DATA_TYPE FDW_INVALID_DATA_TYPE_DESCRIPTORS FDW_INVALID_DESCRIPTOR_FIELD_IDENTIFIER FDW_INVALID_HANDLE FDW_INVALID_OPTION_INDEX FDW_INVALID_OPTION_NAME FDW_INVALID_STRING_LENGTH_OR_BUFFER_LENGTH FDW_INVALID_STRING_FORMAT FDW_INVALID_USE_OF_NULL_POINTER FDW_TOO_MANY_HANDLES FDW_OUT_OF_MEMORY FDW_NO_SCHEMAS FDW_OPTION_NAME_NOT_FOUND FDW_REPLY_HANDLE FDW_SCHEMA_NOT_FOUND FDW_TABLE_NOT_FOUND FDW_UNABLE_TO_CREATE_EXECUTION FDW_UNABLE_TO_CREATE_REPLY FDW_UNABLE_TO_ESTABLISH_CONNECTION PLPGSQL_ERROR RAISE_EXCEPTION NO_DATA_FOUND TOO_MANY_ROWS ASSERT_FAILURE INTERNAL_ERROR DATA_CORRUPTED INDEX_CORRUPTED "
-    ), C = /* https://www.postgresql.org/docs/11/static/functions-aggregate.html */ "ARRAY_AGG AVG BIT_AND BIT_OR BOOL_AND BOOL_OR COUNT EVERY JSON_AGG JSONB_AGG JSON_OBJECT_AGG JSONB_OBJECT_AGG MAX MIN MODE STRING_AGG SUM XMLAGG CORR COVAR_POP COVAR_SAMP REGR_AVGX REGR_AVGY REGR_COUNT REGR_INTERCEPT REGR_R2 REGR_SLOPE REGR_SXX REGR_SXY REGR_SYY STDDEV STDDEV_POP STDDEV_SAMP VARIANCE VAR_POP VAR_SAMP PERCENTILE_CONT PERCENTILE_DISC ROW_NUMBER RANK DENSE_RANK PERCENT_RANK CUME_DIST NTILE LAG LEAD FIRST_VALUE LAST_VALUE NTH_VALUE NUM_NONNULLS NUM_NULLS ABS CBRT CEIL CEILING DEGREES DIV EXP FLOOR LN LOG MOD PI POWER RADIANS ROUND SCALE SIGN SQRT TRUNC WIDTH_BUCKET RANDOM SETSEED ACOS ACOSD ASIN ASIND ATAN ATAND ATAN2 ATAN2D COS COSD COT COTD SIN SIND TAN TAND BIT_LENGTH CHAR_LENGTH CHARACTER_LENGTH LOWER OCTET_LENGTH OVERLAY POSITION SUBSTRING TREAT TRIM UPPER ASCII BTRIM CHR CONCAT CONCAT_WS CONVERT CONVERT_FROM CONVERT_TO DECODE ENCODE INITCAP LEFT LENGTH LPAD LTRIM MD5 PARSE_IDENT PG_CLIENT_ENCODING QUOTE_IDENT|10 QUOTE_LITERAL|10 QUOTE_NULLABLE|10 REGEXP_MATCH REGEXP_MATCHES REGEXP_REPLACE REGEXP_SPLIT_TO_ARRAY REGEXP_SPLIT_TO_TABLE REPEAT REPLACE REVERSE RIGHT RPAD RTRIM SPLIT_PART STRPOS SUBSTR TO_ASCII TO_HEX TRANSLATE OCTET_LENGTH GET_BIT GET_BYTE SET_BIT SET_BYTE TO_CHAR TO_DATE TO_NUMBER TO_TIMESTAMP AGE CLOCK_TIMESTAMP|10 DATE_PART DATE_TRUNC ISFINITE JUSTIFY_DAYS JUSTIFY_HOURS JUSTIFY_INTERVAL MAKE_DATE MAKE_INTERVAL|10 MAKE_TIME MAKE_TIMESTAMP|10 MAKE_TIMESTAMPTZ|10 NOW STATEMENT_TIMESTAMP|10 TIMEOFDAY TRANSACTION_TIMESTAMP|10 ENUM_FIRST ENUM_LAST ENUM_RANGE AREA CENTER DIAMETER HEIGHT ISCLOSED ISOPEN NPOINTS PCLOSE POPEN RADIUS WIDTH BOX BOUND_BOX CIRCLE LINE LSEG PATH POLYGON ABBREV BROADCAST HOST HOSTMASK MASKLEN NETMASK NETWORK SET_MASKLEN TEXT INET_SAME_FAMILY INET_MERGE MACADDR8_SET7BIT ARRAY_TO_TSVECTOR GET_CURRENT_TS_CONFIG NUMNODE PLAINTO_TSQUERY PHRASETO_TSQUERY WEBSEARCH_TO_TSQUERY QUERYTREE SETWEIGHT STRIP TO_TSQUERY TO_TSVECTOR JSON_TO_TSVECTOR JSONB_TO_TSVECTOR TS_DELETE TS_FILTER TS_HEADLINE TS_RANK TS_RANK_CD TS_REWRITE TSQUERY_PHRASE TSVECTOR_TO_ARRAY TSVECTOR_UPDATE_TRIGGER TSVECTOR_UPDATE_TRIGGER_COLUMN XMLCOMMENT XMLCONCAT XMLELEMENT XMLFOREST XMLPI XMLROOT XMLEXISTS XML_IS_WELL_FORMED XML_IS_WELL_FORMED_DOCUMENT XML_IS_WELL_FORMED_CONTENT XPATH XPATH_EXISTS XMLTABLE XMLNAMESPACES TABLE_TO_XML TABLE_TO_XMLSCHEMA TABLE_TO_XML_AND_XMLSCHEMA QUERY_TO_XML QUERY_TO_XMLSCHEMA QUERY_TO_XML_AND_XMLSCHEMA CURSOR_TO_XML CURSOR_TO_XMLSCHEMA SCHEMA_TO_XML SCHEMA_TO_XMLSCHEMA SCHEMA_TO_XML_AND_XMLSCHEMA DATABASE_TO_XML DATABASE_TO_XMLSCHEMA DATABASE_TO_XML_AND_XMLSCHEMA XMLATTRIBUTES TO_JSON TO_JSONB ARRAY_TO_JSON ROW_TO_JSON JSON_BUILD_ARRAY JSONB_BUILD_ARRAY JSON_BUILD_OBJECT JSONB_BUILD_OBJECT JSON_OBJECT JSONB_OBJECT JSON_ARRAY_LENGTH JSONB_ARRAY_LENGTH JSON_EACH JSONB_EACH JSON_EACH_TEXT JSONB_EACH_TEXT JSON_EXTRACT_PATH JSONB_EXTRACT_PATH JSON_OBJECT_KEYS JSONB_OBJECT_KEYS JSON_POPULATE_RECORD JSONB_POPULATE_RECORD JSON_POPULATE_RECORDSET JSONB_POPULATE_RECORDSET JSON_ARRAY_ELEMENTS JSONB_ARRAY_ELEMENTS JSON_ARRAY_ELEMENTS_TEXT JSONB_ARRAY_ELEMENTS_TEXT JSON_TYPEOF JSONB_TYPEOF JSON_TO_RECORD JSONB_TO_RECORD JSON_TO_RECORDSET JSONB_TO_RECORDSET JSON_STRIP_NULLS JSONB_STRIP_NULLS JSONB_SET JSONB_INSERT JSONB_PRETTY CURRVAL LASTVAL NEXTVAL SETVAL COALESCE NULLIF GREATEST LEAST ARRAY_APPEND ARRAY_CAT ARRAY_NDIMS ARRAY_DIMS ARRAY_FILL ARRAY_LENGTH ARRAY_LOWER ARRAY_POSITION ARRAY_POSITIONS ARRAY_PREPEND ARRAY_REMOVE ARRAY_REPLACE ARRAY_TO_STRING ARRAY_UPPER CARDINALITY STRING_TO_ARRAY UNNEST ISEMPTY LOWER_INC UPPER_INC LOWER_INF UPPER_INF RANGE_MERGE GENERATE_SERIES GENERATE_SUBSCRIPTS CURRENT_DATABASE CURRENT_QUERY CURRENT_SCHEMA|10 CURRENT_SCHEMAS|10 INET_CLIENT_ADDR INET_CLIENT_PORT INET_SERVER_ADDR INET_SERVER_PORT ROW_SECURITY_ACTIVE FORMAT_TYPE TO_REGCLASS TO_REGPROC TO_REGPROCEDURE TO_REGOPER TO_REGOPERATOR TO_REGTYPE TO_REGNAMESPACE TO_REGROLE COL_DESCRIPTION OBJ_DESCRIPTION SHOBJ_DESCRIPTION TXID_CURRENT TXID_CURRENT_IF_ASSIGNED TXID_CURRENT_SNAPSHOT TXID_SNAPSHOT_XIP TXID_SNAPSHOT_XMAX TXID_SNAPSHOT_XMIN TXID_VISIBLE_IN_SNAPSHOT TXID_STATUS CURRENT_SETTING SET_CONFIG BRIN_SUMMARIZE_NEW_VALUES BRIN_SUMMARIZE_RANGE BRIN_DESUMMARIZE_RANGE GIN_CLEAN_PENDING_LIST SUPPRESS_REDUNDANT_UPDATES_TRIGGER LO_FROM_BYTEA LO_PUT LO_GET LO_CREAT LO_CREATE LO_UNLINK LO_IMPORT LO_EXPORT LOREAD LOWRITE GROUPING CAST ".trim().split(" ").map(function(f) {
+    ), S = /* https://www.postgresql.org/docs/11/static/functions-aggregate.html */ "ARRAY_AGG AVG BIT_AND BIT_OR BOOL_AND BOOL_OR COUNT EVERY JSON_AGG JSONB_AGG JSON_OBJECT_AGG JSONB_OBJECT_AGG MAX MIN MODE STRING_AGG SUM XMLAGG CORR COVAR_POP COVAR_SAMP REGR_AVGX REGR_AVGY REGR_COUNT REGR_INTERCEPT REGR_R2 REGR_SLOPE REGR_SXX REGR_SXY REGR_SYY STDDEV STDDEV_POP STDDEV_SAMP VARIANCE VAR_POP VAR_SAMP PERCENTILE_CONT PERCENTILE_DISC ROW_NUMBER RANK DENSE_RANK PERCENT_RANK CUME_DIST NTILE LAG LEAD FIRST_VALUE LAST_VALUE NTH_VALUE NUM_NONNULLS NUM_NULLS ABS CBRT CEIL CEILING DEGREES DIV EXP FLOOR LN LOG MOD PI POWER RADIANS ROUND SCALE SIGN SQRT TRUNC WIDTH_BUCKET RANDOM SETSEED ACOS ACOSD ASIN ASIND ATAN ATAND ATAN2 ATAN2D COS COSD COT COTD SIN SIND TAN TAND BIT_LENGTH CHAR_LENGTH CHARACTER_LENGTH LOWER OCTET_LENGTH OVERLAY POSITION SUBSTRING TREAT TRIM UPPER ASCII BTRIM CHR CONCAT CONCAT_WS CONVERT CONVERT_FROM CONVERT_TO DECODE ENCODE INITCAP LEFT LENGTH LPAD LTRIM MD5 PARSE_IDENT PG_CLIENT_ENCODING QUOTE_IDENT|10 QUOTE_LITERAL|10 QUOTE_NULLABLE|10 REGEXP_MATCH REGEXP_MATCHES REGEXP_REPLACE REGEXP_SPLIT_TO_ARRAY REGEXP_SPLIT_TO_TABLE REPEAT REPLACE REVERSE RIGHT RPAD RTRIM SPLIT_PART STRPOS SUBSTR TO_ASCII TO_HEX TRANSLATE OCTET_LENGTH GET_BIT GET_BYTE SET_BIT SET_BYTE TO_CHAR TO_DATE TO_NUMBER TO_TIMESTAMP AGE CLOCK_TIMESTAMP|10 DATE_PART DATE_TRUNC ISFINITE JUSTIFY_DAYS JUSTIFY_HOURS JUSTIFY_INTERVAL MAKE_DATE MAKE_INTERVAL|10 MAKE_TIME MAKE_TIMESTAMP|10 MAKE_TIMESTAMPTZ|10 NOW STATEMENT_TIMESTAMP|10 TIMEOFDAY TRANSACTION_TIMESTAMP|10 ENUM_FIRST ENUM_LAST ENUM_RANGE AREA CENTER DIAMETER HEIGHT ISCLOSED ISOPEN NPOINTS PCLOSE POPEN RADIUS WIDTH BOX BOUND_BOX CIRCLE LINE LSEG PATH POLYGON ABBREV BROADCAST HOST HOSTMASK MASKLEN NETMASK NETWORK SET_MASKLEN TEXT INET_SAME_FAMILY INET_MERGE MACADDR8_SET7BIT ARRAY_TO_TSVECTOR GET_CURRENT_TS_CONFIG NUMNODE PLAINTO_TSQUERY PHRASETO_TSQUERY WEBSEARCH_TO_TSQUERY QUERYTREE SETWEIGHT STRIP TO_TSQUERY TO_TSVECTOR JSON_TO_TSVECTOR JSONB_TO_TSVECTOR TS_DELETE TS_FILTER TS_HEADLINE TS_RANK TS_RANK_CD TS_REWRITE TSQUERY_PHRASE TSVECTOR_TO_ARRAY TSVECTOR_UPDATE_TRIGGER TSVECTOR_UPDATE_TRIGGER_COLUMN XMLCOMMENT XMLCONCAT XMLELEMENT XMLFOREST XMLPI XMLROOT XMLEXISTS XML_IS_WELL_FORMED XML_IS_WELL_FORMED_DOCUMENT XML_IS_WELL_FORMED_CONTENT XPATH XPATH_EXISTS XMLTABLE XMLNAMESPACES TABLE_TO_XML TABLE_TO_XMLSCHEMA TABLE_TO_XML_AND_XMLSCHEMA QUERY_TO_XML QUERY_TO_XMLSCHEMA QUERY_TO_XML_AND_XMLSCHEMA CURSOR_TO_XML CURSOR_TO_XMLSCHEMA SCHEMA_TO_XML SCHEMA_TO_XMLSCHEMA SCHEMA_TO_XML_AND_XMLSCHEMA DATABASE_TO_XML DATABASE_TO_XMLSCHEMA DATABASE_TO_XML_AND_XMLSCHEMA XMLATTRIBUTES TO_JSON TO_JSONB ARRAY_TO_JSON ROW_TO_JSON JSON_BUILD_ARRAY JSONB_BUILD_ARRAY JSON_BUILD_OBJECT JSONB_BUILD_OBJECT JSON_OBJECT JSONB_OBJECT JSON_ARRAY_LENGTH JSONB_ARRAY_LENGTH JSON_EACH JSONB_EACH JSON_EACH_TEXT JSONB_EACH_TEXT JSON_EXTRACT_PATH JSONB_EXTRACT_PATH JSON_OBJECT_KEYS JSONB_OBJECT_KEYS JSON_POPULATE_RECORD JSONB_POPULATE_RECORD JSON_POPULATE_RECORDSET JSONB_POPULATE_RECORDSET JSON_ARRAY_ELEMENTS JSONB_ARRAY_ELEMENTS JSON_ARRAY_ELEMENTS_TEXT JSONB_ARRAY_ELEMENTS_TEXT JSON_TYPEOF JSONB_TYPEOF JSON_TO_RECORD JSONB_TO_RECORD JSON_TO_RECORDSET JSONB_TO_RECORDSET JSON_STRIP_NULLS JSONB_STRIP_NULLS JSONB_SET JSONB_INSERT JSONB_PRETTY CURRVAL LASTVAL NEXTVAL SETVAL COALESCE NULLIF GREATEST LEAST ARRAY_APPEND ARRAY_CAT ARRAY_NDIMS ARRAY_DIMS ARRAY_FILL ARRAY_LENGTH ARRAY_LOWER ARRAY_POSITION ARRAY_POSITIONS ARRAY_PREPEND ARRAY_REMOVE ARRAY_REPLACE ARRAY_TO_STRING ARRAY_UPPER CARDINALITY STRING_TO_ARRAY UNNEST ISEMPTY LOWER_INC UPPER_INC LOWER_INF UPPER_INF RANGE_MERGE GENERATE_SERIES GENERATE_SUBSCRIPTS CURRENT_DATABASE CURRENT_QUERY CURRENT_SCHEMA|10 CURRENT_SCHEMAS|10 INET_CLIENT_ADDR INET_CLIENT_PORT INET_SERVER_ADDR INET_SERVER_PORT ROW_SECURITY_ACTIVE FORMAT_TYPE TO_REGCLASS TO_REGPROC TO_REGPROCEDURE TO_REGOPER TO_REGOPERATOR TO_REGTYPE TO_REGNAMESPACE TO_REGROLE COL_DESCRIPTION OBJ_DESCRIPTION SHOBJ_DESCRIPTION TXID_CURRENT TXID_CURRENT_IF_ASSIGNED TXID_CURRENT_SNAPSHOT TXID_SNAPSHOT_XIP TXID_SNAPSHOT_XMAX TXID_SNAPSHOT_XMIN TXID_VISIBLE_IN_SNAPSHOT TXID_STATUS CURRENT_SETTING SET_CONFIG BRIN_SUMMARIZE_NEW_VALUES BRIN_SUMMARIZE_RANGE BRIN_DESUMMARIZE_RANGE GIN_CLEAN_PENDING_LIST SUPPRESS_REDUNDANT_UPDATES_TRIGGER LO_FROM_BYTEA LO_PUT LO_GET LO_CREAT LO_CREATE LO_UNLINK LO_IMPORT LO_EXPORT LOREAD LOWRITE GROUPING CAST ".trim().split(" ").map(function(f) {
       return f.split("|")[0];
     }).join("|");
     return {
@@ -84950,8 +85062,8 @@ function nJ() {
       supersetOf: "sql",
       case_insensitive: !0,
       keywords: {
-        keyword: d + h + u,
-        built_in: g + w + S
+        keyword: d + m + u,
+        built_in: g + w + C
       },
       // Forbid some cunstructs from other languages to improve autodetect. In fact
       // "[a-z]:" is legal (as part of array slice), but improbabal.
@@ -85081,26 +85193,26 @@ function nJ() {
         },
         // Known functions - only when followed by '('
         {
-          begin: "\\b(" + C + ")\\s*\\("
+          begin: "\\b(" + S + ")\\s*\\("
           // keywords: { built_in: FUNCTIONS }
         },
         // Types
         {
-          begin: "\\.(" + _ + ")\\b"
+          begin: "\\.(" + p + ")\\b"
           // prevent highlight as type, say, 'oid' in 'pgclass.oid'
         },
         {
-          begin: "\\b(" + _ + ")\\s+PATH\\b",
+          begin: "\\b(" + p + ")\\s+PATH\\b",
           // in XMLTABLE
           keywords: {
             keyword: "PATH",
             // hopefully no one would use PATH type in XMLTABLE...
-            type: m.replace("PATH ", "")
+            type: h.replace("PATH ", "")
           }
         },
         {
           className: "type",
-          begin: "\\b(" + _ + ")\\b"
+          begin: "\\b(" + p + ")\\b"
         },
         // Strings, see https://www.postgresql.org/docs/11/static/sql-syntax-lexical.html#SQL-SYNTAX-CONSTANTS
         {
@@ -85202,7 +85314,7 @@ function rJ() {
     ), u = {
       scope: "variable",
       match: "\\$+" + s
-    }, h = {
+    }, m = {
       scope: "meta",
       variants: [
         { begin: /<\?php/, relevance: 10 },
@@ -85213,7 +85325,7 @@ function rJ() {
         { begin: /\?>/ }
         // end php tag
       ]
-    }, m = {
+    }, h = {
       scope: "subst",
       variants: [
         { begin: /\$\w+/ },
@@ -85222,30 +85334,30 @@ function rJ() {
           end: /\}/
         }
       ]
-    }, _ = t.inherit(t.APOS_STRING_MODE, { illegal: null }), g = t.inherit(t.QUOTE_STRING_MODE, {
+    }, p = t.inherit(t.APOS_STRING_MODE, { illegal: null }), g = t.inherit(t.QUOTE_STRING_MODE, {
       illegal: null,
-      contains: t.QUOTE_STRING_MODE.contains.concat(m)
+      contains: t.QUOTE_STRING_MODE.contains.concat(h)
     }), w = {
       begin: /<<<[ \t]*(?:(\w+)|"(\w+)")\n/,
       end: /[ \t]*(\w+)\b/,
-      contains: t.QUOTE_STRING_MODE.contains.concat(m),
-      "on:begin": (ce, de) => {
-        de.data._beginMatch = ce[1] || ce[2];
+      contains: t.QUOTE_STRING_MODE.contains.concat(h),
+      "on:begin": (de, ue) => {
+        ue.data._beginMatch = de[1] || de[2];
       },
-      "on:end": (ce, de) => {
-        de.data._beginMatch !== ce[1] && de.ignoreMatch();
+      "on:end": (de, ue) => {
+        ue.data._beginMatch !== de[1] && ue.ignoreMatch();
       }
-    }, S = t.END_SAME_AS_BEGIN({
+    }, C = t.END_SAME_AS_BEGIN({
       begin: /<<<[ \t]*'(\w+)'\n/,
       end: /[ \t]*(\w+)\b/
-    }), p = `[ 	
-]`, C = {
+    }), _ = `[ 	
+]`, S = {
       scope: "string",
       variants: [
         g,
-        _,
+        p,
         w,
-        S
+        C
       ]
     }, f = {
       scope: "number",
@@ -85364,7 +85476,7 @@ function rJ() {
       "while",
       "xor",
       "yield"
-    ], A = [
+    ], N = [
       // Standard PHP library:
       // <https://www.php.net/manual/en/book.spl.php>
       "Error|0",
@@ -85461,20 +85573,20 @@ function rJ() {
       "stdClass"
     ], y = {
       keyword: T,
-      literal: ((ce) => {
-        const de = [];
-        return ce.forEach((ge) => {
-          de.push(ge), ge.toLowerCase() === ge ? de.push(ge.toUpperCase()) : de.push(ge.toLowerCase());
-        }), de;
+      literal: ((de) => {
+        const ue = [];
+        return de.forEach((me) => {
+          ue.push(me), me.toLowerCase() === me ? ue.push(me.toUpperCase()) : ue.push(me.toLowerCase());
+        }), ue;
       })(R),
-      built_in: A
-    }, b = (ce) => ce.map((de) => de.replace(/\|\d+$/, "")), P = { variants: [
+      built_in: N
+    }, b = (de) => de.map((ue) => ue.replace(/\|\d+$/, "")), D = { variants: [
       {
         match: [
           /new/,
-          e.concat(p, "+"),
+          e.concat(_, "+"),
           // to prevent built ins from being confused as the class constructor call
-          e.concat("(?!", b(A).join("\\b|"), "\\b)"),
+          e.concat("(?!", b(N).join("\\b|"), "\\b)"),
           c
         ],
         scope: {
@@ -85482,14 +85594,14 @@ function rJ() {
           4: "title.class"
         }
       }
-    ] }, H = e.concat(s, "\\b(?!\\()"), K = { variants: [
+    ] }, U = e.concat(s, "\\b(?!\\()"), W = { variants: [
       {
         match: [
           e.concat(
             /::/,
             e.lookahead(/(?!class\b)/)
           ),
-          H
+          U
         ],
         scope: { 2: "variable.constant" }
       },
@@ -85507,7 +85619,7 @@ function rJ() {
             /::/,
             e.lookahead(/(?!class\b)/)
           ),
-          H
+          U
         ],
         scope: {
           1: "title.class",
@@ -85535,45 +85647,45 @@ function rJ() {
           3: "variable.language"
         }
       }
-    ] }, ie = {
+    ] }, le = {
       scope: "attr",
       match: e.concat(s, e.lookahead(":"), e.lookahead(/(?!::)/))
-    }, q = {
+    }, Y = {
       relevance: 0,
       begin: /\(/,
       end: /\)/,
       keywords: y,
       contains: [
-        ie,
+        le,
         u,
-        K,
+        W,
         t.C_BLOCK_COMMENT_MODE,
-        C,
+        S,
         f,
-        P
+        D
       ]
-    }, ae = {
+    }, se = {
       relevance: 0,
       match: [
         /\b/,
         // to prevent keywords from being confused as the function title
-        e.concat("(?!fn\\b|function\\b|", b(T).join("\\b|"), "|", b(A).join("\\b|"), "\\b)"),
+        e.concat("(?!fn\\b|function\\b|", b(T).join("\\b|"), "|", b(N).join("\\b|"), "\\b)"),
         s,
-        e.concat(p, "*"),
+        e.concat(_, "*"),
         e.lookahead(/(?=\()/)
       ],
       scope: { 3: "title.function.invoke" },
-      contains: [q]
+      contains: [Y]
     };
-    q.contains.push(ae);
-    const we = [
-      ie,
-      K,
+    Y.contains.push(se);
+    const Ee = [
+      le,
+      W,
       t.C_BLOCK_COMMENT_MODE,
-      C,
+      S,
       f,
-      P
-    ], le = {
+      D
+    ], ae = {
       begin: e.concat(
         /#\[\s*\\?/,
         e.either(
@@ -85604,10 +85716,10 @@ function rJ() {
           },
           contains: [
             "self",
-            ...we
+            ...Ee
           ]
         },
-        ...we,
+        ...Ee,
         {
           scope: "meta",
           variants: [
@@ -85621,7 +85733,7 @@ function rJ() {
       case_insensitive: !1,
       keywords: y,
       contains: [
-        le,
+        ae,
         t.HASH_COMMENT_MODE,
         t.COMMENT("//", "$"),
         t.COMMENT(
@@ -85649,14 +85761,14 @@ function rJ() {
             ]
           }
         },
-        h,
+        m,
         {
           scope: "variable.language",
           match: /\$this\b/
         },
         u,
-        ae,
-        K,
+        se,
+        W,
         {
           match: [
             /const/,
@@ -85668,7 +85780,7 @@ function rJ() {
             3: "variable.constant"
           }
         },
-        P,
+        D,
         {
           scope: "function",
           relevance: 0,
@@ -85693,11 +85805,11 @@ function rJ() {
               keywords: y,
               contains: [
                 "self",
-                le,
+                ae,
                 u,
-                K,
+                W,
                 t.C_BLOCK_COMMENT_MODE,
-                C,
+                S,
                 f
               ]
             }
@@ -85747,7 +85859,7 @@ function rJ() {
             t.UNDERSCORE_TITLE_MODE
           ]
         },
-        C,
+        S,
         f
       ]
     };
@@ -85903,7 +86015,7 @@ function aJ() {
     }, d = /\w[\w\d]*((-)[\w\d]+)*/, u = {
       begin: "`[\\s\\S]",
       relevance: 0
-    }, h = {
+    }, m = {
       className: "variable",
       variants: [
         { begin: /\$\B/ },
@@ -85913,10 +86025,10 @@ function aJ() {
         },
         { begin: /\$[\w\d][\w\d_:]*/ }
       ]
-    }, m = {
+    }, h = {
       className: "literal",
       begin: /\$(null|true|false)\b/
-    }, _ = {
+    }, p = {
       className: "string",
       variants: [
         {
@@ -85930,7 +86042,7 @@ function aJ() {
       ],
       contains: [
         u,
-        h,
+        m,
         {
           className: "variable",
           begin: /\$[A-z]/,
@@ -85957,7 +86069,7 @@ function aJ() {
         /* one parameter help tags */
         { begin: /\.(parameter|forwardhelptargetname|forwardhelpcategory|remotehelprunspace|externalhelp)\s+\S+/ }
       ]
-    }, S = t.inherit(
+    }, C = t.inherit(
       t.COMMENT(null, null),
       {
         variants: [
@@ -85974,10 +86086,10 @@ function aJ() {
         ],
         contains: [w]
       }
-    ), p = {
+    ), _ = {
       className: "built_in",
       variants: [{ begin: "(".concat(a, ")+(-)[\\w\\d]+") }]
-    }, C = {
+    }, S = {
       className: "class",
       beginKeywords: "class enum",
       end: /\s*[{]/,
@@ -86007,7 +86119,7 @@ function aJ() {
           end: /\)/,
           className: "params",
           relevance: 0,
-          contains: [h]
+          contains: [m]
         }
         // CMDLETS
       ]
@@ -86016,7 +86128,7 @@ function aJ() {
       end: /$/,
       returnBegin: !0,
       contains: [
-        _,
+        p,
         g,
         {
           className: "keyword",
@@ -86034,11 +86146,11 @@ function aJ() {
         begin: /(-){1,2}[\w\d-]+/,
         relevance: 0
       }
-    ] }, A = {
+    ] }, N = {
       className: "selector-tag",
       begin: /@\B/,
       relevance: 0
-    }, L = {
+    }, I = {
       className: "function",
       begin: /\[.*\]\s*[\w]+[ ]??\(/,
       end: /$/,
@@ -86061,17 +86173,17 @@ function aJ() {
       ]
     }, y = [
       // STATIC_MEMBER,
-      L,
-      S,
+      I,
+      C,
       u,
       t.NUMBER_MODE,
-      _,
+      p,
       g,
       // PS_NEW_OBJECT_TYPE,
-      p,
-      h,
+      _,
       m,
-      A
+      h,
+      N
     ], b = {
       begin: /\[/,
       end: /\]/,
@@ -86093,7 +86205,7 @@ function aJ() {
         }
       )
     };
-    return L.contains.unshift(b), {
+    return I.contains.unshift(b), {
       name: "PowerShell",
       aliases: [
         "pwsh",
@@ -86103,7 +86215,7 @@ function aJ() {
       case_insensitive: !0,
       keywords: c,
       contains: y.concat(
-        C,
+        S,
         f,
         R,
         T,
@@ -86410,7 +86522,7 @@ function sJ() {
         s
       ],
       className: { 2: "property" }
-    }, h = {
+    }, m = {
       variants: [
         { match: [
           /class/,
@@ -86433,7 +86545,7 @@ function sJ() {
         5: "keyword",
         7: "title.class.inherited"
       }
-    }, m = [
+    }, h = [
       "boolean",
       "byte",
       "char",
@@ -86443,7 +86555,7 @@ function sJ() {
       "int",
       "long",
       "short"
-    ], _ = [
+    ], p = [
       "BufferedReader",
       "PVector",
       "PFont",
@@ -86515,12 +86627,12 @@ function sJ() {
         variable: "super this",
         built_in: [
           ...a,
-          ..._
+          ...p
         ],
-        type: m
+        type: h
       },
       contains: [
-        h,
+        m,
         d,
         c,
         u,
@@ -86607,11 +86719,11 @@ function dJ() {
       begin: /`/,
       end: /`/,
       contains: [t.BACKSLASH_ESCAPE]
-    }, h = {
+    }, m = {
       className: "string",
       // 0'a etc.
       begin: /0'(\\'|.)/
-    }, m = {
+    }, h = {
       className: "string",
       begin: /0'\\s/
       // 0'\s
@@ -86629,8 +86741,8 @@ function dJ() {
       t.QUOTE_STRING_MODE,
       t.APOS_STRING_MODE,
       u,
-      h,
       m,
+      h,
       t.C_NUMBER_MODE
     ];
     return s.contains = g, c.contains = g, {
@@ -86650,7 +86762,7 @@ function uJ() {
   if (U1) return yo;
   U1 = 1;
   function r(t) {
-    const e = "[ \\t\\f]*", a = "[ \\t\\f]+", s = e + "[:=]" + e, c = a, d = "(" + s + "|" + c + ")", u = "([^\\\\:= \\t\\f\\n]|\\\\.)+", h = {
+    const e = "[ \\t\\f]*", a = "[ \\t\\f]+", s = e + "[:=]" + e, c = a, d = "(" + s + "|" + c + ")", u = "([^\\\\:= \\t\\f\\n]|\\\\.)+", m = {
       // skip DELIM
       end: d,
       relevance: 0,
@@ -86687,7 +86799,7 @@ function uJ() {
               endsParent: !0
             }
           ],
-          starts: h
+          starts: m
         },
         // case of an empty key
         {
@@ -86985,7 +87097,7 @@ function hJ() {
       "while",
       "with",
       "yield"
-    ], h = {
+    ], m = {
       $pattern: /[A-Za-z]\w+|__\w+__/,
       keyword: s,
       built_in: [
@@ -87082,14 +87194,14 @@ function hJ() {
         "Type",
         "Union"
       ]
-    }, m = {
+    }, h = {
       className: "meta",
       begin: /^(>>>|\.\.\.) /
-    }, _ = {
+    }, p = {
       className: "subst",
       begin: /\{/,
       end: /\}/,
-      keywords: h,
+      keywords: m,
       illegal: /#/
     }, g = {
       begin: /\{\{/,
@@ -87103,7 +87215,7 @@ function hJ() {
           end: /'''/,
           contains: [
             t.BACKSLASH_ESCAPE,
-            m
+            h
           ],
           relevance: 10
         },
@@ -87112,7 +87224,7 @@ function hJ() {
           end: /"""/,
           contains: [
             t.BACKSLASH_ESCAPE,
-            m
+            h
           ],
           relevance: 10
         },
@@ -87121,9 +87233,9 @@ function hJ() {
           end: /'''/,
           contains: [
             t.BACKSLASH_ESCAPE,
-            m,
+            h,
             g,
-            _
+            p
           ]
         },
         {
@@ -87131,9 +87243,9 @@ function hJ() {
           end: /"""/,
           contains: [
             t.BACKSLASH_ESCAPE,
-            m,
+            h,
             g,
-            _
+            p
           ]
         },
         {
@@ -87160,7 +87272,7 @@ function hJ() {
           contains: [
             t.BACKSLASH_ESCAPE,
             g,
-            _
+            p
           ]
         },
         {
@@ -87169,13 +87281,13 @@ function hJ() {
           contains: [
             t.BACKSLASH_ESCAPE,
             g,
-            _
+            p
           ]
         },
         t.APOS_STRING_MODE,
         t.QUOTE_STRING_MODE
       ]
-    }, S = "[0-9](_?[0-9])*", p = `(\\b(${S}))?\\.(${S})|\\b(${S})\\.`, C = `\\b|${s.join("|")}`, f = {
+    }, C = "[0-9](_?[0-9])*", _ = `(\\b(${C}))?\\.(${C})|\\b(${C})\\.`, S = `\\b|${s.join("|")}`, f = {
       className: "number",
       relevance: 0,
       variants: [
@@ -87190,10 +87302,10 @@ function hJ() {
         // because both MUST contain a decimal point and so cannot be confused with
         // the interior part of an identifier
         {
-          begin: `(\\b(${S})|(${p}))[eE][+-]?(${S})[jJ]?(?=${C})`
+          begin: `(\\b(${C})|(${_}))[eE][+-]?(${C})[jJ]?(?=${S})`
         },
         {
-          begin: `(${p})[jJ]?`
+          begin: `(${_})[jJ]?`
         },
         // decinteger, bininteger, octinteger, hexinteger
         // https://docs.python.org/3.9/reference/lexical_analysis.html#integer-literals
@@ -87202,28 +87314,28 @@ function hJ() {
         // decinteger is optionally imaginary
         // https://docs.python.org/3.9/reference/lexical_analysis.html#imaginary-literals
         {
-          begin: `\\b([1-9](_?[0-9])*|0+(_?0)*)[lLjJ]?(?=${C})`
+          begin: `\\b([1-9](_?[0-9])*|0+(_?0)*)[lLjJ]?(?=${S})`
         },
         {
-          begin: `\\b0[bB](_?[01])+[lL]?(?=${C})`
+          begin: `\\b0[bB](_?[01])+[lL]?(?=${S})`
         },
         {
-          begin: `\\b0[oO](_?[0-7])+[lL]?(?=${C})`
+          begin: `\\b0[oO](_?[0-7])+[lL]?(?=${S})`
         },
         {
-          begin: `\\b0[xX](_?[0-9a-fA-F])+[lL]?(?=${C})`
+          begin: `\\b0[xX](_?[0-9a-fA-F])+[lL]?(?=${S})`
         },
         // imagnumber (digitpart-based)
         // https://docs.python.org/3.9/reference/lexical_analysis.html#imaginary-literals
         {
-          begin: `\\b(${S})[jJ](?=${C})`
+          begin: `\\b(${C})[jJ](?=${S})`
         }
       ]
     }, R = {
       className: "comment",
       begin: e.lookahead(/# type:/),
       end: /$/,
-      keywords: h,
+      keywords: m,
       contains: [
         {
           // prevent keywords from coloring `type`
@@ -87250,10 +87362,10 @@ function hJ() {
           end: /\)/,
           excludeBegin: !0,
           excludeEnd: !0,
-          keywords: h,
+          keywords: m,
           contains: [
             "self",
-            m,
+            h,
             f,
             w,
             t.HASH_COMMENT_MODE
@@ -87261,10 +87373,10 @@ function hJ() {
         }
       ]
     };
-    return _.contains = [
+    return p.contains = [
       w,
       f,
-      m
+      h
     ], {
       name: "Python",
       aliases: [
@@ -87273,10 +87385,10 @@ function hJ() {
         "ipython"
       ],
       unicodeRegex: !0,
-      keywords: h,
+      keywords: m,
       illegal: /(<\/|\?)|=>/,
       contains: [
-        m,
+        h,
         f,
         {
           // very common convention
@@ -87436,7 +87548,7 @@ function fJ() {
         end: s,
         returnEnd: !1
       }
-    }, h = {
+    }, m = {
       begin: s + "\\s*:",
       returnBegin: !0,
       contains: [
@@ -87449,7 +87561,7 @@ function fJ() {
         }
       ],
       relevance: 0
-    }, m = {
+    }, h = {
       begin: e.concat(s, /\s*\{/),
       end: /\{/,
       returnBegin: !0,
@@ -87540,8 +87652,8 @@ function fJ() {
           relevance: 0
         },
         u,
-        h,
-        m
+        m,
+        h
       ],
       illegal: /#/
     };
@@ -88002,7 +88114,7 @@ function vJ() {
         { begin: /\$[\w\d#@][\w\d_]*/ },
         { begin: /\$\{(.*?)\}/ }
       ]
-    }, h = {
+    }, m = {
       className: "string",
       begin: /"/,
       end: /"/,
@@ -88016,7 +88128,7 @@ function vJ() {
           contains: [t.BACKSLASH_ESCAPE]
         }
       ]
-    }, m = {
+    }, h = {
       className: "string",
       begin: /'/,
       end: /'/
@@ -88053,8 +88165,8 @@ function vJ() {
           illegal: /./
         },
         t.COMMENT("^#", "$"),
-        h,
         m,
+        h,
         u,
         // attribute=value
         {
@@ -88072,8 +88184,8 @@ function vJ() {
               endsWithParent: !0,
               relevance: 0,
               contains: [
-                h,
                 m,
+                h,
                 u,
                 {
                   className: "literal",
@@ -88319,7 +88431,7 @@ function bJ() {
         c,
         e.lookahead(/\s*\(/)
       )
-    }, u = "([ui](8|16|32|64|128|size)|f(32|64))?", h = [
+    }, u = "([ui](8|16|32|64|128|size)|f(32|64))?", m = [
       "abstract",
       "as",
       "async",
@@ -88372,14 +88484,14 @@ function bJ() {
       "where",
       "while",
       "yield"
-    ], m = [
+    ], h = [
       "true",
       "false",
       "Some",
       "None",
       "Ok",
       "Err"
-    ], _ = [
+    ], p = [
       // functions
       "drop ",
       // traits
@@ -88476,9 +88588,9 @@ function bJ() {
       keywords: {
         $pattern: t.IDENT_RE + "!?",
         type: g,
-        keyword: h,
-        literal: m,
-        built_in: _
+        keyword: m,
+        literal: h,
+        built_in: p
       },
       illegal: "</",
       contains: [
@@ -88599,7 +88711,7 @@ function bJ() {
           begin: t.IDENT_RE + "::",
           keywords: {
             keyword: "Self",
-            built_in: _,
+            built_in: p,
             type: g
           }
         },
@@ -89211,7 +89323,7 @@ function OJ() {
       className: "title",
       begin: /[^0-9\n\t "'(),.`{}\[\]:;][^\n\t "'(),.`{}\[\]:;]+|[^0-9\n\t "'(),.`{}\[\]:;=]/,
       relevance: 0
-    }, h = {
+    }, m = {
       className: "class",
       beginKeywords: "class object trait type",
       end: /[:={\[\n;]/,
@@ -89250,12 +89362,12 @@ function OJ() {
         },
         u
       ]
-    }, m = {
+    }, h = {
       className: "function",
       beginKeywords: "def",
       end: e.lookahead(/[:={\[(\n;]/),
       contains: [u]
-    }, _ = {
+    }, p = {
       begin: [
         /^\s*/,
         // Is first token on the line
@@ -89283,7 +89395,7 @@ function OJ() {
         begin: /\binline(?=\s)/,
         keywords: "inline"
       }
-    ], S = {
+    ], C = {
       begin: [
         /\(\s*/,
         // Opening `(` of a parameter or argument list
@@ -89325,13 +89437,13 @@ function OJ() {
         t.C_BLOCK_COMMENT_MODE,
         c,
         d,
-        m,
         h,
+        m,
         t.C_NUMBER_MODE,
-        _,
+        p,
         g,
         ...w,
-        S,
+        C,
         a
       ]
     };
@@ -89364,14 +89476,14 @@ function MJ() {
         { begin: "#o[0-7]+(/[0-7]+)?" },
         { begin: "#x[0-9a-f]+(/[0-9a-f]+)?" }
       ]
-    }, h = t.QUOTE_STRING_MODE, m = [
+    }, m = t.QUOTE_STRING_MODE, h = [
       t.COMMENT(
         ";",
         "$",
         { relevance: 0 }
       ),
       t.COMMENT("#\\|", "\\|#")
-    ], _ = {
+    ], p = {
       begin: e,
       relevance: 0
     }, g = {
@@ -89380,7 +89492,7 @@ function MJ() {
     }, w = {
       endsWithParent: !0,
       relevance: 0
-    }, S = {
+    }, C = {
       variants: [
         { begin: /'/ },
         { begin: "`" }
@@ -89392,14 +89504,14 @@ function MJ() {
           contains: [
             "self",
             d,
-            h,
+            m,
             u,
-            _,
+            p,
             g
           ]
         }
       ]
-    }, p = {
+    }, _ = {
       className: "name",
       relevance: 0,
       begin: e,
@@ -89421,7 +89533,7 @@ function MJ() {
           endsWithParent: !0,
           returnBegin: !0,
           contains: [
-            p,
+            _,
             {
               endsParent: !0,
               variants: [
@@ -89434,34 +89546,34 @@ function MJ() {
                   end: /\]/
                 }
               ],
-              contains: [_]
+              contains: [p]
             }
           ]
         },
-        p,
+        _,
         w
       ]
     };
     return w.contains = [
       d,
       u,
-      h,
-      _,
+      m,
+      p,
       g,
-      S,
+      C,
       f
-    ].concat(m), {
+    ].concat(h), {
       name: "Scheme",
       aliases: ["scm"],
       illegal: /\S/,
       contains: [
         t.SHEBANG(),
         u,
-        h,
+        m,
         g,
-        S,
+        C,
         f
-      ].concat(m)
+      ].concat(h)
     };
   }
   return Qo = r, Qo;
@@ -89532,12 +89644,12 @@ var Zo, is;
 function NJ() {
   if (is) return Zo;
   is = 1;
-  const r = (m) => ({
+  const r = (h) => ({
     IMPORTANT: {
       scope: "meta",
       begin: "!important"
     },
-    BLOCK_COMMENT: m.C_BLOCK_COMMENT_MODE,
+    BLOCK_COMMENT: h.C_BLOCK_COMMENT_MODE,
     HEXCOLOR: {
       scope: "number",
       begin: /#(([0-9a-fA-F]{3,4})|(([0-9a-fA-F]{2}){3,4}))\b/
@@ -89552,13 +89664,13 @@ function NJ() {
       end: /\]/,
       illegal: "$",
       contains: [
-        m.APOS_STRING_MODE,
-        m.QUOTE_STRING_MODE
+        h.APOS_STRING_MODE,
+        h.QUOTE_STRING_MODE
       ]
     },
     CSS_NUMBER_MODE: {
       scope: "number",
-      begin: m.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
+      begin: h.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
       relevance: 0
     },
     CSS_VARIABLE: {
@@ -90329,8 +90441,8 @@ function NJ() {
     "z-index",
     "zoom"
   ].sort().reverse();
-  function h(m) {
-    const _ = r(m), g = d, w = c, S = "@[a-z-]+", p = "and or not only", f = {
+  function m(h) {
+    const p = r(h), g = d, w = c, C = "@[a-z-]+", _ = "and or not only", f = {
       className: "variable",
       begin: "(\\$" + "[a-zA-Z-][a-zA-Z0-9_-]*" + ")\\b",
       relevance: 0
@@ -90340,11 +90452,11 @@ function NJ() {
       case_insensitive: !0,
       illegal: "[=/|']",
       contains: [
-        m.C_LINE_COMMENT_MODE,
-        m.C_BLOCK_COMMENT_MODE,
+        h.C_LINE_COMMENT_MODE,
+        h.C_BLOCK_COMMENT_MODE,
         // to recognize keyframe 40% etc which are outside the scope of our
         // attribute value mode
-        _.CSS_NUMBER_MODE,
+        p.CSS_NUMBER_MODE,
         {
           className: "selector-id",
           begin: "#[A-Za-z0-9_-]+",
@@ -90355,7 +90467,7 @@ function NJ() {
           begin: "\\.[A-Za-z0-9_-]+",
           relevance: 0
         },
-        _.ATTRIBUTE_SELECTOR_MODE,
+        p.ATTRIBUTE_SELECTOR_MODE,
         {
           className: "selector-tag",
           begin: "\\b(" + a.join("|") + ")\\b",
@@ -90375,9 +90487,9 @@ function NJ() {
           // pseudo-selector params
           begin: /\(/,
           end: /\)/,
-          contains: [_.CSS_NUMBER_MODE]
+          contains: [p.CSS_NUMBER_MODE]
         },
-        _.CSS_VARIABLE,
+        p.CSS_VARIABLE,
         {
           className: "attribute",
           begin: "\\b(" + u.join("|") + ")\\b"
@@ -90388,14 +90500,14 @@ function NJ() {
           end: /[;}{]/,
           relevance: 0,
           contains: [
-            _.BLOCK_COMMENT,
+            p.BLOCK_COMMENT,
             f,
-            _.HEXCOLOR,
-            _.CSS_NUMBER_MODE,
-            m.QUOTE_STRING_MODE,
-            m.APOS_STRING_MODE,
-            _.IMPORTANT,
-            _.FUNCTION_DISPATCH
+            p.HEXCOLOR,
+            p.CSS_NUMBER_MODE,
+            h.QUOTE_STRING_MODE,
+            h.APOS_STRING_MODE,
+            p.IMPORTANT,
+            p.FUNCTION_DISPATCH
           ]
         },
         // matching these here allows us to treat them more like regular CSS
@@ -90404,7 +90516,7 @@ function NJ() {
         {
           begin: "@(page|font-face)",
           keywords: {
-            $pattern: S,
+            $pattern: C,
             keyword: "@page @font-face"
           }
         },
@@ -90414,12 +90526,12 @@ function NJ() {
           returnBegin: !0,
           keywords: {
             $pattern: /[a-z-]+/,
-            keyword: p,
+            keyword: _,
             attribute: s.join(" ")
           },
           contains: [
             {
-              begin: S,
+              begin: C,
               className: "keyword"
             },
             {
@@ -90427,17 +90539,17 @@ function NJ() {
               className: "attribute"
             },
             f,
-            m.QUOTE_STRING_MODE,
-            m.APOS_STRING_MODE,
-            _.HEXCOLOR,
-            _.CSS_NUMBER_MODE
+            h.QUOTE_STRING_MODE,
+            h.APOS_STRING_MODE,
+            p.HEXCOLOR,
+            p.CSS_NUMBER_MODE
           ]
         },
-        _.FUNCTION_DISPATCH
+        p.FUNCTION_DISPATCH
       ]
     };
   }
-  return Zo = h, Zo;
+  return Zo = m, Zo;
 }
 var Jo, ls;
 function yJ() {
@@ -93275,7 +93387,7 @@ function PJ() {
       "worldToModel",
       "worldToModelVisual",
       "worldToScreen"
-    ], h = {
+    ], m = {
       className: "meta",
       begin: /#\s*[a-z]+\b/,
       end: /$/,
@@ -93310,7 +93422,7 @@ function PJ() {
         e,
         a,
         s,
-        h
+        m
       ],
       illegal: [
         //$ is only valid when used with Hex numbers (e.g. $FF)
@@ -93360,7 +93472,7 @@ function BJ() {
       "large object",
       "with timezone",
       "without timezone"
-    ], h = [
+    ], m = [
       "bigint",
       "binary",
       "blob",
@@ -93389,7 +93501,7 @@ function BJ() {
       "varying",
       // modifier (character varying)
       "varbinary"
-    ], m = [
+    ], h = [
       "add",
       "asc",
       "collation",
@@ -93398,7 +93510,7 @@ function BJ() {
       "first",
       "last",
       "view"
-    ], _ = [
+    ], p = [
       "abs",
       "acos",
       "all",
@@ -93867,7 +93979,7 @@ function BJ() {
       "localtime",
       "current_timestamp",
       "localtimestamp"
-    ], S = [
+    ], C = [
       "create table",
       "insert into",
       "primary key",
@@ -93884,9 +93996,9 @@ function BJ() {
       "nulls last",
       "depth first",
       "breadth first"
-    ], p = g, C = [
-      ..._,
-      ...m
+    ], _ = g, S = [
+      ...p,
+      ...h
     ].filter((b) => !g.includes(b)), f = {
       scope: "variable",
       match: /@[a-z0-9][a-z0-9_]*/
@@ -93895,28 +94007,28 @@ function BJ() {
       match: /[-+*/=%^~]|&&?|\|\|?|!=?|<(?:=>?|<|>)?|>[>=]?/,
       relevance: 0
     }, T = {
-      match: e.concat(/\b/, e.either(...p), /\s*\(/),
+      match: e.concat(/\b/, e.either(..._), /\s*\(/),
       relevance: 0,
-      keywords: { built_in: p }
+      keywords: { built_in: _ }
     };
-    function A(b) {
+    function N(b) {
       return e.concat(
         /\b/,
-        e.either(...b.map((P) => P.replace(/\s+/, "\\s+"))),
+        e.either(...b.map((D) => D.replace(/\s+/, "\\s+"))),
         /\b/
       );
     }
-    const L = {
+    const I = {
       scope: "keyword",
-      match: A(S),
+      match: N(C),
       relevance: 0
     };
     function y(b, {
-      exceptions: P,
-      when: H
+      exceptions: D,
+      when: U
     } = {}) {
-      const K = H;
-      return P = P || [], b.map((ie) => ie.match(/\|\d+$/) || P.includes(ie) ? ie : K(ie) ? `${ie}|0` : ie);
+      const W = U;
+      return D = D || [], b.map((le) => le.match(/\|\d+$/) || D.includes(le) ? le : W(le) ? `${le}|0` : le);
     }
     return {
       name: "SQL",
@@ -93925,17 +94037,17 @@ function BJ() {
       illegal: /[{}]|<\//,
       keywords: {
         $pattern: /\b[\w\.]+/,
-        keyword: y(C, { when: (b) => b.length < 3 }),
+        keyword: y(S, { when: (b) => b.length < 3 }),
         literal: d,
-        type: h,
+        type: m,
         built_in: w
       },
       contains: [
         {
           scope: "type",
-          match: A(u)
+          match: N(u)
         },
-        L,
+        I,
         T,
         f,
         s,
@@ -94315,7 +94427,7 @@ function zJ() {
       "wiener",
       "wishart",
       "wishart_cholesky"
-    ], h = t.COMMENT(
+    ], m = t.COMMENT(
       /\/\*/,
       /\*\//,
       {
@@ -94327,7 +94439,7 @@ function zJ() {
           }
         ]
       }
-    ), m = {
+    ), h = {
       scope: "meta",
       begin: /#include\b/,
       end: /$/,
@@ -94338,7 +94450,7 @@ function zJ() {
         },
         t.C_LINE_COMMENT_MODE
       ]
-    }, _ = [
+    }, p = [
       "lower",
       "upper",
       "offset",
@@ -94356,17 +94468,17 @@ function zJ() {
       },
       contains: [
         t.C_LINE_COMMENT_MODE,
-        m,
-        t.HASH_COMMENT_MODE,
         h,
+        t.HASH_COMMENT_MODE,
+        m,
         {
           scope: "built_in",
           match: /\s(pi|e|sqrt2|log2|log10)(?=\()/,
           relevance: 0
         },
         {
-          match: e.concat(/[<,]\s*/, e.either(..._), /\s*=/),
-          keywords: _
+          match: e.concat(/[<,]\s*/, e.either(...p), /\s*=/),
+          keywords: p
         },
         {
           scope: "keyword",
@@ -94547,12 +94659,12 @@ var si, hs;
 function HJ() {
   if (hs) return si;
   hs = 1;
-  const r = (m) => ({
+  const r = (h) => ({
     IMPORTANT: {
       scope: "meta",
       begin: "!important"
     },
-    BLOCK_COMMENT: m.C_BLOCK_COMMENT_MODE,
+    BLOCK_COMMENT: h.C_BLOCK_COMMENT_MODE,
     HEXCOLOR: {
       scope: "number",
       begin: /#(([0-9a-fA-F]{3,4})|(([0-9a-fA-F]{2}){3,4}))\b/
@@ -94567,13 +94679,13 @@ function HJ() {
       end: /\]/,
       illegal: "$",
       contains: [
-        m.APOS_STRING_MODE,
-        m.QUOTE_STRING_MODE
+        h.APOS_STRING_MODE,
+        h.QUOTE_STRING_MODE
       ]
     },
     CSS_NUMBER_MODE: {
       scope: "number",
-      begin: m.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
+      begin: h.NUMBER_RE + "(%|em|ex|ch|rem|vw|vh|vmin|vmax|cm|mm|in|pt|pc|px|deg|grad|rad|turn|s|ms|Hz|kHz|dpi|dpcm|dppx)?",
       relevance: 0
     },
     CSS_VARIABLE: {
@@ -95344,11 +95456,11 @@ function HJ() {
     "z-index",
     "zoom"
   ].sort().reverse();
-  function h(m) {
-    const _ = r(m), g = "and or not only", w = {
+  function m(h) {
+    const p = r(h), g = "and or not only", w = {
       className: "variable",
-      begin: "\\$" + m.IDENT_RE
-    }, S = [
+      begin: "\\$" + h.IDENT_RE
+    }, C = [
       "charset",
       "css",
       "debug",
@@ -95363,7 +95475,7 @@ function HJ() {
       "page",
       "warn",
       "while"
-    ], p = "(?=[.\\s\\n[:,(])";
+    ], _ = "(?=[.\\s\\n[:,(])";
     return {
       name: "Stylus",
       aliases: ["styl"],
@@ -95393,38 +95505,38 @@ function HJ() {
       ].join("|") + ")",
       contains: [
         // strings
-        m.QUOTE_STRING_MODE,
-        m.APOS_STRING_MODE,
+        h.QUOTE_STRING_MODE,
+        h.APOS_STRING_MODE,
         // comments
-        m.C_LINE_COMMENT_MODE,
-        m.C_BLOCK_COMMENT_MODE,
+        h.C_LINE_COMMENT_MODE,
+        h.C_BLOCK_COMMENT_MODE,
         // hex colors
-        _.HEXCOLOR,
+        p.HEXCOLOR,
         // class tag
         {
-          begin: "\\.[a-zA-Z][a-zA-Z0-9_-]*" + p,
+          begin: "\\.[a-zA-Z][a-zA-Z0-9_-]*" + _,
           className: "selector-class"
         },
         // id tag
         {
-          begin: "#[a-zA-Z][a-zA-Z0-9_-]*" + p,
+          begin: "#[a-zA-Z][a-zA-Z0-9_-]*" + _,
           className: "selector-id"
         },
         // tags
         {
-          begin: "\\b(" + a.join("|") + ")" + p,
+          begin: "\\b(" + a.join("|") + ")" + _,
           className: "selector-tag"
         },
         // psuedo selectors
         {
           className: "selector-pseudo",
-          begin: "&?:(" + c.join("|") + ")" + p
+          begin: "&?:(" + c.join("|") + ")" + _
         },
         {
           className: "selector-pseudo",
-          begin: "&?:(:)?(" + d.join("|") + ")" + p
+          begin: "&?:(:)?(" + d.join("|") + ")" + _
         },
-        _.ATTRIBUTE_SELECTOR_MODE,
+        p.ATTRIBUTE_SELECTOR_MODE,
         {
           className: "keyword",
           begin: /@media/,
@@ -95435,18 +95547,18 @@ function HJ() {
               keyword: g,
               attribute: s.join(" ")
             },
-            contains: [_.CSS_NUMBER_MODE]
+            contains: [p.CSS_NUMBER_MODE]
           }
         },
         // @ keywords
         {
           className: "keyword",
-          begin: "@((-(o|moz|ms|webkit)-)?(" + S.join("|") + "))\\b"
+          begin: "@((-(o|moz|ms|webkit)-)?(" + C.join("|") + "))\\b"
         },
         // variables
         w,
         // dimension
-        _.CSS_NUMBER_MODE,
+        p.CSS_NUMBER_MODE,
         // functions
         //  - only from beginning of line + whitespace
         {
@@ -95464,17 +95576,17 @@ function HJ() {
               begin: /\(/,
               end: /\)/,
               contains: [
-                _.HEXCOLOR,
+                p.HEXCOLOR,
                 w,
-                m.APOS_STRING_MODE,
-                _.CSS_NUMBER_MODE,
-                m.QUOTE_STRING_MODE
+                h.APOS_STRING_MODE,
+                p.CSS_NUMBER_MODE,
+                h.QUOTE_STRING_MODE
               ]
             }
           ]
         },
         // css variables
-        _.CSS_VARIABLE,
+        p.CSS_VARIABLE,
         // attributes
         //  - only from beginning of line + whitespace
         //  - must have whitespace after it
@@ -95485,24 +95597,24 @@ function HJ() {
             // value container
             end: /;|$/,
             contains: [
-              _.HEXCOLOR,
+              p.HEXCOLOR,
               w,
-              m.APOS_STRING_MODE,
-              m.QUOTE_STRING_MODE,
-              _.CSS_NUMBER_MODE,
-              m.C_BLOCK_COMMENT_MODE,
-              _.IMPORTANT,
-              _.FUNCTION_DISPATCH
+              h.APOS_STRING_MODE,
+              h.QUOTE_STRING_MODE,
+              p.CSS_NUMBER_MODE,
+              h.C_BLOCK_COMMENT_MODE,
+              p.IMPORTANT,
+              p.FUNCTION_DISPATCH
             ],
             illegal: /\./,
             relevance: 0
           }
         },
-        _.FUNCTION_DISPATCH
+        p.FUNCTION_DISPATCH
       ]
     };
   }
-  return si = h, si;
+  return si = m, si;
 }
 var ci, gs;
 function GJ() {
@@ -95547,26 +95659,26 @@ var di, ws;
 function VJ() {
   if (ws) return di;
   ws = 1;
-  function r(H) {
-    return H ? typeof H == "string" ? H : H.source : null;
+  function r(U) {
+    return U ? typeof U == "string" ? U : U.source : null;
   }
-  function t(H) {
-    return e("(?=", H, ")");
+  function t(U) {
+    return e("(?=", U, ")");
   }
-  function e(...H) {
-    return H.map((ie) => r(ie)).join("");
+  function e(...U) {
+    return U.map((le) => r(le)).join("");
   }
-  function a(H) {
-    const K = H[H.length - 1];
-    return typeof K == "object" && K.constructor === Object ? (H.splice(H.length - 1, 1), K) : {};
+  function a(U) {
+    const W = U[U.length - 1];
+    return typeof W == "object" && W.constructor === Object ? (U.splice(U.length - 1, 1), W) : {};
   }
-  function s(...H) {
-    return "(" + (a(H).capture ? "" : "?:") + H.map((q) => r(q)).join("|") + ")";
+  function s(...U) {
+    return "(" + (a(U).capture ? "" : "?:") + U.map((Y) => r(Y)).join("|") + ")";
   }
-  const c = (H) => e(
+  const c = (U) => e(
     /\b/,
-    H,
-    /\w$/.test(H) ? /\b/ : /\B/
+    U,
+    /\w$/.test(U) ? /\b/ : /\B/
   ), d = [
     "Protocol",
     // contextual
@@ -95575,10 +95687,10 @@ function VJ() {
   ].map(c), u = [
     "init",
     "self"
-  ].map(c), h = [
+  ].map(c), m = [
     "Any",
     "Self"
-  ], m = [
+  ], h = [
     // strings below will be fed into the regular `keywords` engine while regex
     // will result in additional modes being created to scan for those keywords to
     // avoid conflicts with other rules
@@ -95714,7 +95826,7 @@ function VJ() {
     "while",
     "willSet"
     // contextual
-  ], _ = [
+  ], p = [
     "false",
     "nil",
     "true"
@@ -95746,7 +95858,7 @@ function VJ() {
     "#selector",
     "#sourceLocation",
     "#warning"
-  ], S = [
+  ], C = [
     "abs",
     "all",
     "any",
@@ -95781,7 +95893,7 @@ function VJ() {
     "withVaList",
     "withoutActuallyEscaping",
     "zip"
-  ], p = s(
+  ], _ = s(
     /[/=\-+!*%<>&|^~?]/,
     /[\u00A1-\u00A7]/,
     /[\u00A9\u00AB]/,
@@ -95800,8 +95912,8 @@ function VJ() {
     /[\u3001-\u3003]/,
     /[\u3008-\u3020]/,
     /[\u3030]/
-  ), C = s(
-    p,
+  ), S = s(
+    _,
     /[\u0300-\u036F]/,
     /[\u1DC0-\u1DFF]/,
     /[\u20D0-\u20FF]/,
@@ -95809,7 +95921,7 @@ function VJ() {
     /[\uFE20-\uFE2F]/
     // TODO: The following characters are also allowed, but the regex isn't supported yet.
     // /[\u{E0100}-\u{E01EF}]/u
-  ), f = e(p, C, "*"), R = s(
+  ), f = e(_, S, "*"), R = s(
     /[a-zA-Z_]/,
     /[\u00A8\u00AA\u00AD\u00AF\u00B2-\u00B5\u00B7-\u00BA]/,
     /[\u00BC-\u00BE\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF]/,
@@ -95831,7 +95943,7 @@ function VJ() {
     R,
     /\d/,
     /[\u0300-\u036F\u1DC0-\u1DFF\u20D0-\u20FF\uFE20-\uFE2F]/
-  ), A = e(R, T, "*"), L = e(/[A-Z]/, T, "*"), y = [
+  ), N = e(R, T, "*"), I = e(/[A-Z]/, T, "*"), y = [
     "attached",
     "autoclosure",
     e(/convention\(/, s("swift", "block", "c"), /\)/),
@@ -95853,7 +95965,7 @@ function VJ() {
     "NSApplicationMain",
     "NSCopying",
     "NSManaged",
-    e(/objc\(/, A, /\)/),
+    e(/objc\(/, N, /\)/),
     "objc",
     "objcMembers",
     "propertyWrapper",
@@ -95879,56 +95991,56 @@ function VJ() {
     "tvOSApplicationExtension",
     "swift"
   ];
-  function P(H) {
-    const K = {
+  function D(U) {
+    const W = {
       match: /\s+/,
       relevance: 0
-    }, ie = H.COMMENT(
+    }, le = U.COMMENT(
       "/\\*",
       "\\*/",
       { contains: ["self"] }
-    ), q = [
-      H.C_LINE_COMMENT_MODE,
-      ie
-    ], ae = {
+    ), Y = [
+      U.C_LINE_COMMENT_MODE,
+      le
+    ], se = {
       match: [
         /\./,
         s(...d, ...u)
       ],
       className: { 2: "keyword" }
-    }, we = {
+    }, Ee = {
       // Consume .keyword to prevent highlighting properties and methods as keywords.
-      match: e(/\./, s(...m)),
+      match: e(/\./, s(...h)),
       relevance: 0
-    }, le = m.filter((me) => typeof me == "string").concat(["_|0"]), ce = m.filter((me) => typeof me != "string").concat(h).map(c), de = { variants: [
+    }, ae = h.filter((ge) => typeof ge == "string").concat(["_|0"]), de = h.filter((ge) => typeof ge != "string").concat(m).map(c), ue = { variants: [
       {
         className: "keyword",
-        match: s(...ce, ...u)
+        match: s(...de, ...u)
       }
-    ] }, ge = {
+    ] }, me = {
       $pattern: s(
         /\b\w+/,
         // regular keywords
         /#\w+/
         // number keywords
       ),
-      keyword: le.concat(w),
-      literal: _
-    }, xe = [
-      ae,
-      we,
-      de
+      keyword: ae.concat(w),
+      literal: p
+    }, Se = [
+      se,
+      Ee,
+      ue
     ], Be = {
       // Consume .built_in to prevent highlighting properties and methods.
-      match: e(/\./, s(...S)),
+      match: e(/\./, s(...C)),
       relevance: 0
-    }, Z = {
+    }, He = {
       className: "built_in",
-      match: e(/\b/, s(...S), /(?=\()/)
+      match: e(/\b/, s(...C), /(?=\()/)
     }, ze = [
       Be,
-      Z
-    ], Fe = {
+      He
+    ], X = {
       // Prevent -> from being highlighting as an operator.
       match: /->/,
       relevance: 0
@@ -95941,111 +96053,111 @@ function VJ() {
           // dot-operator: only operators that start with a dot are allowed to use dots as
           // characters (..., ...<, .*, etc). So there rule here is: a dot followed by one or more
           // characters that may also include dots.
-          match: `\\.(\\.|${C})+`
+          match: `\\.(\\.|${S})+`
         }
       ]
     }, De = [
-      Fe,
+      X,
       Ue
-    ], Te = "([0-9]_*)+", Oe = "([0-9a-fA-F]_*)+", _e = {
+    ], ke = "([0-9]_*)+", Oe = "([0-9a-fA-F]_*)+", he = {
       className: "number",
       relevance: 0,
       variants: [
         // decimal floating-point-literal (subsumes decimal-literal)
-        { match: `\\b(${Te})(\\.(${Te}))?([eE][+-]?(${Te}))?\\b` },
+        { match: `\\b(${ke})(\\.(${ke}))?([eE][+-]?(${ke}))?\\b` },
         // hexadecimal floating-point-literal (subsumes hexadecimal-literal)
-        { match: `\\b0x(${Oe})(\\.(${Oe}))?([pP][+-]?(${Te}))?\\b` },
+        { match: `\\b0x(${Oe})(\\.(${Oe}))?([pP][+-]?(${ke}))?\\b` },
         // octal-literal
         { match: /\b0o([0-7]_*)+\b/ },
         // binary-literal
         { match: /\b0b([01]_*)+\b/ }
       ]
-    }, ue = (me = "") => ({
+    }, pe = (ge = "") => ({
       className: "subst",
       variants: [
-        { match: e(/\\/, me, /[0\\tnr"']/) },
-        { match: e(/\\/, me, /u\{[0-9a-fA-F]{1,8}\}/) }
+        { match: e(/\\/, ge, /[0\\tnr"']/) },
+        { match: e(/\\/, ge, /u\{[0-9a-fA-F]{1,8}\}/) }
       ]
-    }), Se = (me = "") => ({
+    }), xe = (ge = "") => ({
       className: "subst",
-      match: e(/\\/, me, /[\t ]*(?:[\r\n]|\r\n)/)
-    }), Ce = (me = "") => ({
+      match: e(/\\/, ge, /[\t ]*(?:[\r\n]|\r\n)/)
+    }), ve = (ge = "") => ({
       className: "subst",
       label: "interpol",
-      begin: e(/\\/, me, /\(/),
+      begin: e(/\\/, ge, /\(/),
       end: /\)/
-    }), ve = (me = "") => ({
-      begin: e(me, /"""/),
-      end: e(/"""/, me),
+    }), Te = (ge = "") => ({
+      begin: e(ge, /"""/),
+      end: e(/"""/, ge),
       contains: [
-        ue(me),
-        Se(me),
-        Ce(me)
+        pe(ge),
+        xe(ge),
+        ve(ge)
       ]
-    }), Pe = (me = "") => ({
-      begin: e(me, /"/),
-      end: e(/"/, me),
+    }), Pe = (ge = "") => ({
+      begin: e(ge, /"/),
+      end: e(/"/, ge),
       contains: [
-        ue(me),
-        Ce(me)
+        pe(ge),
+        ve(ge)
       ]
-    }), He = {
+    }), Fe = {
       className: "string",
       variants: [
-        ve(),
-        ve("#"),
-        ve("##"),
-        ve("###"),
+        Te(),
+        Te("#"),
+        Te("##"),
+        Te("###"),
         Pe(),
         Pe("#"),
         Pe("##"),
         Pe("###")
       ]
-    }, ot = [
-      H.BACKSLASH_ESCAPE,
+    }, st = [
+      U.BACKSLASH_ESCAPE,
       {
         begin: /\[/,
         end: /\]/,
         relevance: 0,
-        contains: [H.BACKSLASH_ESCAPE]
+        contains: [U.BACKSLASH_ESCAPE]
       }
-    ], _t = {
+    ], mt = {
       begin: /\/[^\s](?=[^/\n]*\/)/,
       end: /\//,
-      contains: ot
-    }, it = (me) => {
-      const ut = e(me, /\//), et = e(/\//, me);
+      contains: st
+    }, Je = (ge) => {
+      const pt = e(ge, /\//), nt = e(/\//, ge);
       return {
-        begin: ut,
-        end: et,
+        begin: pt,
+        end: nt,
         contains: [
-          ...ot,
+          ...st,
           {
             scope: "comment",
-            begin: `#(?!.*${et})`,
+            begin: `#(?!.*${nt})`,
             end: /$/
           }
         ]
       };
-    }, at = {
+    }, ct = {
       scope: "regexp",
       variants: [
-        it("###"),
-        it("##"),
-        it("#"),
-        _t
+        Je("###"),
+        Je("##"),
+        Je("#"),
+        mt
       ]
-    }, st = { match: e(/`/, A, /`/) }, mt = {
+    }, dt = { match: e(/`/, N, /`/) }, ht = {
       className: "variable",
       match: /\$\d+/
-    }, ct = {
+    }, ut = {
       className: "variable",
       match: `\\$${T}+`
-    }, je = [
-      st,
-      mt,
-      ct
-    ], v = {
+    }, lt = [
+      dt,
+      ht,
+      ut
+    ], gt = {
       match: /(@|#(un)?)available/,
       scope: "keyword",
       starts: { contains: [
@@ -96055,22 +96167,22 @@ function VJ() {
           keywords: b,
           contains: [
             ...De,
-            _e,
-            He
+            he,
+            Fe
           ]
         }
       ] }
-    }, M = {
+    }, et = {
       scope: "keyword",
       match: e(/@/, s(...y), t(s(/\(/, /\s+/)))
-    }, N = {
+    }, v = {
       scope: "meta",
-      match: e(/@/, A)
-    }, D = [
-      v,
-      M,
-      N
-    ], z = {
+      match: e(/@/, N)
+    }, O = [
+      gt,
+      et,
+      v
+    ], A = {
       match: t(/\b[A-Z]/),
       relevance: 0,
       contains: [
@@ -96082,7 +96194,7 @@ function VJ() {
         {
           // Type identifier
           className: "type",
-          match: L,
+          match: I,
           relevance: 0
         },
         {
@@ -96097,58 +96209,58 @@ function VJ() {
         },
         {
           // Protocol composition
-          match: e(/\s+&\s+/, t(L)),
+          match: e(/\s+&\s+/, t(I)),
           relevance: 0
         }
       ]
-    }, I = {
+    }, P = {
       begin: /</,
       end: />/,
-      keywords: ge,
+      keywords: me,
       contains: [
-        ...q,
-        ...xe,
-        ...D,
-        Fe,
-        z
+        ...Y,
+        ...Se,
+        ...O,
+        X,
+        A
       ]
     };
-    z.contains.push(I);
+    A.contains.push(P);
     const G = {
-      match: e(A, /\s*:/),
+      match: e(N, /\s*:/),
       keywords: "_|0",
       relevance: 0
-    }, Y = {
+    }, L = {
       begin: /\(/,
       end: /\)/,
       relevance: 0,
-      keywords: ge,
+      keywords: me,
       contains: [
         "self",
         G,
-        ...q,
-        at,
-        ...xe,
+        ...Y,
+        ct,
+        ...Se,
         ...ze,
         ...De,
-        _e,
-        He,
-        ...je,
-        ...D,
-        z
+        he,
+        Fe,
+        ...lt,
+        ...O,
+        A
       ]
-    }, V = {
+    }, H = {
       begin: /</,
       end: />/,
       keywords: "repeat each",
       contains: [
-        ...q,
-        z
+        ...Y,
+        A
       ]
-    }, j = {
+    }, $ = {
       begin: s(
-        t(e(A, /\s*:/)),
-        t(e(A, /\s+/, A, /\s*:/))
+        t(e(N, /\s*:/)),
+        t(e(N, /\s+/, N, /\s*:/))
       ),
       end: /:/,
       relevance: 0,
@@ -96159,58 +96271,58 @@ function VJ() {
         },
         {
           className: "params",
-          match: A
+          match: N
         }
       ]
-    }, fe = {
+    }, J = {
       begin: /\(/,
       end: /\)/,
-      keywords: ge,
+      keywords: me,
       contains: [
-        j,
-        ...q,
-        ...xe,
+        $,
+        ...Y,
+        ...Se,
         ...De,
-        _e,
-        He,
-        ...D,
-        z,
-        Y
+        he,
+        Fe,
+        ...O,
+        A,
+        L
       ],
       endsParent: !0,
       illegal: /["']/
-    }, ke = {
+    }, Q = {
       match: [
         /(func|macro)/,
         /\s+/,
-        s(st.match, A, f)
+        s(dt.match, N, f)
       ],
       className: {
         1: "keyword",
         3: "title.function"
       },
       contains: [
-        V,
-        fe,
-        K
+        H,
+        J,
+        W
       ],
       illegal: [
         /\[/,
         /%/
       ]
-    }, Ge = {
+    }, ee = {
       match: [
         /\b(?:subscript|init[?!]?)/,
         /\s*(?=[<(])/
       ],
       className: { 1: "keyword" },
       contains: [
-        V,
-        fe,
-        K
+        H,
+        J,
+        W
       ],
       illegal: /\[|%/
-    }, Qe = {
+    }, we = {
       match: [
         /operator/,
         /\s+/,
@@ -96220,23 +96332,23 @@ function VJ() {
         1: "keyword",
         3: "title"
       }
-    }, dt = {
+    }, Ve = {
       begin: [
         /precedencegroup/,
         /\s+/,
-        L
+        I
       ],
       className: {
         1: "keyword",
         3: "title"
       },
-      contains: [z],
+      contains: [A],
       keywords: [
         ...g,
-        ..._
+        ...p
       ],
       end: /}/
-    }, At = {
+    }, je = {
       match: [
         /class\b/,
         /\s+/,
@@ -96249,7 +96361,7 @@ function VJ() {
         3: "keyword",
         5: "title.function"
       }
-    }, ht = {
+    }, tt = {
       match: [
         /class\b/,
         /\s+/,
@@ -96259,91 +96371,91 @@ function VJ() {
         1: "keyword",
         3: "keyword"
       }
-    }, Et = {
+    }, St = {
       begin: [
         /(struct|protocol|class|extension|enum|actor)/,
         /\s+/,
-        A,
+        N,
         /\s*/
       ],
       beginScope: {
         1: "keyword",
         3: "title.class"
       },
-      keywords: ge,
+      keywords: me,
       contains: [
-        V,
-        ...xe,
+        H,
+        ...Se,
         {
           begin: /:/,
           end: /\{/,
-          keywords: ge,
+          keywords: me,
           contains: [
             {
               scope: "title.class.inherited",
-              match: L
+              match: I
             },
-            ...xe
+            ...Se
           ],
           relevance: 0
         }
       ]
     };
-    for (const me of He.variants) {
-      const ut = me.contains.find((tt) => tt.label === "interpol");
-      ut.keywords = ge;
-      const et = [
-        ...xe,
+    for (const ge of Fe.variants) {
+      const pt = ge.contains.find((rt) => rt.label === "interpol");
+      pt.keywords = me;
+      const nt = [
+        ...Se,
         ...ze,
         ...De,
-        _e,
-        He,
-        ...je
+        he,
+        Fe,
+        ...lt
       ];
-      ut.contains = [
-        ...et,
+      pt.contains = [
+        ...nt,
         {
           begin: /\(/,
           end: /\)/,
           contains: [
             "self",
-            ...et
+            ...nt
           ]
         }
       ];
     }
     return {
       name: "Swift",
-      keywords: ge,
+      keywords: me,
       contains: [
-        ...q,
-        ke,
-        Ge,
-        At,
-        ht,
-        Et,
-        Qe,
-        dt,
+        ...Y,
+        Q,
+        ee,
+        je,
+        tt,
+        St,
+        we,
+        Ve,
         {
           beginKeywords: "import",
           end: /$/,
-          contains: [...q],
+          contains: [...Y],
           relevance: 0
         },
-        at,
-        ...xe,
+        ct,
+        ...Se,
         ...ze,
         ...De,
-        _e,
-        He,
-        ...je,
-        ...D,
-        z,
-        Y
+        he,
+        Fe,
+        ...lt,
+        ...O,
+        A,
+        L
       ]
     };
   }
-  return di = P, di;
+  return di = D, di;
 }
 var ui, fs;
 function $J() {
@@ -96450,7 +96562,7 @@ function YJ() {
         t.BACKSLASH_ESCAPE,
         c
       ]
-    }, h = t.inherit(u, { variants: [
+    }, m = t.inherit(u, { variants: [
       {
         begin: /'/,
         end: /'/,
@@ -96466,25 +96578,25 @@ function YJ() {
         end: /"/
       },
       { begin: /[^\s,{}[\]]+/ }
-    ] }), S = {
+    ] }), C = {
       className: "number",
       begin: "\\b" + "[0-9]{4}(-[0-9][0-9]){0,2}" + "([Tt \\t][0-9][0-9]?(:[0-9][0-9]){2})?" + "(\\.[0-9]*)?" + "([ \\t])*(Z|[-+][0-9][0-9]?(:[0-9][0-9])?)?" + "\\b"
-    }, p = {
+    }, _ = {
       end: ",",
       endsWithParent: !0,
       excludeEnd: !0,
       keywords: e,
       relevance: 0
-    }, C = {
+    }, S = {
       begin: /\{/,
       end: /\}/,
-      contains: [p],
+      contains: [_],
       illegal: "\\n",
       relevance: 0
     }, f = {
       begin: "\\[",
       end: "\\]",
-      contains: [p],
+      contains: [_],
       illegal: "\\n",
       relevance: 0
     }, R = [
@@ -96555,7 +96667,7 @@ function YJ() {
         beginKeywords: e,
         keywords: { literal: e }
       },
-      S,
+      C,
       // numbers are any valid C-style number that
       // sit isolated from other words
       {
@@ -96563,12 +96675,12 @@ function YJ() {
         begin: t.C_NUMBER_RE + "\\b",
         relevance: 0
       },
-      C,
+      S,
       f,
       d,
       u
     ], T = [...R];
-    return T.pop(), T.push(h), p.contains = T, {
+    return T.pop(), T.push(m), _.contains = T, {
       name: "YAML",
       case_insensitive: !0,
       aliases: ["yml"],
@@ -97181,7 +97293,7 @@ function QJ() {
       "verbatim",
       "with"
     ];
-    c = c.concat(c.map((C) => `end${C}`));
+    c = c.concat(c.map((S) => `end${S}`));
     const d = {
       scope: "string",
       variants: [
@@ -97197,7 +97309,7 @@ function QJ() {
     }, u = {
       scope: "number",
       match: /\d+/
-    }, h = {
+    }, m = {
       begin: /\(/,
       end: /\)/,
       excludeBegin: !0,
@@ -97206,12 +97318,12 @@ function QJ() {
         d,
         u
       ]
-    }, m = {
+    }, h = {
       beginKeywords: a.join(" "),
       keywords: { name: a },
       relevance: 0,
-      contains: [h]
-    }, _ = {
+      contains: [m]
+    }, p = {
       match: /\|(?=[A-Za-z_]+:?)/,
       beginScope: "punctuation",
       relevance: 0,
@@ -97221,7 +97333,7 @@ function QJ() {
           keywords: s
         }
       ]
-    }, g = (C, { relevance: f }) => ({
+    }, g = (S, { relevance: f }) => ({
       beginScope: {
         1: "template-tag",
         3: "name"
@@ -97231,17 +97343,17 @@ function QJ() {
       begin: [
         /\{%/,
         /\s*/,
-        e.either(...C)
+        e.either(...S)
       ],
       end: /%\}/,
       keywords: "in",
       contains: [
-        _,
-        m,
+        p,
+        h,
         d,
         u
       ]
-    }), w = /[a-z_]+/, S = g(c, { relevance: 2 }), p = g([w], { relevance: 1 });
+    }), w = /[a-z_]+/, C = g(c, { relevance: 2 }), _ = g([w], { relevance: 1 });
     return {
       name: "Twig",
       aliases: ["craftcms"],
@@ -97249,16 +97361,16 @@ function QJ() {
       subLanguage: "xml",
       contains: [
         t.COMMENT(/\{#/, /#\}/),
-        S,
-        p,
+        C,
+        _,
         {
           className: "template-variable",
           begin: /\{\{/,
           end: /\}\}/,
           contains: [
             "self",
-            _,
-            m,
+            p,
+            h,
             d,
             u
           ]
@@ -97418,42 +97530,42 @@ function XJ() {
     a,
     s
   );
-  function h(_) {
-    const g = _.regex, w = (ue, { after: Se }) => {
-      const Ce = "</" + ue[0].slice(1);
-      return ue.input.indexOf(Ce, Se) !== -1;
-    }, S = r, p = {
+  function m(p) {
+    const g = p.regex, w = (pe, { after: xe }) => {
+      const ve = "</" + pe[0].slice(1);
+      return pe.input.indexOf(ve, xe) !== -1;
+    }, C = r, _ = {
       begin: "<>",
       end: "</>"
-    }, C = /<[A-Za-z0-9\\._:-]+\s*\/>/, f = {
+    }, S = /<[A-Za-z0-9\\._:-]+\s*\/>/, f = {
       begin: /<[A-Za-z0-9\\._:-]+/,
       end: /\/[A-Za-z0-9\\._:-]+>|\/>/,
       /**
        * @param {RegExpMatchArray} match
        * @param {CallbackResponse} response
        */
-      isTrulyOpeningTag: (ue, Se) => {
-        const Ce = ue[0].length + ue.index, ve = ue.input[Ce];
+      isTrulyOpeningTag: (pe, xe) => {
+        const ve = pe[0].length + pe.index, Te = pe.input[ve];
         if (
           // HTML should not include another raw `<` inside a tag
           // nested type?
           // `<Array<Array<number>>`, etc.
-          ve === "<" || // the , gives away that this is not HTML
+          Te === "<" || // the , gives away that this is not HTML
           // `<T, A extends keyof T, V>`
-          ve === ","
+          Te === ","
         ) {
-          Se.ignoreMatch();
+          xe.ignoreMatch();
           return;
         }
-        ve === ">" && (w(ue, { after: Ce }) || Se.ignoreMatch());
+        Te === ">" && (w(pe, { after: ve }) || xe.ignoreMatch());
         let Pe;
-        const He = ue.input.substring(Ce);
-        if (Pe = He.match(/^\s*=/)) {
-          Se.ignoreMatch();
+        const Fe = pe.input.substring(ve);
+        if (Pe = Fe.match(/^\s*=/)) {
+          xe.ignoreMatch();
           return;
         }
-        if ((Pe = He.match(/^\s+extends\s+/)) && Pe.index === 0) {
-          Se.ignoreMatch();
+        if ((Pe = Fe.match(/^\s+extends\s+/)) && Pe.index === 0) {
+          xe.ignoreMatch();
           return;
         }
       }
@@ -97463,12 +97575,12 @@ function XJ() {
       literal: e,
       built_in: u,
       "variable.language": d
-    }, T = "[0-9](_?[0-9])*", A = `\\.(${T})`, L = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", y = {
+    }, T = "[0-9](_?[0-9])*", N = `\\.(${T})`, I = "0|[1-9](_?[0-9])*|0[0-7]*[89][0-9]*", y = {
       className: "number",
       variants: [
         // DecimalLiteral
-        { begin: `(\\b(${L})((${A})|\\.)?|(${A}))[eE][+-]?(${T})\\b` },
-        { begin: `\\b(${L})\\b((${A})\\b|\\.)?|(${A})\\b` },
+        { begin: `(\\b(${I})((${N})|\\.)?|(${N}))[eE][+-]?(${T})\\b` },
+        { begin: `\\b(${I})\\b((${N})\\b|\\.)?|(${N})\\b` },
         // DecimalBigIntegerLiteral
         { begin: "\\b(0|[1-9](_?[0-9])*)n\\b" },
         // NonDecimalIntegerLiteral
@@ -97487,54 +97599,54 @@ function XJ() {
       keywords: R,
       contains: []
       // defined later
-    }, P = {
+    }, D = {
       begin: ".?html`",
       end: "",
       starts: {
         end: "`",
         returnEnd: !1,
         contains: [
-          _.BACKSLASH_ESCAPE,
+          p.BACKSLASH_ESCAPE,
           b
         ],
         subLanguage: "xml"
       }
-    }, H = {
+    }, U = {
       begin: ".?css`",
       end: "",
       starts: {
         end: "`",
         returnEnd: !1,
         contains: [
-          _.BACKSLASH_ESCAPE,
+          p.BACKSLASH_ESCAPE,
           b
         ],
         subLanguage: "css"
       }
-    }, K = {
+    }, W = {
       begin: ".?gql`",
       end: "",
       starts: {
         end: "`",
         returnEnd: !1,
         contains: [
-          _.BACKSLASH_ESCAPE,
+          p.BACKSLASH_ESCAPE,
           b
         ],
         subLanguage: "graphql"
       }
-    }, ie = {
+    }, le = {
       className: "string",
       begin: "`",
       end: "`",
       contains: [
-        _.BACKSLASH_ESCAPE,
+        p.BACKSLASH_ESCAPE,
         b
       ]
-    }, ae = {
+    }, se = {
       className: "comment",
       variants: [
-        _.COMMENT(
+        p.COMMENT(
           /\/\*\*(?!\/)/,
           "\\*/",
           {
@@ -97558,7 +97670,7 @@ function XJ() {
                   },
                   {
                     className: "variable",
-                    begin: S + "(?=\\s*(-)|$)",
+                    begin: C + "(?=\\s*(-)|$)",
                     endsParent: !0,
                     relevance: 0
                   },
@@ -97573,16 +97685,16 @@ function XJ() {
             ]
           }
         ),
-        _.C_BLOCK_COMMENT_MODE,
-        _.C_LINE_COMMENT_MODE
+        p.C_BLOCK_COMMENT_MODE,
+        p.C_LINE_COMMENT_MODE
       ]
-    }, we = [
-      _.APOS_STRING_MODE,
-      _.QUOTE_STRING_MODE,
-      P,
-      H,
-      K,
-      ie,
+    }, Ee = [
+      p.APOS_STRING_MODE,
+      p.QUOTE_STRING_MODE,
+      D,
+      U,
+      W,
+      le,
       // Skip numbers when they are part of a variable name
       { match: /\$\d+/ },
       y
@@ -97590,7 +97702,7 @@ function XJ() {
       // See https://github.com/highlightjs/highlight.js/issues/3288
       // hljs.REGEXP_MODE
     ];
-    b.contains = we.concat({
+    b.contains = Ee.concat({
       // we need to pair up {} inside our subst to prevent
       // it from ending too early by matching another }
       begin: /\{/,
@@ -97598,17 +97710,17 @@ function XJ() {
       keywords: R,
       contains: [
         "self"
-      ].concat(we)
+      ].concat(Ee)
     });
-    const le = [].concat(ae, b.contains), ce = le.concat([
+    const ae = [].concat(se, b.contains), de = ae.concat([
       // eat recursive parens in sub expressions
       {
         begin: /(\s*)\(/,
         end: /\)/,
         keywords: R,
-        contains: ["self"].concat(le)
+        contains: ["self"].concat(ae)
       }
-    ]), de = {
+    ]), ue = {
       className: "params",
       // convert this to negative lookbehind in v12
       begin: /(\s*)\(/,
@@ -97617,19 +97729,19 @@ function XJ() {
       excludeBegin: !0,
       excludeEnd: !0,
       keywords: R,
-      contains: ce
-    }, ge = {
+      contains: de
+    }, me = {
       variants: [
         // class Car extends vehicle
         {
           match: [
             /class/,
             /\s+/,
-            S,
+            C,
             /\s+/,
             /extends/,
             /\s+/,
-            g.concat(S, "(", g.concat(/\./, S), ")*")
+            g.concat(C, "(", g.concat(/\./, C), ")*")
           ],
           scope: {
             1: "keyword",
@@ -97643,7 +97755,7 @@ function XJ() {
           match: [
             /class/,
             /\s+/,
-            S
+            C
           ],
           scope: {
             1: "keyword",
@@ -97651,7 +97763,7 @@ function XJ() {
           }
         }
       ]
-    }, xe = {
+    }, Se = {
       relevance: 0,
       match: g.either(
         // Hard coded exceptions
@@ -97680,13 +97792,13 @@ function XJ() {
       className: "meta",
       relevance: 10,
       begin: /^\s*['"]use (strict|asm)['"]/
-    }, Z = {
+    }, He = {
       variants: [
         {
           match: [
             /function/,
             /\s+/,
-            S,
+            C,
             /(?=\s*\()/
           ]
         },
@@ -97703,43 +97815,43 @@ function XJ() {
         3: "title.function"
       },
       label: "func.def",
-      contains: [de],
+      contains: [ue],
       illegal: /%/
     }, ze = {
       relevance: 0,
       match: /\b[A-Z][A-Z_0-9]+\b/,
       className: "variable.constant"
     };
-    function Fe(ue) {
-      return g.concat("(?!", ue.join("|"), ")");
+    function X(pe) {
+      return g.concat("(?!", pe.join("|"), ")");
     }
     const Ue = {
       match: g.concat(
         /\b/,
-        Fe([
+        X([
           ...c,
           "super",
           "import"
-        ].map((ue) => `${ue}\\s*\\(`)),
-        S,
+        ].map((pe) => `${pe}\\s*\\(`)),
+        C,
         g.lookahead(/\s*\(/)
       ),
       className: "title.function",
       relevance: 0
     }, De = {
       begin: g.concat(/\./, g.lookahead(
-        g.concat(S, /(?![0-9A-Za-z$_(])/)
+        g.concat(C, /(?![0-9A-Za-z$_(])/)
       )),
-      end: S,
+      end: C,
       excludeBegin: !0,
       keywords: "prototype",
       className: "property",
       relevance: 0
-    }, Te = {
+    }, ke = {
       match: [
         /get|set/,
         /\s+/,
-        S,
+        C,
         /(?=\()/
       ],
       className: {
@@ -97751,13 +97863,13 @@ function XJ() {
           // eat to avoid empty params
           begin: /\(\)/
         },
-        de
+        ue
       ]
-    }, Oe = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + _.UNDERSCORE_IDENT_RE + ")\\s*=>", _e = {
+    }, Oe = "(\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)|" + p.UNDERSCORE_IDENT_RE + ")\\s*=>", he = {
       match: [
         /const|var|let/,
         /\s+/,
-        S,
+        C,
         /\s*/,
         /=\s*/,
         /(async\s*)?/,
@@ -97770,7 +97882,7 @@ function XJ() {
         3: "title.function"
       },
       contains: [
-        de
+        ue
       ]
     };
     return {
@@ -97778,40 +97890,40 @@ function XJ() {
       aliases: ["js", "jsx", "mjs", "cjs"],
       keywords: R,
       // this will be extended by TypeScript
-      exports: { PARAMS_CONTAINS: ce, CLASS_REFERENCE: xe },
+      exports: { PARAMS_CONTAINS: de, CLASS_REFERENCE: Se },
       illegal: /#(?![$_A-z])/,
       contains: [
-        _.SHEBANG({
+        p.SHEBANG({
           label: "shebang",
           binary: "node",
           relevance: 5
         }),
         Be,
-        _.APOS_STRING_MODE,
-        _.QUOTE_STRING_MODE,
-        P,
-        H,
-        K,
-        ie,
-        ae,
+        p.APOS_STRING_MODE,
+        p.QUOTE_STRING_MODE,
+        D,
+        U,
+        W,
+        le,
+        se,
         // Skip numbers when they are part of a variable name
         { match: /\$\d+/ },
         y,
-        xe,
+        Se,
         {
           scope: "attr",
-          match: S + g.lookahead(":"),
+          match: C + g.lookahead(":"),
           relevance: 0
         },
-        _e,
+        he,
         {
           // "value" container
-          begin: "(" + _.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
+          begin: "(" + p.RE_STARTERS_RE + "|\\b(case|return|throw)\\b)\\s*",
           keywords: "return throw case",
           relevance: 0,
           contains: [
-            ae,
-            _.REGEXP_MODE,
+            se,
+            p.REGEXP_MODE,
             {
               className: "function",
               // we have to count the parens to make sure we actually have the
@@ -97825,7 +97937,7 @@ function XJ() {
                   className: "params",
                   variants: [
                     {
-                      begin: _.UNDERSCORE_IDENT_RE,
+                      begin: p.UNDERSCORE_IDENT_RE,
                       relevance: 0
                     },
                     {
@@ -97839,7 +97951,7 @@ function XJ() {
                       excludeBegin: !0,
                       excludeEnd: !0,
                       keywords: R,
-                      contains: ce
+                      contains: de
                     }
                   ]
                 }
@@ -97857,8 +97969,8 @@ function XJ() {
             {
               // JSX
               variants: [
-                { begin: p.begin, end: p.end },
-                { match: C },
+                { begin: _.begin, end: _.end },
+                { match: S },
                 {
                   begin: f.begin,
                   // we carefully check the opening tag to see if it truly
@@ -97879,7 +97991,7 @@ function XJ() {
             }
           ]
         },
-        Z,
+        He,
         {
           // prevent this from getting swallowed up by function
           // since they appear "function like"
@@ -97889,13 +98001,13 @@ function XJ() {
           // we have to count the parens to make sure we actually have the correct
           // bounding ( ).  There could be any number of sub-expressions inside
           // also surrounded by parens.
-          begin: "\\b(?!function)" + _.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
+          begin: "\\b(?!function)" + p.UNDERSCORE_IDENT_RE + "\\([^()]*(\\([^()]*(\\([^()]*\\)[^()]*)*\\)[^()]*)*\\)\\s*\\{",
           // end parens
           returnBegin: !0,
           label: "func.def",
           contains: [
-            de,
-            _.inherit(_.TITLE_MODE, { begin: S, className: "title.function" })
+            ue,
+            p.inherit(p.TITLE_MODE, { begin: C, className: "title.function" })
           ]
         },
         // catch ... so it won't trigger the property rule below
@@ -97908,18 +98020,18 @@ function XJ() {
         // .keyword()
         // $keyword = x
         {
-          match: "\\$" + S,
+          match: "\\$" + C,
           relevance: 0
         },
         {
           match: [/\bconstructor(?=\s*\()/],
           className: { 1: "title.function" },
-          contains: [de]
+          contains: [ue]
         },
         Ue,
         ze,
-        ge,
-        Te,
+        me,
+        ke,
         {
           match: /\$[(.]/
           // relevance booster for a pattern common to JS libs: `$(something)` and `$.something`
@@ -97927,8 +98039,8 @@ function XJ() {
       ]
     };
   }
-  function m(_) {
-    const g = _.regex, w = h(_), S = r, p = [
+  function h(p) {
+    const g = p.regex, w = m(p), C = r, _ = [
       "any",
       "void",
       "number",
@@ -97939,11 +98051,11 @@ function XJ() {
       "symbol",
       "bigint",
       "unknown"
-    ], C = {
+    ], S = {
       begin: [
         /namespace/,
         /\s+/,
-        _.IDENT_RE
+        p.IDENT_RE
       ],
       beginScope: {
         1: "keyword",
@@ -97955,7 +98067,7 @@ function XJ() {
       excludeEnd: !0,
       keywords: {
         keyword: "interface extends",
-        built_in: p
+        built_in: _
       },
       contains: [w.exports.CLASS_REFERENCE]
     }, R = {
@@ -97976,43 +98088,43 @@ function XJ() {
       "enum",
       "override",
       "satisfies"
-    ], A = {
+    ], N = {
       $pattern: r,
       keyword: t.concat(T),
       literal: e,
-      built_in: u.concat(p),
+      built_in: u.concat(_),
       "variable.language": d
-    }, L = {
+    }, I = {
       className: "meta",
-      begin: "@" + S
-    }, y = (K, ie, q) => {
-      const ae = K.contains.findIndex((we) => we.label === ie);
-      if (ae === -1)
+      begin: "@" + C
+    }, y = (W, le, Y) => {
+      const se = W.contains.findIndex((Ee) => Ee.label === le);
+      if (se === -1)
         throw new Error("can not find mode to replace");
-      K.contains.splice(ae, 1, q);
+      W.contains.splice(se, 1, Y);
     };
-    Object.assign(w.keywords, A), w.exports.PARAMS_CONTAINS.push(L);
-    const b = w.contains.find((K) => K.scope === "attr"), P = Object.assign(
+    Object.assign(w.keywords, N), w.exports.PARAMS_CONTAINS.push(I);
+    const b = w.contains.find((W) => W.scope === "attr"), D = Object.assign(
       {},
       b,
-      { match: g.concat(S, g.lookahead(/\s*\?:/)) }
+      { match: g.concat(C, g.lookahead(/\s*\?:/)) }
     );
     w.exports.PARAMS_CONTAINS.push([
       w.exports.CLASS_REFERENCE,
       // class reference for highlighting the params types
       b,
       // highlight the params key
-      P
+      D
       // Added for optional property assignment highlighting
     ]), w.contains = w.contains.concat([
-      L,
-      C,
+      I,
+      S,
       f,
-      P
+      D
       // Added for optional property assignment highlighting
-    ]), y(w, "shebang", _.SHEBANG()), y(w, "use_strict", R);
-    const H = w.contains.find((K) => K.label === "func.def");
-    return H.relevance = 0, Object.assign(w, {
+    ]), y(w, "shebang", p.SHEBANG()), y(w, "use_strict", R);
+    const U = w.contains.find((W) => W.label === "func.def");
+    return U.relevance = 0, Object.assign(w, {
       name: "TypeScript",
       aliases: [
         "ts",
@@ -98022,7 +98134,7 @@ function XJ() {
       ]
     }), w;
   }
-  return fi = m, fi;
+  return fi = h, fi;
 }
 var Ei, bs;
 function ZJ() {
@@ -98088,7 +98200,7 @@ function JJ() {
           begin: /""/
         }
       ]
-    }, c = /\d{1,2}\/\d{1,2}\/\d{4}/, d = /\d{4}-\d{1,2}-\d{1,2}/, u = /(\d|1[012])(:\d+){0,2} *(AM|PM)/, h = /\d{1,2}(:\d{1,2}){1,2}/, m = {
+    }, c = /\d{1,2}\/\d{1,2}\/\d{4}/, d = /\d{4}-\d{1,2}-\d{1,2}/, u = /(\d|1[012])(:\d+){0,2} *(AM|PM)/, m = /\d{1,2}(:\d{1,2}){1,2}/, h = {
       className: "literal",
       variants: [
         {
@@ -98097,7 +98209,7 @@ function JJ() {
         },
         {
           // #H:mm[:ss]# (24h Time)
-          begin: e.concat(/# */, h, / *#/)
+          begin: e.concat(/# */, m, / *#/)
         },
         {
           // #h[:mm[:ss]] A# (12h Time)
@@ -98109,12 +98221,12 @@ function JJ() {
             /# */,
             e.either(d, c),
             / +/,
-            e.either(u, h),
+            e.either(u, m),
             / *#/
           )
         }
       ]
-    }, _ = {
+    }, p = {
       className: "number",
       relevance: 0,
       variants: [
@@ -98148,7 +98260,7 @@ function JJ() {
         begin: /<\/?/,
         end: />/
       }
-    ] }), S = t.COMMENT(null, /$/, { variants: [
+    ] }), C = t.COMMENT(null, /$/, { variants: [
       { begin: /'/ },
       {
         // TODO: Use multi-class for leading spaces
@@ -98176,18 +98288,18 @@ function JJ() {
       contains: [
         a,
         s,
-        m,
-        _,
+        h,
+        p,
         g,
         w,
-        S,
+        C,
         {
           className: "meta",
           // TODO: Use multi-class for indentation once available
           begin: /[\t ]*#(const|disable|else|elseif|enable|end|externalsource|if|region)\b/,
           end: /$/,
           keywords: { keyword: "const disable else elseif enable end externalsource if region then" },
-          contains: [S]
+          contains: [C]
         }
       ]
     };
@@ -99303,16 +99415,16 @@ function iee() {
       match: /(\((?!;)|\))+/,
       className: "punctuation",
       relevance: 0
-    }, h = {
+    }, m = {
       className: "number",
       relevance: 0,
       // borrowed from Prism, TODO: split out into variants
       match: /[+-]?\b(?:\d(?:_?\d)*(?:\.\d(?:_?\d)*)?(?:[eE][+-]?\d(?:_?\d)*)?|0x[\da-fA-F](?:_?[\da-fA-F])*(?:\.[\da-fA-F](?:_?[\da-fA-D])*)?(?:[pP][+-]?\d(?:_?\d)*)?)\b|\binf\b|\bnan(?::0x[\da-fA-F](?:_?[\da-fA-D])*)?\b/
-    }, m = {
+    }, h = {
       // look-ahead prevents us from gobbling up opcodes
       match: /(i32|i64|f32|f64)(?!\.)/,
       className: "type"
-    }, _ = {
+    }, p = {
       className: "keyword",
       // borrowed from Prism, TODO: split out into variants
       match: /\b(f32|f64|i32|i64)(?:\.(?:abs|add|and|ceil|clz|const|convert_[su]\/i(?:32|64)|copysign|ctz|demote\/f64|div(?:_[su])?|eqz?|extend_[su]\/i32|floor|ge(?:_[su])?|gt(?:_[su])?|le(?:_[su])?|load(?:(?:8|16|32)_[su])?|lt(?:_[su])?|max|min|mul|nearest|neg?|or|popcnt|promote\/f32|reinterpret\/[fi](?:32|64)|rem_[su]|rot[lr]|shl|shr_[su]|store(?:8|16|32)?|sqrt|sub|trunc(?:_[su]\/f(?:32|64))?|wrap\/i64|xor))\b/
@@ -99341,9 +99453,9 @@ function iee() {
         u,
         c,
         t.QUOTE_STRING_MODE,
-        m,
-        _,
-        h
+        h,
+        p,
+        m
       ]
     };
   }
@@ -99392,7 +99504,7 @@ function lee() {
       "Sequence",
       "String",
       "System"
-    ], h = [
+    ], m = [
       "-",
       "~",
       /\*/,
@@ -99417,15 +99529,15 @@ function lee() {
       /\|/,
       /\?:/,
       "="
-    ], m = {
+    ], h = {
       relevance: 0,
       match: e.concat(/\b(?!(if|while|for|else|super)\b)/, a, /(?=\s*[({])/),
       className: "title.function"
-    }, _ = {
+    }, p = {
       match: e.concat(
         e.either(
           e.concat(/\b(?!(if|while|for|else|super)\b)/, a),
-          e.either(...h)
+          e.either(...m)
         ),
         /(?=\s*\([^)]+\)\s*\{)/
       ),
@@ -99463,19 +99575,19 @@ function lee() {
       keywords: s
     }, w = {
       relevance: 0,
-      match: e.either(...h),
+      match: e.either(...m),
       className: "operator"
-    }, S = {
+    }, C = {
       className: "string",
       begin: /"""/,
       end: /"""/
-    }, p = {
+    }, _ = {
       className: "property",
       begin: e.concat(/\./, e.lookahead(a)),
       end: a,
       excludeBegin: !0,
       relevance: 0
-    }, C = {
+    }, S = {
       relevance: 0,
       match: e.concat(/\b_/, a),
       scope: "variable"
@@ -99499,7 +99611,7 @@ function lee() {
         3: "operator",
         6: "params"
       }
-    }, A = t.COMMENT(
+    }, N = t.COMMENT(
       /\/\*\*/,
       /\*\//,
       { contains: [
@@ -99509,15 +99621,15 @@ function lee() {
         },
         "self"
       ] }
-    ), L = {
+    ), I = {
       scope: "subst",
       begin: /%\(/,
       end: /\)/,
       contains: [
         R,
         f,
-        m,
-        C,
+        h,
+        S,
         w
       ]
     }, y = {
@@ -99525,7 +99637,7 @@ function lee() {
       begin: /"/,
       end: /"/,
       contains: [
-        L,
+        I,
         {
           scope: "char.escape",
           variants: [
@@ -99537,12 +99649,12 @@ function lee() {
         }
       ]
     };
-    L.contains.push(y);
+    I.contains.push(y);
     const b = [
       ...s,
       ...d,
       ...c
-    ], P = {
+    ], D = {
       relevance: 0,
       match: e.concat(
         "\\b(?!",
@@ -99593,19 +99705,19 @@ function lee() {
         },
         R,
         y,
-        S,
-        A,
+        C,
+        N,
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
         f,
         g,
         T,
-        _,
-        m,
-        w,
-        C,
         p,
-        P
+        h,
+        w,
+        S,
+        _,
+        D
       ]
     };
   }
@@ -99845,16 +99957,16 @@ function see() {
       begin: '"',
       end: '"',
       illegal: "\\n"
-    }, h = {
+    }, m = {
       className: "string",
       begin: "'",
       end: "'",
       illegal: "\\n"
-    }, m = {
+    }, h = {
       className: "string",
       begin: "<<",
       end: ">>"
-    }, _ = {
+    }, p = {
       className: "number",
       begin: "[0-9]+#[0-9A-Z_]+(\\.[0-9-A-Z_]+)?#?([Ee][+-]?[0-9]+)?"
     }, g = {
@@ -99882,11 +99994,11 @@ function see() {
         t.C_LINE_COMMENT_MODE,
         t.C_BLOCK_COMMENT_MODE,
         u,
-        h,
         m,
+        h,
         w,
         g,
-        _,
+        p,
         t.NUMBER_MODE
       ]
     };
@@ -100321,7 +100433,7 @@ function uee() {
 var pee = /* @__PURE__ */ uee();
 const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
   __proto__: null
-}, Symbol.toStringTag, { value: "Module" })), mee = ["data-theme"], hee = ["innerHTML"], gee = {
+}, Symbol.toStringTag, { value: "Module" })), mee = ["data-theme"], hee = ["innerHTML"], gee = /* @__PURE__ */ l({
   __name: "MarkdownPreviewPanel",
   props: {
     modelValue: {
@@ -100348,12 +100460,13 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
   setup(r, { emit: t }) {
     const e = r, a = t, s = Le(null);
     rl.setOptions({
-      highlight: function(u, h) {
-        if (h && Fs.getLanguage(h))
+      // @ts-ignore - marked 类型定义问题
+      highlight: function(u, m) {
+        if (m && Fs.getLanguage(m))
           try {
-            return Fs.highlight(u, { language: h }).value;
-          } catch (m) {
-            console.error("Highlight error:", m);
+            return Fs.highlight(u, { language: m }).value;
+          } catch (h) {
+            console.error("Highlight error:", h);
           }
         return u;
       },
@@ -100369,22 +100482,22 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
     });
     Ke(() => e.scrollPercentage, (u) => {
       if (e.isSyncing || !s.value) return;
-      const h = s.value, _ = (h.scrollHeight - h.clientHeight) * u;
-      h.scrollTop = _;
+      const m = s.value, p = (m.scrollHeight - m.clientHeight) * u;
+      m.scrollTop = p;
     });
     const d = () => {
       if (e.isSyncing || !s.value) return;
-      const u = s.value, h = u.scrollHeight - u.clientHeight;
-      if (h <= 0) {
+      const u = s.value, m = u.scrollHeight - u.clientHeight;
+      if (m <= 0) {
         a("update:scrollPercentage", 0), a("scroll", 0);
         return;
       }
-      const m = u.scrollTop / h;
-      a("update:scrollPercentage", m), a("scroll", m);
+      const h = u.scrollTop / m;
+      a("update:scrollPercentage", h), a("scroll", h);
     };
     return Ke(() => e.theme, (u) => {
       u === "dark" ? Promise.resolve({                }) : Promise.resolve().then(() => _ee);
-    }), (u, h) => (o(), i("div", {
+    }), (u, m) => (o(), i("div", {
       class: "preview-panel",
       ref_key: "previewRef",
       ref: s,
@@ -100397,7 +100510,7 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
       }, null, 8, hee)
     ], 40, mee));
   }
-}, Fee = /* @__PURE__ */ Mt(gee, [["__scopeId", "data-v-3ae28dec"]]), wee = { class: "editor-config" }, fee = { class: "config-header" }, Eee = { class: "config-body" }, See = { class: "config-section" }, Cee = { class: "config-item" }, xee = ["value"], vee = { class: "config-item" }, kee = ["checked"], Tee = { class: "config-item" }, bee = ["value"], Ree = { class: "config-item" }, Oee = ["value"], Mee = { class: "config-section" }, Aee = { class: "color-grid" }, Nee = ["value", "onInput"], yee = { class: "color-value" }, Iee = {
+}), Fee = /* @__PURE__ */ At(gee, [["__scopeId", "data-v-118934b7"]]), wee = { class: "editor-config" }, fee = { class: "config-header" }, Eee = { class: "config-body" }, See = { class: "config-section" }, Cee = { class: "config-item" }, xee = ["value"], vee = { class: "config-item" }, kee = ["checked"], Tee = { class: "config-item" }, bee = ["value"], Ree = { class: "config-item" }, Oee = ["value"], Mee = { class: "config-section" }, Aee = { class: "color-grid" }, Nee = ["value", "onInput"], yee = { class: "color-value" }, Iee = /* @__PURE__ */ l({
   __name: "EditorConfig",
   props: {
     theme: String,
@@ -100418,42 +100531,42 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
   ],
   setup(r, { emit: t }) {
     const e = r, a = t, s = Pi(() => {
-      const h = e.customColors || {};
+      const m = e.customColors || {};
       return [
-        { key: "heading1", label: "标题1", value: h.heading1 || "#0066cc" },
-        { key: "heading2", label: "标题2", value: h.heading2 || "#0077dd" },
-        { key: "bold_text", label: "粗体", value: h.bold_text || "#000000" },
-        { key: "italic_text", label: "斜体", value: h.italic_text || "#555555" },
-        { key: "code_text", label: "代码", value: h.code_text || "#d14" },
-        { key: "link_text", label: "链接", value: h.link_text || "#0066cc" },
-        { key: "list_marker", label: "列表标记", value: h.list_marker || "#cc6600" },
-        { key: "quote_marker", label: "引用标记", value: h.quote_marker || "#999999" }
+        { key: "heading1", label: "标题1", value: m.heading1 || "#0066cc" },
+        { key: "heading2", label: "标题2", value: m.heading2 || "#0077dd" },
+        { key: "bold_text", label: "粗体", value: m.bold_text || "#000000" },
+        { key: "italic_text", label: "斜体", value: m.italic_text || "#555555" },
+        { key: "code_text", label: "代码", value: m.code_text || "#d14" },
+        { key: "link_text", label: "链接", value: m.link_text || "#0066cc" },
+        { key: "list_marker", label: "列表标记", value: m.list_marker || "#cc6600" },
+        { key: "quote_marker", label: "引用标记", value: m.quote_marker || "#999999" }
       ];
-    }), c = (h, m) => {
-      const _ = { ...e.customColors || {}, [h]: m };
-      a("update:customColors", _);
+    }), c = (m, h) => {
+      const p = { ...e.customColors || {}, [m]: h };
+      a("update:customColors", p);
     }, d = () => {
       a("reset");
     }, u = () => {
       a("save"), a("close");
     };
-    return (h, m) => (o(), i("div", wee, [
+    return (m, h) => (o(), i("div", wee, [
       n("div", fee, [
-        m[5] || (m[5] = n("h3", null, "编辑器配置", -1)),
+        h[5] || (h[5] = n("h3", null, "编辑器配置", -1)),
         n("button", {
-          onClick: m[0] || (m[0] = (_) => h.$emit("close")),
+          onClick: h[0] || (h[0] = (p) => m.$emit("close")),
           class: "close-btn"
         }, "×")
       ]),
       n("div", Eee, [
         n("div", See, [
-          m[13] || (m[13] = n("h4", null, "基础设置", -1)),
+          h[13] || (h[13] = n("h4", null, "基础设置", -1)),
           n("div", Cee, [
-            m[7] || (m[7] = n("label", null, "主题", -1)),
+            h[7] || (h[7] = n("label", null, "主题", -1)),
             n("select", {
               value: r.theme,
-              onInput: m[1] || (m[1] = (_) => h.$emit("update:theme", _.target.value))
-            }, [...m[6] || (m[6] = [
+              onInput: h[1] || (h[1] = (p) => m.$emit("update:theme", p.target.value))
+            }, [...h[6] || (h[6] = [
               n("option", { value: "light" }, "浅色", -1),
               n("option", { value: "dark" }, "深色", -1)
             ])], 40, xee)
@@ -100463,49 +100576,49 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
               n("input", {
                 type: "checkbox",
                 checked: r.enableSyntaxHighlight,
-                onChange: m[2] || (m[2] = (_) => h.$emit("update:enableSyntaxHighlight", _.target.checked))
+                onChange: h[2] || (h[2] = (p) => m.$emit("update:enableSyntaxHighlight", p.target.checked))
               }, null, 40, kee),
-              m[8] || (m[8] = r0(" 语法高亮 ", -1))
+              h[8] || (h[8] = r0(" 语法高亮 ", -1))
             ])
           ]),
           n("div", Tee, [
-            m[9] || (m[9] = n("label", null, "字体大小", -1)),
+            h[9] || (h[9] = n("label", null, "字体大小", -1)),
             n("input", {
               type: "number",
               value: r.fontSize,
-              onInput: m[3] || (m[3] = (_) => h.$emit("update:fontSize", Number(_.target.value))),
+              onInput: h[3] || (h[3] = (p) => m.$emit("update:fontSize", Number(p.target.value))),
               min: "10",
               max: "24"
             }, null, 40, bee),
-            m[10] || (m[10] = n("span", { class: "unit" }, "px", -1))
+            h[10] || (h[10] = n("span", { class: "unit" }, "px", -1))
           ]),
           n("div", Ree, [
-            m[11] || (m[11] = n("label", null, "行高", -1)),
+            h[11] || (h[11] = n("label", null, "行高", -1)),
             n("input", {
               type: "number",
               value: r.lineHeight,
-              onInput: m[4] || (m[4] = (_) => h.$emit("update:lineHeight", Number(_.target.value))),
+              onInput: h[4] || (h[4] = (p) => m.$emit("update:lineHeight", Number(p.target.value))),
               min: "16",
               max: "40"
             }, null, 40, Oee),
-            m[12] || (m[12] = n("span", { class: "unit" }, "px", -1))
+            h[12] || (h[12] = n("span", { class: "unit" }, "px", -1))
           ])
         ]),
         n("div", Mee, [
-          m[14] || (m[14] = n("h4", null, "颜色方案", -1)),
-          m[15] || (m[15] = n("p", { class: "hint" }, "点击颜色块可自定义颜色", -1)),
+          h[14] || (h[14] = n("h4", null, "颜色方案", -1)),
+          h[15] || (h[15] = n("p", { class: "hint" }, "点击颜色块可自定义颜色", -1)),
           n("div", Aee, [
-            (o(!0), i(Ii, null, Li(s.value, (_) => (o(), i("div", {
+            (o(!0), i(Ii, null, Li(s.value, (p) => (o(), i("div", {
               class: "color-item",
-              key: _.key
+              key: p.key
             }, [
-              n("label", null, ft(_.label), 1),
+              n("label", null, Et(p.label), 1),
               n("input", {
                 type: "color",
-                value: _.value,
-                onInput: (g) => c(_.key, g.target.value)
+                value: p.value,
+                onInput: (g) => c(p.key, g.target.value)
               }, null, 40, Nee),
-              n("span", yee, ft(_.value), 1)
+              n("span", yee, Et(p.value), 1)
             ]))), 128))
           ])
         ]),
@@ -100522,7 +100635,7 @@ const Fs = /* @__PURE__ */ IQ(pee), _ee = /* @__PURE__ */ Object.freeze(/* @__PU
       ])
     ]));
   }
-}, Hee = /* @__PURE__ */ Mt(Iee, [["__scopeId", "data-v-2ff40722"]]);
+}), Hee = /* @__PURE__ */ At(Iee, [["__scopeId", "data-v-c86daa5e"]]);
 export {
   Uee as CanvasEditor,
   Hee as EditorConfig,
