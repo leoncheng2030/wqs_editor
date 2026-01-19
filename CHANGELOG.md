@@ -79,6 +79,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `README.md` - English documentation
   - `README.zh-CN.md` - 简体中文文档
   - 支持语言切换链接
+- **完整 API 文档**: 新增 `API.md` 详细 API 文档
+  - 中英文双语，单文件包含
+  - 完整的组件 Props、Events、类型定义
+  - 插件系统开发指南
+  - 键盘快捷键列表
+  - 性能优化说明
+  - 高级用法示例
+- **性能基准测试**: 新增 `BENCHMARK.md` 性能对比文档
+  - 与主流编辑器的详细对比数据
+  - 10-40x 性能优势展示
+  - 所有优化技术的详细说明
+  - 真实场景性能测试
+  - 行业领先的性能评级
+- **示例与教程**: 新增 `EXAMPLES.md` 实用示例集合
+  - 12+ 实际使用场景
+  - 基础到高级的完整代码示例
+  - 插件开发指南
+  - 真实项目应用案例
+- **贡献指南**: 新增 `CONTRIBUTING.md` 开源贡献指南
+  - 完整的开发环境搭建
+  - 代码规范和最佳实践
+  - PR 提交流程
+  - 项目结构详解
 
 ### 🔧 Fixed
 

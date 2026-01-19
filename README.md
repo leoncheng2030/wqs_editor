@@ -263,6 +263,14 @@ import { VueMarkdownEditor } from '@nywqs/vue-markdown-editor'
 
 **No Breaking Changes**: All public APIs remain compatible.
 
+## 📚 Documentation
+
+- [API Reference](./API.md) - Complete API documentation
+- [Performance Benchmark](./BENCHMARK.md) - Detailed performance comparison
+- [Examples & Tutorials](./EXAMPLES.md) - Usage examples and tutorials
+- [Contributing Guide](./CONTRIBUTING.md) - How to contribute
+- [Changelog](./CHANGELOG.md) - Version history
+
 ## 📝 License
 
 MIT © [nywqs](https://github.com/leoncheng2030)

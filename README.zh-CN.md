@@ -263,6 +263,14 @@ import { VueMarkdownEditor } from '@nywqs/vue-markdown-editor'
 
 **无破坏性更改**：所有公共 API 保持兼容。
 
+## 📚 文档资源
+
+- [API 参考文档](./API.md) - 完整的 API 文档
+- [性能基准测试](./BENCHMARK.md) - 详细的性能对比数据
+- [示例与教程](./EXAMPLES.md) - 使用示例和教程
+- [贡献指南](./CONTRIBUTING.md) - 如何贡献代码
+- [更新日志](./CHANGELOG.md) - 版本历史
+
 ## 📝 开源协议
 
 MIT © [nywqs](https://github.com/leoncheng2030)

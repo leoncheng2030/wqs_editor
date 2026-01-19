@@ -1,6 +1,6 @@
 {
   "name": "@nywqs/vue-markdown-editor",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "A high-performance Markdown editor based on Vue 3 and Canvas with hybrid rendering architecture",
   "keywords": [
     "vue",
@@ -52,7 +52,13 @@
   "style": "dist-lib/wqs_editor.css",
   "files": [
     "dist-lib",
-    "README.md"
+    "README.md",
+    "README.zh-CN.md",
+    "API.md",
+    "BENCHMARK.md",
+    "EXAMPLES.md",
+    "CONTRIBUTING.md",
+    "CHANGELOG.md"
   ],
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"
