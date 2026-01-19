@@ -47,7 +47,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, watch, nextTick } from 'vue'
 
 const props = defineProps({
@@ -64,7 +64,7 @@ const emit = defineEmits([
   'replaceAll'
 ])
 
-const searchInputRef = ref(null)
+const searchInputRef = ref<HTMLInputElement | null>(null)
 const searchText = ref('')
 const replaceText = ref('')
 const showReplace = ref(false)
@@ -100,7 +100,7 @@ const performSearch = () => {
     matchCase: matchCase.value,
     matchWholeWord: matchWholeWord.value,
     useRegex: useRegex.value,
-    callback: (matches) => {
+    callback: (matches: any[]) => {
       totalMatches.value = matches.length
       if (matches.length > 0) {
         currentIndex.value = 0

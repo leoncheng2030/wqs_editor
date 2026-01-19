@@ -5,16 +5,33 @@
     "moduleResolution": "bundler",
     "strict": true,
     "jsx": "preserve",
-    "allowJs": true,
+    "allowJs": false,
     "noEmit": true,
     "isolatedModules": true,
     "useDefineForClassFields": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
     "types": ["vite/client"],
-    "lib": ["ESNext", "DOM"],
-    "baseUrl": "."
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
   },
-  "include": ["src/**/*.ts", "src/**/*.d.ts", "src/**/*.vue", "src/**/*.js"]
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.d.ts",
+    "src/**/*.vue"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "dist-lib"
+  ]
 }
 

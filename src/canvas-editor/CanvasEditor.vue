@@ -1,6 +1,11 @@
 <template>
   <div class="canvas-editor-container">
-    <CanvasToolbar v-if="showToolbar" @command="handleToolbarCommand" />
+    <CanvasToolbar 
+      v-if="showToolbar" 
+      :plugin-buttons="pluginToolbarButtons"
+      @command="handleToolbarCommand" 
+      @plugin-command="handlePluginCommand"
+    />
     <div class="canvas-editor" ref="containerRef">
       <canvas
         ref="canvasRef"
@@ -19,33 +24,35 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, watch } from 'vue'
-import { Document } from './core/Document.js'
-import { ViewportManager } from './managers/ViewportManager.js'
-import { DOMTextRenderer } from './renderers/DOMTextRenderer.js'  // 改用DOM渲染器
-import { InputManager } from './managers/InputManager.js'
-import { Cursor } from './core/Cursor.js'
-import { CursorRenderer } from './renderers/CursorRenderer.js'
-import { Selection } from './core/Selection.js'
-import { SelectionRenderer } from './renderers/SelectionRenderer.js'
-import { History } from './core/History.js'
-import { Clipboard } from './managers/ClipboardManager.js'
-import { MarkdownLexer } from './syntax/MarkdownLexer.js'
-import { SyntaxHighlighter } from './syntax/SyntaxHighlighter.js'
-import { LineNumberRenderer } from './renderers/LineNumberRenderer.js'
-import { RenderOptimizer } from './managers/RenderOptimizer.js'
-import { PreloadManager } from './managers/PreloadManager.js'
-import { PredictiveRenderer } from './managers/PredictiveRenderer.js'
+import { Document } from './core/Document'
+import { ViewportManager } from './managers/ViewportManager'
+import { DOMTextRenderer } from './renderers/DOMTextRenderer'  // 改用DOM渲染器
+import { InputManager } from './managers/InputManager'
+import { Cursor } from './core/Cursor'
+import { CursorRenderer } from './renderers/CursorRenderer'
+import { Selection } from './core/Selection'
+import { SelectionRenderer } from './renderers/SelectionRenderer'
+import { History } from './core/History'
+import { Clipboard } from './managers/ClipboardManager'
+import { MarkdownLexer } from './syntax/MarkdownLexer'
+import { SyntaxHighlighter } from './syntax/SyntaxHighlighter'
+import { LineNumberRenderer } from './renderers/LineNumberRenderer'
+import { RenderOptimizer } from './managers/RenderOptimizer'
+import { PreloadManager } from './managers/PreloadManager'
+import { PredictiveRenderer } from './managers/PredictiveRenderer'
 import CanvasToolbar from './CanvasToolbar.vue'
 import SearchPanel from './SearchPanel.vue'
-import { PluginManager } from './plugins/PluginManager.js'
-import { TablePlugin } from './plugins/TablePlugin.js'
-import { TodoListPlugin } from './plugins/TodoListPlugin.js'
-import { MathPlugin } from './plugins/MathPlugin.js'
-import { MermaidPlugin } from './plugins/MermaidPlugin.js'
-import { AutoCompletePlugin } from './plugins/AutoCompletePlugin.js'
-import { SyntaxCheckerPlugin } from './plugins/SyntaxCheckerPlugin.js'
+import { 
+  PluginManager,
+  TablePlugin,
+  TodoListPlugin,
+  MathPlugin,
+  MermaidPlugin,
+  AutoCompletePlugin,
+  SyntaxCheckerPlugin
+} from './plugins'
 
 const props = defineProps({
   modelValue: {
@@ -53,9 +60,9 @@ const props = defineProps({
     default: ''
   },
   theme: {
-    type: String,
+    type: String as () => 'light' | 'dark',
     default: 'light',
-    validator: (value) => ['light', 'dark'].includes(value)
+    validator: (value: string) => ['light', 'dark'].includes(value)
   },
   enableSyntaxHighlight: {
     type: Boolean,
@@ -92,8 +99,8 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue', 'update:scrollPercentage', 'scroll'])
 
 // DOM 引用
-const containerRef = ref(null)
-const canvasRef = ref(null)
+const containerRef = ref<HTMLDivElement | null>(null)
+const canvasRef = ref<HTMLCanvasElement | null>(null)
 
 // Canvas 尺寸
 const canvasWidth = ref(800)
@@ -101,36 +108,66 @@ const canvasHeight = ref(600)
 const dpr = ref(window.devicePixelRatio || 1) // 设备像素比
 
 // 核心对象
-let document = null
-let viewport = null
-let textRenderer = null
-let inputManager = null
-let cursor = null
-let cursorRenderer = null
-let selection = null
-let selectionRenderer = null
-let history = null
-let clipboard = null
-let ctx = null
-let lineNumberRenderer = null
-let pluginManager = null
-let renderOptimizer = null // 渲染优化器
-let preloadManager = null // 预加载管理器
-let predictiveRenderer = null // 智能预测渲染器
+let document: Document | null = null
+let viewport: ViewportManager | null = null
+let textRenderer: DOMTextRenderer | null = null
+let inputManager: InputManager | null = null
+let cursor: Cursor | null = null
+let cursorRenderer: CursorRenderer | null = null
+let selection: Selection | null = null
+let selectionRenderer: SelectionRenderer | null = null
+let history: History | null = null
+let clipboard: Clipboard | null = null
+let ctx: CanvasRenderingContext2D | null = null
+let lineNumberRenderer: LineNumberRenderer | null = null
+let pluginManager: PluginManager | null = null
+let renderOptimizer: RenderOptimizer | null = null // 渲染优化器
+let preloadManager: PreloadManager | null = null // 预加载管理器
+let predictiveRenderer: PredictiveRenderer | null = null // 智能预测渲染器
 
 // 鼠标状态
 let isMouseDown = false
-let mouseDownPosition = null
+let mouseDownPosition: { x: number; y: number; line: number; column: number } | null = null
 let isDragging = false
-let dragStartSelection = null
+
+// 插件工具栏按钮
+const pluginToolbarButtons = ref<any[]>([])
+let dragStartSelection: any = null
 
 // 搜索状态
 const showSearch = ref(false)
-const searchMatches = ref([])
-const searchHighlightRenderer = ref(null)
+const searchMatches = ref<any[]>([])
+const searchHighlightRenderer = ref<any>(null)
 
 // 渲染循环
-let animationFrameId = null
+let animationFrameId: number | null = null
+
+// 批量渲染请求标志（防止同一帧内多次立即渲染）
+let pendingImmediateRender = false
+
+/**
+ * 检查核心对象是否已初始化
+ */
+const ensureInitialized = () => {
+  if (!document || !viewport || !textRenderer || !cursor || !selection) {
+    throw new Error('Editor not initialized')
+  }
+  return { document, viewport, textRenderer, cursor, selection, history: history!, clipboard: clipboard! }
+}
+
+/**
+ * 请求立即渲染（自动合并同一帧内的多次请求）
+ */
+const requestImmediateRender = () => {
+  if (pendingImmediateRender) return
+  pendingImmediateRender = true
+  
+  // 使用queueMicrotask确保在所有同步代码执行后再渲染
+  queueMicrotask(() => {
+    pendingImmediateRender = false
+    render(true)
+  })
+}
 
 /**
  * 初始化编辑器
@@ -162,7 +199,7 @@ const initEditor = () => {
   viewport.setTotalLines(document.getLineCount())
   
   // 创建DOM文字渲染器（清晰）
-  textRenderer = new DOMTextRenderer(containerRef.value, {
+  textRenderer = new DOMTextRenderer(containerRef.value!, {
     fontSize: props.fontSize,
     lineHeight: props.lineHeight,
     enableSyntaxHighlight: props.enableSyntaxHighlight
@@ -212,12 +249,13 @@ const initEditor = () => {
   preloadManager = new PreloadManager({
     preloadLines: 10,
     preloadThreshold: 0.3,
-    onPreload: async ({ startLine, endLine, direction }) => {
+    onPreload: async ({ startLine, endLine, direction }: any) => {
       // 预加载回调：提前解析这些行的语法
+      if (!document || !textRenderer) return
       for (let i = startLine; i < endLine && i < document.getLineCount(); i++) {
         const line = document.getLine(i)
-        if (textRenderer.lexer) {
-          textRenderer.lexer.parseLine(line, i)
+        if ((textRenderer as any).lexer) {
+          (textRenderer as any).lexer.parseLine(line, i)
         }
       }
     }
@@ -227,19 +265,20 @@ const initEditor = () => {
   predictiveRenderer = new PredictiveRenderer({
     enablePrediction: true,
     learningRate: 0.1,
-    onPredict: (predictions) => {
+    onPredict: (predictions: any) => {
       // 根据预测调整策略
+      if (!preloadManager) return
       if (predictions.nextScrollSpeed === 'fast') {
         // 快速滚动时，增加预加载范围
-        preloadManager.preloadLines = 20
+        (preloadManager as any).preloadLines = 20
       } else {
-        preloadManager.preloadLines = 10
+        (preloadManager as any).preloadLines = 10
       }
     }
   })
   
   // 获取 Canvas 上下文
-  const canvas = canvasRef.value
+  const canvas = canvasRef.value!
   
   // 获取容器尺寸
   const rect = canvas.getBoundingClientRect()
@@ -255,7 +294,7 @@ const initEditor = () => {
   // 注意：不要在这里设置 scale，会在 resizeCanvas() 中统一处理
   
   // 创建输入管理器
-  inputManager = new InputManager(containerRef.value, {
+  inputManager = new InputManager(containerRef.value!, {
     canvas: canvas
   })
   
@@ -317,6 +356,9 @@ const initPluginSystem = async () => {
     await pluginManager.activate('mermaid')
     await pluginManager.activate('autocomplete')
     await pluginManager.activate('syntax-checker')
+    
+    // 更新插件工具栏按钮
+    pluginToolbarButtons.value = pluginManager.getToolbarButtons()
   } catch (error) {
     console.error('Failed to activate plugins:', error)
   }
@@ -326,8 +368,8 @@ const initPluginSystem = async () => {
  * 监听主题变化
  */
 watch(() => props.theme, (newTheme) => {
-  if (textRenderer && textRenderer.highlighter) {
-    textRenderer.highlighter.setTheme(newTheme)
+  if (textRenderer && (textRenderer as any).highlighter) {
+    (textRenderer as any).highlighter.setTheme(newTheme)
     textRenderer.updateThemeColors()
   }
   if (lineNumberRenderer) {
@@ -337,7 +379,7 @@ watch(() => props.theme, (newTheme) => {
   if (renderOptimizer) {
     renderOptimizer.markStaticLayerDirty()
   }
-  render(true) // 立即渲染
+  requestImmediateRender()
 })
 
 /**
@@ -350,7 +392,7 @@ watch(() => props.enableSyntaxHighlight, (enabled) => {
     if (textRenderer.markDirty) {
       textRenderer.markDirty()
     }
-    render()
+    requestImmediateRender()
   }
 })
 
@@ -372,7 +414,7 @@ watch(() => props.fontSize, (newSize, oldSize) => {
   
   // 更新行号渲染器的字体大小
   if (lineNumberRenderer) {
-    lineNumberRenderer.fontSize = newSize - 1
+    (lineNumberRenderer as any).fontSize = newSize - 1
   }
   
   // 注意：不在这里渲染，等待lineHeight的watch一起处理
@@ -391,7 +433,7 @@ watch(() => props.lineHeight, (newHeight) => {
       textRenderer.markDirty()
     }
   }
-  if (viewport) {
+  if (viewport && document) {
     viewport.lineHeight = newHeight
     viewport.setTotalLines(document.getLineCount())  // 重新计算总高度
   }
@@ -401,8 +443,8 @@ watch(() => props.lineHeight, (newHeight) => {
     renderOptimizer.markStaticLayerDirty()
   }
   
-  // 立即渲染，确保fontSize和lineHeight同步更新后的效果
-  render(true)
+  // 使用批量渲染，确保fontSize和lineHeight同步更新后的效果
+  requestImmediateRender()
 })
 
 /**
@@ -427,14 +469,16 @@ watch(() => props.showLineNumbers, (show) => {
   }
   
   // 重新计算总高度（因为 padding 变化了）
-  viewport.setTotalLines(document.getLineCount())
+  if (viewport && document) {
+    viewport.setTotalLines(document.getLineCount())
+  }
   
   // 需要重绘静态层
   if (renderOptimizer) {
     renderOptimizer.markStaticLayerDirty()
   }
   
-  render(true)
+  requestImmediateRender()
 })
 
 /**
@@ -453,12 +497,13 @@ watch(() => props.scrollPercentage, (newPercentage) => {
 /**
  * 文档变化处理
  */
-const handleDocumentChange = (changeInfo) => {
+const handleDocumentChange = (changeInfo?: any) => {
+  if (!viewport || !document || !renderOptimizer) return
   viewport.setTotalLines(document.getLineCount())
   
   // 标记文字层需要重新渲染
-  if (textRenderer && textRenderer.markDirty) {
-    textRenderer.markDirty()
+  if (textRenderer && (textRenderer as any).markDirty) {
+    (textRenderer as any).markDirty()
   }
   
   // 如果有变更信息，添加脏区域（增量渲染）
@@ -493,7 +538,9 @@ const render = (immediate = false) => {
 /**
  * 执行实际渲染
  */
-const performRender = (renderContext) => {
+const performRender = (renderContext: any) => {
+  if (!ctx || !viewport || !textRenderer || !document) return
+  
   const { fullRender, staticLayerDirty, offscreenCtx, offscreenCanvas } = renderContext
   
   // 获取可见范围（带缓冲区）
@@ -516,7 +563,7 @@ const performRender = (renderContext) => {
     ctx.fillRect(0, 0, viewport.width, viewport.height)
     
     // 渲染行号
-    if (lineNumberRenderer && props.showLineNumbers) {
+    if (lineNumberRenderer && props.showLineNumbers && cursor && document) {
       lineNumberRenderer.render(
         ctx,
         viewport,
@@ -528,23 +575,23 @@ const performRender = (renderContext) => {
   }
   
   // 3. 渲染选区（Canvas）
-  if (selection && selectionRenderer) {
-    selectionRenderer.render(ctx, selection, viewport, document, textRenderer, textRenderer.lineHeight)
+  if (selection && selectionRenderer && cursor && document) {
+    selectionRenderer.render(ctx, selection, viewport as any, document, textRenderer as any, textRenderer.lineHeight)
   }
   
   // 4. 渲染文本内容（DOM！）
   textRenderer.renderContent(document, viewport)
   
   // 5. 渲染光标（Canvas）
-  if (cursor && cursorRenderer && !selection.hasSelection) {
+  if (cursor && cursorRenderer && selection && !selection.hasSelection) {
     const lineText = document.getLine(cursor.line)
-    cursorRenderer.render(ctx, cursor, viewport, textRenderer, lineText, textRenderer.lineHeight)
+    cursorRenderer.render(ctx, cursor, viewport as any, textRenderer as any, lineText, textRenderer.lineHeight)
   }
   
   // 6. 更新 textarea 位置，让 IME 候选框跟随光标
   if (cursor && inputManager) {
     const lineText = document.getLine(cursor.line)
-    const { x, y } = viewport.docToCanvas(cursor.line, cursor.column, textRenderer, lineText)
+    const { x, y } = viewport.docToCanvas(cursor.line, cursor.column, textRenderer as any, lineText)
     inputManager.updateTextareaPosition(x, y + textRenderer.lineHeight)
   }
 }
@@ -552,8 +599,8 @@ const performRender = (renderContext) => {
 /**
  * 渲染静态层（行号、背景）到离屏Canvas
  */
-const renderStaticLayer = (offCtx, startLine, endLine) => {
-  if (!offCtx) return
+const renderStaticLayer = (offCtx: CanvasRenderingContext2D, startLine: number, endLine: number) => {
+  if (!offCtx || !viewport || !textRenderer || !document) return
   
   // 清空离屏Canvas
   offCtx.clearRect(0, 0, viewport.width, viewport.height)
@@ -563,7 +610,7 @@ const renderStaticLayer = (offCtx, startLine, endLine) => {
   offCtx.fillRect(0, 0, viewport.width, viewport.height)
   
   // 渲染行号
-  if (lineNumberRenderer && props.showLineNumbers) {
+  if (lineNumberRenderer && props.showLineNumbers && cursor) {
     lineNumberRenderer.render(
       offCtx,
       viewport,
@@ -578,7 +625,7 @@ const renderStaticLayer = (offCtx, startLine, endLine) => {
  * 获取性能统计
  */
 const getPerformanceStats = () => {
-  const stats = {
+  const stats: any = {
     optimizer: null,
     preload: null,
     prediction: null
@@ -586,9 +633,9 @@ const getPerformanceStats = () => {
   
   if (renderOptimizer) {
     stats.optimizer = {
-      dirtyRegions: renderOptimizer.dirtyRegions.length,
-      fullRenderNeeded: renderOptimizer.fullRenderNeeded,
-      hasOffscreenCanvas: !!renderOptimizer.offscreenCanvas
+      dirtyRegions: (renderOptimizer as any).dirtyRegions?.length || 0,
+      fullRenderNeeded: (renderOptimizer as any).fullRenderNeeded || false,
+      hasOffscreenCanvas: !!(renderOptimizer as any).offscreenCanvas
     }
   }
   
@@ -606,8 +653,8 @@ const getPerformanceStats = () => {
 /**
  * 处理输入
  */
-const handleInput = (data) => {
-  if (!data.data || !cursor || !document) return
+const handleInput = (data: any) => {
+  if (!data.data || !cursor || !document || !selection || !history || !cursorRenderer) return
   
   // 过滤换行符，因为Enter键已经在handleKeyDown中处理了
   if (data.data === '\n') {
@@ -666,10 +713,10 @@ const handleInput = (data) => {
 /**
  * 处理按键
  */
-const handleKeyDown = (data) => {
+const handleKeyDown = (data: any) => {
   const { key, ctrlKey, shiftKey, metaKey } = data
   
-  if (!cursor || !document) return
+  if (!cursor || !document || !selection || !history || !cursorRenderer || !clipboard) return
   
   // 阻止Tab键的默认行为（切换焦点）
   if (key === 'Tab') {
@@ -738,8 +785,13 @@ const handleKeyDown = (data) => {
   
   // Ctrl+V 粘贴
   if ((ctrlKey || metaKey) && key === 'v') {
+    // 阻止默认的粘贴行为，避免重复粘贴
+    if (data.preventDefault) {
+      data.preventDefault()
+    }
+    
     clipboard.paste().then(text => {
-      if (!text) return
+      if (!text || !cursor || !document || !history || !selection || !cursorRenderer) return
       
       const cursorBefore = { line: cursor.line, column: cursor.column }
       
@@ -1253,7 +1305,7 @@ const handleKeyDown = (data) => {
  * @param {number} offset - 光标位置
  * @returns {{start: number, end: number}} 单词边界
  */
-const findWordBoundary = (text, offset) => {
+const findWordBoundary = (text: string, offset: number) => {
   // 单词字符正则（字母、数字、下划线、中文）
   const wordChar = /[\w\u4e00-\u9fa5]/
   
@@ -1276,8 +1328,8 @@ const findWordBoundary = (text, offset) => {
 /**
  * 处理双击（选词）
  */
-const handleDblClick = (data) => {
-  if (!cursor || !viewport || !textRenderer || !document) return
+const handleDblClick = (data: any) => {
+  if (!cursor || !viewport || !textRenderer || !document || !selection) return
   
   // 直接使用原始 x 坐标
   const { line } = viewport.canvasToDoc(data.x, data.y, textRenderer, '')
@@ -1305,8 +1357,8 @@ const handleDblClick = (data) => {
 /**
  * 处理三击（选行）
  */
-const handleTripleClick = (data) => {
-  if (!cursor || !viewport || !textRenderer || !document) return
+const handleTripleClick = (data: any) => {
+  if (!cursor || !viewport || !textRenderer || !document || !selection) return
   
   // 直接使用原始 x 坐标
   const { line } = viewport.canvasToDoc(data.x, data.y, textRenderer, '')
@@ -1324,8 +1376,8 @@ const handleTripleClick = (data) => {
 /**
  * 处理工具栏命令
  */
-const handleToolbarCommand = (command) => {
-  if (!cursor || !document) return
+const handleToolbarCommand = (command: string) => {
+  if (!cursor || !document || !selection || !history) return
   
   let textToInsert = ''
   let cursorOffset = 0
@@ -1383,34 +1435,6 @@ const handleToolbarCommand = (command) => {
       textToInsert = '![图片描述](url)'
       cursorOffset = 2
       break
-    case 'table':
-      // 使用插件命令插入表格
-      if (pluginManager) {
-        pluginManager.executeCommand('markdown-table.insertTable', 3, 3)
-        return
-      }
-      break
-    case 'todo':
-      // 使用插件命令插入任务列表
-      if (pluginManager) {
-        pluginManager.executeCommand('todo-list.insertTodo', false)
-        return
-      }
-      break
-    case 'math':
-      // 使用插件命令插入数学公式
-      if (pluginManager) {
-        pluginManager.executeCommand('math.insertInlineMath')
-        return
-      }
-      break
-    case 'diagram':
-      // 使用插件命令插入流程图
-      if (pluginManager) {
-        pluginManager.executeCommand('mermaid.insertFlowchart')
-        return
-      }
-      break
     default:
       return
   }
@@ -1452,13 +1476,28 @@ const handleToolbarCommand = (command) => {
   cursor.column += cursorOffset
   
   // 重置光标闪烁
-  cursorRenderer.resetBlink(() => render(true))
+  if (cursorRenderer) {
+    cursorRenderer.resetBlink(() => render(true))
+  }
+}
+
+/**
+ * 处理插件工具栏命令
+ */
+const handlePluginCommand = ({ command, args }: { command: string; args: any[] }) => {
+  if (!pluginManager) return
+  
+  try {
+    pluginManager.executeCommand(command, ...args)
+  } catch (error) {
+    console.error('Failed to execute plugin command:', command, error)
+  }
 }
 
 /**
  * 处理搜索
  */
-const handleSearch = (options) => {
+const handleSearch = (options: any) => {
   if (!document) return
   
   const { text, matchCase, matchWholeWord, useRegex, jumpTo, callback } = options
@@ -1519,7 +1558,7 @@ const handleSearch = (options) => {
   // 跳转到指定匹配
   if (typeof jumpTo === 'number' && matches[jumpTo]) {
     // 记录跳转行为（智能预测）
-    if (predictiveRenderer) {
+    if (predictiveRenderer && cursor) {
       predictiveRenderer.recordBehavior('jump', {
         from: cursor.line,
         to: matches[jumpTo].line
@@ -1527,23 +1566,25 @@ const handleSearch = (options) => {
     }
     
     const match = matches[jumpTo]
-    cursor.setPosition(match.line, match.startColumn)
-    
-    // 滚动到可见区域
-    const targetY = match.line * viewport.lineHeight
-    if (targetY < viewport.scrollTop || targetY > viewport.scrollTop + viewport.height) {
-      viewport.setScrollTop(targetY - viewport.height / 3)
+    if (cursor && viewport) {
+      cursor.setPosition(match.line, match.startColumn)
+      
+      // 滚动到可见区域
+      const targetY = match.line * viewport.lineHeight
+      if (targetY < viewport.scrollTop || targetY > viewport.scrollTop + viewport.height) {
+        viewport.setScrollTop(targetY - viewport.height / 3)
+      }
+      
+      render(true) // 搜索跳转立即渲染
     }
-    
-    render(true) // 搜索跳转立即渲染
   }
 }
 
 /**
  * 处理替换
  */
-const handleReplace = (options) => {
-  if (!document || !cursor) return
+const handleReplace = (options: any) => {
+  if (!document || !cursor || !history) return
   
   const { searchText, replaceText, matchCase, matchWholeWord, useRegex, callback } = options
   
@@ -1553,14 +1594,17 @@ const handleReplace = (options) => {
     matchCase,
     matchWholeWord,
     useRegex,
-    callback: (matches) => {
-      if (matches.length === 0) return
+    callback: (matches: any[]) => {
+      if (matches.length === 0 || !cursor || !history || !document) return
+      
+      const cursorLine = cursor.line
+      const cursorColumn = cursor.column
       
       // 找到当前光标位置的匹配
-      const currentMatch = matches.find(m => 
-        m.line === cursor.line && 
-        cursor.column >= m.startColumn && 
-        cursor.column <= m.endColumn
+      const currentMatch = matches.find((m: any) => 
+        m.line === cursorLine && 
+        cursorColumn >= m.startColumn && 
+        cursorColumn <= m.endColumn
       )
       
       if (currentMatch) {
@@ -1601,8 +1645,8 @@ const handleReplace = (options) => {
 /**
  * 处理全部替换
  */
-const handleReplaceAll = (options) => {
-  if (!document) return
+const handleReplaceAll = (options: any) => {
+  if (!document || !history) return
   
   const { searchText, replaceText, matchCase, matchWholeWord, useRegex, callback } = options
   
@@ -1612,8 +1656,8 @@ const handleReplaceAll = (options) => {
     matchCase,
     matchWholeWord,
     useRegex,
-    callback: (matches) => {
-      if (matches.length === 0) {
+    callback: (matches: any[]) => {
+      if (matches.length === 0 || !history || !document || !cursor) {
         if (callback) callback()
         return
       }
@@ -1657,7 +1701,9 @@ const handleReplaceAll = (options) => {
  * @param {Object} operation - 操作对象
  * @param {boolean} isUndo - 是否是撤销操作
  */
-const applyHistoryOperation = (operation, isUndo) => {
+const applyHistoryOperation = (operation: any, isUndo: boolean) => {
+  if (!history || !document || !cursor || !selection || !cursorRenderer) return
+  
   history.startApplying()
   
   try {
@@ -1704,8 +1750,8 @@ const applyHistoryOperation = (operation, isUndo) => {
 /**
  * 处理鼠标点击
  */
-const handleClick = (data) => {
-  if (!cursor || !viewport || !textRenderer || !document) return
+const handleClick = (data: any) => {
+  if (!cursor || !viewport || !textRenderer || !document || !selection || !cursorRenderer) return
   
   // 如果有选区，说明用户刚才拖拽选择了文本，不要清除选区
   if (selection.hasSelection) {
@@ -1737,8 +1783,8 @@ const handleClick = (data) => {
 /**
  * 处理鼠标按下
  */
-const handleMouseDown = (data) => {
-  if (!viewport || !textRenderer || !document) return
+const handleMouseDown = (data: any) => {
+  if (!viewport || !textRenderer || !document || !selection || !cursor || !cursorRenderer) return
   
   isMouseDown = true
   isDragging = false
@@ -1755,7 +1801,7 @@ const handleMouseDown = (data) => {
   const { column } = viewport.canvasToDoc(data.x, data.y, textRenderer, lineText)
   const targetColumn = Math.max(0, Math.min(column, lineText.length))
   
-  mouseDownPosition = { line: targetLine, column: targetColumn }
+  mouseDownPosition = { x: data.x, y: data.y, line: targetLine, column: targetColumn }
   
   // 检查是否点击在选区内（可能开始拖拽）
   if (selection.hasSelection) {
@@ -1789,8 +1835,8 @@ const handleMouseDown = (data) => {
 /**
  * 处理鼠标移动
  */
-const handleMouseMove = (data) => {
-  if (!isMouseDown || !viewport || !textRenderer || !document) return
+const handleMouseMove = (data: any) => {
+  if (!isMouseDown || !viewport || !textRenderer || !document || !cursor || !selection || !mouseDownPosition || !canvasRef.value) return
   
   // 直接使用原始 x 坐标
   const { line } = viewport.canvasToDoc(data.x, data.y, textRenderer, '')
@@ -1839,6 +1885,8 @@ const handleMouseMove = (data) => {
  * 处理鼠标释放
  */
 const handleMouseUp = () => {
+  if (!selection || !cursor || !history || !document || !cursorRenderer) return
+  
   // 如果只是点击（没有真正选择文字），清除选区
   if (!isDragging && !dragStartSelection && selection.hasSelection) {
     const { startLine, startColumn, endLine, endColumn } = selection.getOrderedRange()
@@ -1937,7 +1985,9 @@ const handleMouseUp = () => {
     }
     
     // 恢复鼠标样式
-    canvasRef.value.style.cursor = 'text'
+    if (canvasRef.value) {
+      canvasRef.value.style.cursor = 'text'
+    }
   } else if (dragStartSelection && !isDragging) {
     // 点击了选区内但没有拖拽，清除选区
     selection.clear()
@@ -1976,7 +2026,9 @@ const handleMouseUp = () => {
 /**
  * 处理鼠标滚轮
  */
-const handleWheel = (event) => {
+const handleWheel = (event: WheelEvent) => {
+  if (!viewport || !predictiveRenderer) return
+  
   event.preventDefault()
   
   const delta = event.deltaY

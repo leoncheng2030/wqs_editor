@@ -4,7 +4,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
@@ -16,9 +16,9 @@ const props = defineProps({
     default: ''
   },
   theme: {
-    type: String,
+    type: String as () => 'light' | 'dark',
     default: 'light',
-    validator: (value) => ['light', 'dark'].includes(value)
+    validator: (value: string) => ['light', 'dark'].includes(value)
   },
   // 外部控制的滚动位置（百分比）
   scrollPercentage: {
@@ -34,11 +34,12 @@ const props = defineProps({
 
 const emit = defineEmits(['update:scrollPercentage', 'scroll'])
 
-const previewRef = ref(null)
+const previewRef = ref<HTMLDivElement | null>(null)
 
 // 配置 marked
 marked.setOptions({
-  highlight: function(code, lang) {
+  // @ts-ignore - marked 类型定义问题
+  highlight: function(code: string, lang: string) {
     if (lang && hljs.getLanguage(lang)) {
       try {
         return hljs.highlight(code, { language: lang }).value

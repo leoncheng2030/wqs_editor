@@ -12,7 +12,7 @@
         
         <div class="config-item">
           <label>主题</label>
-          <select :value="theme" @input="$emit('update:theme', $event.target.value)">
+          <select :value="theme" @input="$emit('update:theme', ($event.target as HTMLSelectElement).value)">
             <option value="light">浅色</option>
             <option value="dark">深色</option>
           </select>
@@ -23,7 +23,7 @@
             <input 
               type="checkbox" 
               :checked="enableSyntaxHighlight" 
-              @change="$emit('update:enableSyntaxHighlight', $event.target.checked)"
+              @change="$emit('update:enableSyntaxHighlight', ($event.target as HTMLInputElement).checked)"
             />
             语法高亮
           </label>
@@ -34,7 +34,7 @@
           <input 
             type="number" 
             :value="fontSize" 
-            @input="$emit('update:fontSize', Number($event.target.value))"
+            @input="$emit('update:fontSize', Number(($event.target as HTMLInputElement).value))"
             min="10" 
             max="24"
           />
@@ -46,7 +46,7 @@
           <input 
             type="number" 
             :value="lineHeight" 
-            @input="$emit('update:lineHeight', Number($event.target.value))"
+            @input="$emit('update:lineHeight', Number(($event.target as HTMLInputElement).value))"
             min="16" 
             max="40"
           />
@@ -65,7 +65,7 @@
             <input 
               type="color" 
               :value="item.value"
-              @input="handleColorChange(item.key, $event.target.value)"
+              @input="handleColorChange(item.key, ($event.target as HTMLInputElement).value)"
             />
             <span class="color-value">{{ item.value }}</span>
           </div>
@@ -80,7 +80,7 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed } from 'vue'
 
 const props = defineProps({
@@ -117,7 +117,7 @@ const colorItems = computed(() => {
   ]
 })
 
-const handleColorChange = (key, value) => {
+const handleColorChange = (key: string, value: string) => {
   const newColors = { ...(props.customColors || {}), [key]: value }
   emit('update:customColors', newColors)
 }

@@ -1,11 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { ref, watch, onMounted } from 'vue'
 import CanvasEditor from './canvas-editor/CanvasEditor.vue'
 import MarkdownPreviewPanel from './canvas-editor/MarkdownPreviewPanel.vue'
 import EditorConfig from './canvas-editor/EditorConfig.vue'
 
 const showPreview = ref(false)
-const theme = ref('light')
+const theme = ref<'light' | 'dark'>('light')
 const enableSyntaxHighlight = ref(true)
 const showLineNumbers = ref(true)
 const fontSize = ref(14)
@@ -13,8 +13,8 @@ const lineHeight = ref(24)
 const customColors = ref({})
 const showConfig = ref(false)
 const showStats = ref(false)
-const editorRef = ref(null)
-const perfStats = ref(null)
+const editorRef = ref<InstanceType<typeof CanvasEditor> | null>(null)
+const perfStats = ref<any>(null)
 
 // 滚动同步状态
 const editorScrollPercentage = ref(0)
@@ -26,7 +26,7 @@ const isSyncingPreview = ref(false)
 const CONFIG_KEY = 'canvas-editor-config'
 
 // 编辑器滚动事件处理
-const handleEditorScroll = (percentage) => {
+const handleEditorScroll = (percentage: number) => {
   if (isSyncingPreview.value) return
   
   isSyncingEditor.value = true
@@ -38,7 +38,7 @@ const handleEditorScroll = (percentage) => {
 }
 
 // 预览面板滚动事件处理
-const handlePreviewScroll = (percentage) => {
+const handlePreviewScroll = (percentage: number) => {
   if (isSyncingEditor.value) return
   
   isSyncingPreview.value = true
